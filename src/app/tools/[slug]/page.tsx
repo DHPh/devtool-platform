@@ -6,7 +6,7 @@ import { Base64Encoder } from "@/lib/tools/base64-encoder";
 import { RegexTester } from "@/lib/tools/regex-tester";
 import { UuidGenerator } from "@/lib/tools/uuid-generator";
 import { TimestampConverter } from "@/lib/tools/timestamp-converter";
-import { PasswordGenerator } from "@/lib/tools/password-generator";
+import PasswordGenerator from "@/lib/tools/password-generator";
 import ColorConverter from "@/lib/tools/color-converter";
 import CaseConverter from "@/lib/tools/case-converter";
 import UrlEncoder from "@/lib/tools/url-encoder";
@@ -23,6 +23,7 @@ import MarkdownPreview from "@/lib/tools/markdown-preview";
 import CsvViewer from "@/lib/tools/csv-viewer";
 import JsonTableViewer from "@/lib/tools/json-table-viewer";
 import DataExplorer from "@/lib/tools/data-explorer";
+import RandomWheel from "@/lib/tools/random-wheel";
 
 // Tool component mapping
 const TOOL_COMPONENTS: Record<string, React.ComponentType> = {
@@ -48,6 +49,7 @@ const TOOL_COMPONENTS: Record<string, React.ComponentType> = {
   "csv-viewer": CsvViewer,
   "json-table-viewer": JsonTableViewer,
   "data-explorer": DataExplorer,
+  "random-wheel": RandomWheel,
 };
 
 interface ToolPageProps {

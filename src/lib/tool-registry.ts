@@ -297,6 +297,18 @@ export const TOOL_REGISTRY: ToolMetadata[] = [
     icon: "🔍",
     complexity: "advanced",
   },
+  {
+    id: "random-wheel",
+    name: "Random Wheel",
+    description: "Spin a wheel to randomly select from your list of options",
+    category: TOOL_CATEGORIES.UTILITIES.id,
+    type: TOOL_TYPES.RANDOM,
+    types: [TOOL_TYPES.UTILITY],
+    tags: ["random", "wheel", "picker", "decision", "spinner"],
+    path: "/tools/random-wheel",
+    icon: "🎯",
+    complexity: "simple",
+  },
 ];
 
 // Helper functions
