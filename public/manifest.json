@@ -1,0 +1,49 @@
+{
+    "name": "DevTool Platform",
+    "short_name": "DevTool",
+    "description": "A comprehensive collection of 100+ developer tools",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#000000",
+    "orientation": "portrait-primary",
+    "categories": [
+        "developer",
+        "tools",
+        "utilities"
+    ],
+    "_comment_icons": "TODO: Create and upload these icon files to public/",
+    "icons": [
+        {
+            "src": "/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable",
+            "_comment": "TODO: Create 192x192 PWA icon"
+        },
+        {
+            "src": "/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable",
+            "_comment": "TODO: Create 512x512 PWA icon"
+        }
+    ],
+    "_comment_screenshots": "TODO: Create and upload these screenshot files",
+    "screenshots": [
+        {
+            "src": "/screenshot-1.png",
+            "sizes": "1280x720",
+            "type": "image/png",
+            "form_factor": "wide",
+            "_comment": "TODO: Create desktop screenshot"
+        },
+        {
+            "src": "/screenshot-2.png",
+            "sizes": "750x1334",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "_comment": "TODO: Create mobile screenshot"
+        }
+    ]
+}

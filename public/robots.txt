@@ -1,0 +1,41 @@
+User-agent: *
+Allow: /
+
+# Allow all well-behaved crawlers access to all content
+User-agent: *
+Disallow:
+
+# Google bots
+User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-Image
+Allow: /
+
+# Bing bot
+User-agent: Bingbot
+Allow: /
+
+# Social media crawlers
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+# Block bad bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+# Sitemap location
+# TODO: Replace with your actual domain URL
+Sitemap: https://devtool-platform.vercel.app/sitemap.xml

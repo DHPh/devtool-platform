@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FOUC Test</title>
+    <style>
+      /* Simulate Tailwind CSS theme styles */
+      html {
+        transition: background-color 0.15s ease-in-out;
+      }
+
+      body {
+        transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+        margin: 0;
+        padding: 20px;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      }
+
+      /* Light theme (default) */
+      .light {
+        background-color: #ffffff;
+        color: #000000;
+      }
+
+      /* Dark theme */
+      .dark {
+        background-color: #000000;
+        color: #ffffff;
+      }
+
+      /* FOUC Prevention */
+      html:not([data-theme-applied]) body {
+        visibility: hidden;
+      }
+
+      html[data-theme-applied] body {
+        visibility: visible;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        border-radius: 8px;
+        background-color: rgba(128, 128, 128, 0.1);
+      }
+
+      .dark .container {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+
+      button {
+        padding: 10px 20px;
+        margin: 10px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        background-color: #007bff;
+        color: white;
+      }
+
+      .dark button {
+        background-color: #0056b3;
+      }
+    </style>
+
+    <!-- FOUC Prevention Script (same as in layout.tsx) -->
+    <script>
+      (function () {
+        try {
+          // Get theme from localStorage (Zustand persist format)
+          var stored = localStorage.getItem("devtool-theme");
+          var theme = stored ? JSON.parse(stored).state?.theme : "system";
+          var root = document.documentElement;
+
+          // Clear any existing theme classes first
+          root.classList.remove("light", "dark");
+
+          // Apply theme immediately
+          if (theme === "system") {
+            var systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+              .matches
+              ? "dark"
+              : "light";
+            root.classList.add(systemTheme);
+          } else if (theme === "dark" || theme === "light") {
+            root.classList.add(theme);
+          } else {
+            // Fallback to system if unknown theme
+            var systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+              .matches
+              ? "dark"
+              : "light";
+            root.classList.add(systemTheme);
+          }
+
+          // Set flag to indicate theme was applied and make content visible
+          root.setAttribute("data-theme-applied", "true");
+        } catch (e) {
+          // Fallback to system preference on any error
+          var systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+            .matches
+            ? "dark"
+            : "light";
+          document.documentElement.classList.remove("light", "dark");
+          document.documentElement.classList.add(systemTheme);
+          document.documentElement.setAttribute("data-theme-applied", "true");
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <h1>FOUC Test Page</h1>
+      <p>
+        This page tests the Flash of Unstyled Content (FOUC) fix for theme
+        switching.
+      </p>
+
+      <h2>Instructions:</h2>
+      <ol>
+        <li>Click the theme buttons below to change theme</li>
+        <li>Refresh the page multiple times</li>
+        <li>
+          Observe that there should be no flash of different colored content
+        </li>
+        <li>Test with different browser themes and system preferences</li>
+      </ol>
+
+      <div>
+        <button onclick="setTheme('light')">Light Theme</button>
+        <button onclick="setTheme('dark')">Dark Theme</button>
+        <button onclick="setTheme('system')">System Theme</button>
+      </div>
+
+      <div style="margin-top: 20px">
+        <strong>Current Theme:</strong>
+        <span id="current-theme">Loading...</span><br />
+        <strong>Applied Classes:</strong>
+        <span id="applied-classes">Loading...</span><br />
+        <strong>Theme Applied Flag:</strong>
+        <span id="theme-flag">Loading...</span>
+      </div>
+
+      <div
+        style="margin-top: 20px; padding: 15px; border: 1px solid currentColor"
+      >
+        <h3>Sample Content</h3>
+        <p>
+          This is sample content to demonstrate the theme switching. The
+          background and text colors should change smoothly without any flash.
+        </p>
+        <ul>
+          <li>Item 1</li>
+          <li>Item 2</li>
+          <li>Item 3</li>
+        </ul>
+      </div>
+    </div>
+
+    <script>
+      // Theme switching functionality
+      function setTheme(theme) {
+        const themeData = {
+          state: { theme: theme },
+        };
+        localStorage.setItem("devtool-theme", JSON.stringify(themeData));
+        applyTheme(theme);
+        updateDisplay();
+      }
+
+      function applyTheme(theme) {
+        const root = document.documentElement;
+        root.classList.remove("light", "dark");
+
+        if (theme === "system") {
+          const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+            .matches
+            ? "dark"
+            : "light";
+          root.classList.add(systemTheme);
+        } else {
+          root.classList.add(theme);
+        }
+      }
+
+      function getCurrentTheme() {
+        try {
+          const stored = localStorage.getItem("devtool-theme");
+          return stored ? JSON.parse(stored).state?.theme : "system";
+        } catch (e) {
+          return "system";
+        }
+      }
+
+      function updateDisplay() {
+        document.getElementById("current-theme").textContent =
+          getCurrentTheme();
+        document.getElementById("applied-classes").textContent =
+          document.documentElement.classList.toString() || "none";
+        document.getElementById("theme-flag").textContent =
+          document.documentElement.getAttribute("data-theme-applied") ||
+          "false";
+      }
+
+      // Initialize display
+      document.addEventListener("DOMContentLoaded", updateDisplay);
+
+      // Listen for system theme changes
+      window
+        .matchMedia("(prefers-color-scheme: dark)")
+        .addEventListener("change", function () {
+          if (getCurrentTheme() === "system") {
+            applyTheme("system");
+            updateDisplay();
+          }
+        });
+    </script>
+  </body>
+</html>
