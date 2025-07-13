@@ -13,14 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Play, 
-  RotateCcw, 
-  Trash2, 
-  Trophy,
-  Clock,
-  Shuffle
-} from "lucide-react";
+import { Play, RotateCcw, Trash2, Trophy, Clock, Shuffle } from "lucide-react";
 import { toast } from "sonner";
 import {
   ToolContainer,
@@ -53,9 +46,21 @@ interface SpinResult {
 }
 
 const DEFAULT_COLORS = [
-  "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7",
-  "#DDA0DD", "#98D8C8", "#F7DC6F", "#BB8FCE", "#85C1E9",
-  "#F8C471", "#82E0AA", "#F1948A", "#85C0E0", "#D7DBDD"
+  "#FF6B6B",
+  "#4ECDC4",
+  "#45B7D1",
+  "#96CEB4",
+  "#FFEAA7",
+  "#DDA0DD",
+  "#98D8C8",
+  "#F7DC6F",
+  "#BB8FCE",
+  "#85C1E9",
+  "#F8C471",
+  "#82E0AA",
+  "#F1948A",
+  "#85C0E0",
+  "#D7DBDD",
 ];
 
 export default function RandomWheel() {
@@ -65,21 +70,26 @@ export default function RandomWheel() {
     { id: "3", text: "Option 3", color: DEFAULT_COLORS[2], weight: 1 },
     { id: "4", text: "Option 4", color: DEFAULT_COLORS[3], weight: 1 },
   ]);
-  
-  const [inputText, setInputText] = useState("Option 1\nOption 2\nOption 3\nOption 4");
+
+  const [inputText, setInputText] = useState(
+    "Option 1\nOption 2\nOption 3\nOption 4"
+  );
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [selectedItem, setSelectedItem] = useState<WheelItem | null>(null);
   const [results, setResults] = useState<SpinResult[]>([]);
   const [spinDuration, setSpinDuration] = useState(3);
   const [autoSpin, setAutoSpin] = useState(false);
-  
+
   const wheelRef = useRef<SVGSVGElement>(null);
   const animationRef = useRef<number | undefined>(undefined);
 
   // Parse input text to items
   const parseInputToItems = () => {
-    const lines = inputText.trim().split('\n').filter(line => line.trim());
+    const lines = inputText
+      .trim()
+      .split("\n")
+      .filter((line) => line.trim());
     if (lines.length === 0) {
       toast.error("Please enter at least one option");
       return;
@@ -98,15 +108,15 @@ export default function RandomWheel() {
 
   // Remove item
   const removeItem = (id: string) => {
-    setItems(items.filter(item => item.id !== id));
+    setItems(items.filter((item) => item.id !== id));
   };
 
   // Calculate wheel segments
   const calculateSegments = () => {
     const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
     let currentAngle = 0;
-    
-    return items.map(item => {
+
+    return items.map((item) => {
       const angle = (item.weight / totalWeight) * 360;
       const segment = {
         item,
@@ -134,7 +144,7 @@ export default function RandomWheel() {
     // Random spin amount (multiple full rotations + random angle)
     const randomSpins = Math.random() * 5 + 5; // 5-10 full rotations
     const randomAngle = Math.random() * 360;
-    const finalRotation = rotation + (randomSpins * 360) + randomAngle;
+    const finalRotation = rotation + randomSpins * 360 + randomAngle;
 
     // Animate rotation
     const startTime = Date.now();
@@ -144,11 +154,12 @@ export default function RandomWheel() {
     const animate = () => {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      
+
       // Easing function (ease-out)
       const eased = 1 - Math.pow(1 - progress, 3);
-      const currentRotation = startRotation + (finalRotation - startRotation) * eased;
-      
+      const currentRotation =
+        startRotation + (finalRotation - startRotation) * eased;
+
       setRotation(currentRotation);
 
       if (progress < 1) {
@@ -157,19 +168,24 @@ export default function RandomWheel() {
         // Animation complete - determine winner
         const normalizedAngle = (360 - (currentRotation % 360)) % 360;
         const segments = calculateSegments();
-        const winner = segments.find(segment => 
-          normalizedAngle >= segment.startAngle && normalizedAngle < segment.endAngle
+        const winner = segments.find(
+          (segment) =>
+            normalizedAngle >= segment.startAngle &&
+            normalizedAngle < segment.endAngle
         );
 
         if (winner) {
           setSelectedItem(winner.item);
-          setResults(prev => [{
-            item: winner.item,
-            timestamp: new Date()
-          }, ...prev.slice(0, 9)]); // Keep last 10 results
+          setResults((prev) => [
+            {
+              item: winner.item,
+              timestamp: new Date(),
+            },
+            ...prev.slice(0, 9),
+          ]); // Keep last 10 results
           toast.success(`🎉 Winner: ${winner.item.text}!`);
         }
-        
+
         setIsSpinning(false);
       }
     };
@@ -212,26 +228,26 @@ export default function RandomWheel() {
           className="drop-shadow-lg"
           style={{
             transform: `rotate(${rotation}deg)`,
-            transition: isSpinning ? 'none' : 'transform 0.5s ease-out'
+            transition: isSpinning ? "none" : "transform 0.5s ease-out",
           }}
         >
           {segments.map((segment) => {
             const startAngleRad = (segment.startAngle * Math.PI) / 180;
             const endAngleRad = (segment.endAngle * Math.PI) / 180;
-            
+
             const x1 = centerX + radius * Math.cos(startAngleRad);
             const y1 = centerY + radius * Math.sin(startAngleRad);
             const x2 = centerX + radius * Math.cos(endAngleRad);
             const y2 = centerY + radius * Math.sin(endAngleRad);
-            
+
             const largeArcFlag = segment.angle > 180 ? 1 : 0;
-            
+
             const pathData = [
               `M ${centerX} ${centerY}`,
               `L ${x1} ${y1}`,
               `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
-              'Z'
-            ].join(' ');
+              "Z",
+            ].join(" ");
 
             // Text position (middle of segment)
             const textAngle = (segment.startAngle + segment.endAngle) / 2;
@@ -247,7 +263,9 @@ export default function RandomWheel() {
                   fill={segment.item.color}
                   stroke="#fff"
                   strokeWidth="2"
-                  className={selectedItem?.id === segment.item.id ? "brightness-110" : ""}
+                  className={
+                    selectedItem?.id === segment.item.id ? "brightness-110" : ""
+                  }
                 />
                 <text
                   x={textX}
@@ -260,15 +278,14 @@ export default function RandomWheel() {
                   transform={`rotate(${textAngle}, ${textX}, ${textY})`}
                   className="pointer-events-none drop-shadow-sm"
                 >
-                  {segment.item.text.length > 10 
-                    ? segment.item.text.substring(0, 10) + '...' 
-                    : segment.item.text
-                  }
+                  {segment.item.text.length > 10
+                    ? segment.item.text.substring(0, 10) + "..."
+                    : segment.item.text}
                 </text>
               </g>
             );
           })}
-          
+
           {/* Center circle */}
           <circle
             cx={centerX}
@@ -279,7 +296,7 @@ export default function RandomWheel() {
             strokeWidth="2"
           />
         </svg>
-        
+
         {/* Pointer */}
         <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
           <div className="w-0 h-0 border-l-4 border-r-4 border-b-8 border-l-transparent border-r-transparent border-b-red-500"></div>
@@ -322,7 +339,7 @@ export default function RandomWheel() {
         <CardContent>
           <div className="flex flex-col items-center space-y-6">
             {renderWheel()}
-            
+
             <ActionButtons
               buttons={[
                 {
@@ -381,7 +398,10 @@ Option 4"
                   <div
                     key={item.id}
                     className="flex items-center justify-between p-2 border rounded-md"
-                    style={{ borderLeftColor: item.color, borderLeftWidth: '4px' }}
+                    style={{
+                      borderLeftColor: item.color,
+                      borderLeftWidth: "4px",
+                    }}
                   >
                     <span className="font-mono text-sm">{item.text}</span>
                     <Button
