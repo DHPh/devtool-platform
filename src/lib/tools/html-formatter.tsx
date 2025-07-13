@@ -8,9 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -18,9 +16,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Copy, Download, FileText } from "lucide-react";
+import { Copy, Download, FileText, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import {
+  ToolContainer,
+  ResponsiveTextArea,
+  ActionButtons,
+  SettingsPanel,
+  FormField,
+  ModeTabs,
+} from "@/components/layout";
 
 export const metadata = {
   id: "html-formatter",
@@ -39,14 +44,80 @@ export default function HtmlFormatter() {
   const [output, setOutput] = useState("");
   const [indentSize, setIndentSize] = useState("2");
   const [indentType, setIndentType] = useState("spaces");
+  const [activeTab, setActiveTab] = useState("input");
+  const [errors, setErrors] = useState<string[]>([]);
+  const [warnings, setWarnings] = useState<string[]>([]);
+
+  const validateHtml = (html: string) => {
+    const newErrors: string[] = [];
+    const newWarnings: string[] = [];
+
+    // Basic HTML validation
+    const openTags: string[] = [];
+    const tagRegex = /<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^<>]*>/g;
+    const voidElements = [
+      "area",
+      "base",
+      "br",
+      "col",
+      "embed",
+      "hr",
+      "img",
+      "input",
+      "link",
+      "meta",
+      "param",
+      "source",
+      "track",
+      "wbr",
+    ];
+
+    let match;
+    while ((match = tagRegex.exec(html)) !== null) {
+      const fullTag = match[0];
+      const tagName = match[1].toLowerCase();
+
+      if (fullTag.startsWith("</")) {
+        // Closing tag
+        const lastOpenTag = openTags.pop();
+        if (!lastOpenTag || lastOpenTag !== tagName) {
+          newErrors.push(`Mismatched closing tag: ${fullTag}`);
+        }
+      } else if (!fullTag.endsWith("/>") && !voidElements.includes(tagName)) {
+        // Opening tag (not self-closing and not void)
+        openTags.push(tagName);
+      }
+    }
+
+    // Check for unclosed tags
+    openTags.forEach((tag) => {
+      newErrors.push(`Unclosed tag: <${tag}>`);
+    });
+
+    // Check for common issues
+    if (html.includes("<img") && !html.includes("alt=")) {
+      newWarnings.push("Images should have alt attributes for accessibility");
+    }
+
+    if (html.includes("<a") && html.includes('href="#"')) {
+      newWarnings.push('Avoid using href="#" for links');
+    }
+
+    setErrors(newErrors);
+    setWarnings(newWarnings);
+  };
 
   const formatHtml = () => {
     if (!input.trim()) {
       setOutput("");
+      setErrors([]);
+      setWarnings([]);
       return;
     }
 
     try {
+      validateHtml(input);
+
       const indent =
         indentType === "spaces" ? " ".repeat(parseInt(indentSize)) : "\t";
       let formatted = input;
@@ -82,337 +153,268 @@ export default function HtmlFormatter() {
             result.push(`\n${indent.repeat(level)}${token}`);
             level++;
           }
-        } else {
+        } else if (token.trim()) {
           // Text content
-          const trimmed = token.trim();
-          if (trimmed) {
-            result.push(trimmed);
+          const trimmedToken = token.trim();
+          if (trimmedToken) {
+            result.push(trimmedToken);
           }
         }
       }
 
-      // Join and clean up
-      formatted = result.join("").trim();
+      let finalResult = result.join("").trim();
 
       // Clean up extra newlines
-      formatted = formatted.replace(/\n\s*\n/g, "\n");
+      finalResult = finalResult.replace(/\n\s*\n/g, "\n");
 
-      setOutput(formatted);
+      setOutput(finalResult);
+      toast.success("HTML formatted successfully!");
     } catch {
       toast.error("Error formatting HTML");
-      setOutput("Error: Invalid HTML");
+      setOutput("");
     }
   };
 
-  const copyToClipboard = async () => {
+  const copyToClipboard = async (text: string) => {
     try {
-      await navigator.clipboard.writeText(output);
-      toast.success("Formatted HTML copied to clipboard!");
+      await navigator.clipboard.writeText(text);
+      toast.success("Copied to clipboard!");
     } catch {
-      toast.error("Failed to copy to clipboard");
+      toast.error("Failed to copy");
     }
   };
 
-  const downloadHtml = () => {
-    const blob = new Blob([output], { type: "text/html" });
+  const downloadFile = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "formatted.html";
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success("HTML file downloaded!");
+    toast.success("File downloaded!");
   };
 
-  const minifyHtml = () => {
-    if (!input.trim()) {
-      setOutput("");
-      return;
-    }
-
-    try {
-      let minified = input;
-      // Remove HTML comments (but preserve conditional comments)
-      minified = minified.replace(/<!--(?!\[if|<!\[endif)[\s\S]*?-->/g, "");
-      // Remove extra whitespace between tags
-      minified = minified.replace(/>\s+</g, "><");
-      // Remove whitespace from the beginning and end of tags
-      minified = minified.replace(/>\s+/g, ">");
-      minified = minified.replace(/\s+</g, "<");
-      // Compress whitespace within text content
-      minified = minified.replace(/\s+/g, " ");
-      // Remove leading/trailing whitespace
-      minified = minified.trim();
-
-      setOutput(minified);
-    } catch {
-      toast.error("Error minifying HTML");
-      setOutput("Error: Invalid HTML");
-    }
-  };
-
-  const validateHtml = () => {
-    const errors: string[] = [];
-    const warnings: string[] = [];
-
-    // Check for unclosed tags
-    const openTags = input.match(/<[^\/!][^>]*>/g) || [];
-    const closeTags = input.match(/<\/[^>]*>/g) || [];
-
-    const openTagNames = openTags
-      .map((tag) => tag.match(/<(\w+)/)?.[1])
-      .filter(Boolean);
-    const closeTagNames = closeTags
-      .map((tag) => tag.match(/<\/(\w+)/)?.[1])
-      .filter(Boolean);
-
-    openTagNames.forEach((tag) => {
-      if (
-        tag &&
-        !closeTagNames.includes(tag) &&
-        !["img", "br", "hr", "input", "meta", "link"].includes(tag)
-      ) {
-        warnings.push(`Unclosed tag: ${tag}`);
-      }
-    });
-
-    // Check for basic HTML structure
-    if (!input.includes("<html") && !input.includes("<HTML")) {
-      warnings.push("Missing <html> tag");
-    }
-
-    if (!input.includes("<head") && !input.includes("<HEAD")) {
-      warnings.push("Missing <head> tag");
-    }
-
-    if (!input.includes("<body") && !input.includes("<BODY")) {
-      warnings.push("Missing <body> tag");
-    }
-
-    return { errors, warnings };
-  };
-
-  const { errors, warnings } = validateHtml();
-
-  const examples = [
+  const exampleHtmls = [
     {
       name: "Basic HTML",
-      code: "<div><p>Hello World</p><span>Example</span></div>",
+      content: `<div><h1>Title</h1><p>This is a paragraph with <strong>bold</strong> and <em>italic</em> text.</p><ul><li>Item 1</li><li>Item 2</li></ul></div>`,
     },
     {
-      name: "HTML Document",
-      code: "<!DOCTYPE html><html><head><title>Test</title></head><body><h1>Hello</h1><p>World</p></body></html>",
+      name: "HTML Form",
+      content: `<form><div><label for="name">Name:</label><input type="text" id="name" required></div><div><label for="email">Email:</label><input type="email" id="email" required></div><button type="submit">Submit</button></form>`,
     },
     {
-      name: "Form Example",
-      code: '<form><input type="text" name="name"><button type="submit">Submit</button></form>',
+      name: "HTML Table",
+      content: `<table><thead><tr><th>Name</th><th>Age</th><th>City</th></tr></thead><tbody><tr><td>John</td><td>30</td><td>New York</td></tr><tr><td>Jane</td><td>25</td><td>London</td></tr></tbody></table>`,
     },
   ];
 
+  const tabOptions = [
+    { value: "input", label: "Input" },
+    { value: "output", label: "Formatted" },
+  ];
+
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>HTML Formatter</CardTitle>
-          <CardDescription>
-            Format, beautify, and minify HTML code with customizable indentation
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Input Section */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between min-h-[2.5rem]">
-                <Label htmlFor="input">HTML Input</Label>
-                <div className="flex gap-2 w-[140px] justify-end">
-                  {/* Placeholder để maintain symmetry */}
-                </div>
-              </div>
+    <ToolContainer
+      title="HTML Formatter"
+      description="Format and beautify HTML code with proper indentation and validation"
+    >
+      <ModeTabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        options={tabOptions}
+      />
 
-              <div className="space-y-2">
-                <Textarea
-                  id="input"
-                  placeholder="Paste your HTML here..."
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  rows={12}
-                  className="font-mono text-sm tool-input textarea-enhanced"
-                />
-              </div>
+      {activeTab === "input" ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>HTML Input</CardTitle>
+            <CardDescription>
+              Enter your HTML code to format and validate
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <ResponsiveTextArea
+              placeholder="Enter your HTML code here...
+Example: <div><p>Hello World</p></div>"
+              value={input}
+              onChange={setInput}
+              minHeight={300}
+              showCharacterCount={true}
+              showLineCount={true}
+            />
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Indent Size</Label>
-                  <Select value={indentSize} onValueChange={setIndentSize}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1</SelectItem>
-                      <SelectItem value="2">2</SelectItem>
-                      <SelectItem value="4">4</SelectItem>
-                      <SelectItem value="8">8</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Indent Type</Label>
-                  <Select value={indentType} onValueChange={setIndentType}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="spaces">Spaces</SelectItem>
-                      <SelectItem value="tabs">Tabs</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <Button onClick={formatHtml} className="flex-1">
-                  <FileText className="h-4 w-4 mr-2" />
-                  Format HTML
-                </Button>
+            <div className="flex gap-2 flex-wrap">
+              {exampleHtmls.map((example, index) => (
                 <Button
-                  onClick={minifyHtml}
+                  key={index}
                   variant="outline"
-                  className="flex-1"
+                  size="sm"
+                  onClick={() => setInput(example.content)}
                 >
-                  Minify
+                  <FileText className="h-4 w-4 mr-2" />
+                  {example.name}
                 </Button>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Examples</Label>
-                <div className="grid gap-2">
-                  {examples.map((example) => (
-                    <Button
-                      key={example.name}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setInput(example.code)}
-                      className="justify-start text-xs"
-                    >
-                      {example.name}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+              ))}
             </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              Formatted Output
+              <ActionButtons
+                buttons={[
+                  {
+                    icon: Copy,
+                    label: "Copy",
+                    onClick: () => copyToClipboard(output),
+                    disabled: !output,
+                  },
+                  {
+                    icon: Download,
+                    label: "Download",
+                    onClick: () => downloadFile(output, "formatted.html"),
+                    disabled: !output,
+                  },
+                ]}
+              />
+            </CardTitle>
+            <CardDescription>
+              Your formatted and validated HTML code
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveTextArea
+              value={output}
+              onChange={() => {}} // Read-only
+              placeholder="Formatted HTML will appear here..."
+              minHeight={300}
+              readOnly={true}
+              showCharacterCount={true}
+              showLineCount={true}
+            />
 
-            {/* Output Section */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between min-h-[2.5rem]">
-                <Label>Formatted Output</Label>
-                <div className="flex gap-2 w-[140px] justify-end">
-                  {output ? (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={copyToClipboard}
-                      >
-                        <Copy className="h-4 w-4 mr-2" />
-                        Copy
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={downloadHtml}
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Download
-                      </Button>
-                    </>
-                  ) : (
-                    // Invisible placeholder buttons để maintain layout
-                    <div className="invisible flex gap-2">
-                      <Button variant="outline" size="sm">
-                        <Copy className="h-4 w-4 mr-2" />
-                        Copy
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Download className="h-4 w-4 mr-2" />
-                        Download
-                      </Button>
+            {/* Validation Results */}
+            {(errors.length > 0 || warnings.length > 0) && (
+              <div className="mt-4 space-y-2">
+                {errors.length > 0 && (
+                  <div className="p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded">
+                    <div className="flex items-center gap-2 text-red-600 dark:text-red-400 font-medium mb-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      Errors Found:
                     </div>
-                  )}
-                </div>
-              </div>
+                    <ul className="text-sm space-y-1">
+                      {errors.map((error, index) => (
+                        <li
+                          key={index}
+                          className="text-red-600 dark:text-red-400"
+                        >
+                          • {error}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
-              <div className="relative">
-                <Textarea
-                  value={output}
-                  readOnly
-                  placeholder="Formatted HTML will appear here..."
-                  rows={12}
-                  className="font-mono text-sm tool-output textarea-enhanced"
-                />
-                {output && (
-                  <div className="absolute top-2 right-2">
-                    <Badge variant="secondary" className="text-xs">
-                      {output.split("\n").length} lines
-                    </Badge>
+                {warnings.length > 0 && (
+                  <div className="p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded">
+                    <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 font-medium mb-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      Warnings:
+                    </div>
+                    <ul className="text-sm space-y-1">
+                      {warnings.map((warning, index) => (
+                        <li
+                          key={index}
+                          className="text-yellow-600 dark:text-yellow-400"
+                        >
+                          • {warning}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
               </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
-              {/* Validation Results */}
-              {(errors.length > 0 || warnings.length > 0) && (
-                <div className="space-y-2">
-                  {errors.length > 0 && (
-                    <div className="space-y-1">
-                      <Label className="text-red-500">Errors:</Label>
-                      <div className="flex flex-wrap gap-1">
-                        {errors.map((error, index) => (
-                          <Badge
-                            key={index}
-                            variant="destructive"
-                            className="text-xs"
-                          >
-                            {error}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+      {/* Settings */}
+      <SettingsPanel title="Formatting Options">
+        <FormField
+          label="Indent Size"
+          description="Number of spaces or tabs for indentation"
+        >
+          <Select value={indentSize} onValueChange={setIndentSize}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="2">2</SelectItem>
+              <SelectItem value="4">4</SelectItem>
+              <SelectItem value="6">6</SelectItem>
+              <SelectItem value="8">8</SelectItem>
+            </SelectContent>
+          </Select>
+        </FormField>
 
-                  {warnings.length > 0 && (
-                    <div className="space-y-1">
-                      <Label className="text-yellow-500">Warnings:</Label>
-                      <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
-                        {warnings.map((warning, index) => (
-                          <Badge
-                            key={index}
-                            variant="outline"
-                            className="text-xs border-yellow-500"
-                          >
-                            {warning}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+        <FormField
+          label="Indent Type"
+          description="Use spaces or tabs for indentation"
+        >
+          <Select value={indentType} onValueChange={setIndentType}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="spaces">Spaces</SelectItem>
+              <SelectItem value="tabs">Tabs</SelectItem>
+            </SelectContent>
+          </Select>
+        </FormField>
 
-              {output && (
-                <div className="text-xs text-muted-foreground">
-                  Output: {output.split("\n").length} lines, {output.length}{" "}
-                  characters
-                </div>
-              )}
+        <div className="pt-4">
+          <Button onClick={formatHtml} className="w-full">
+            Format HTML
+          </Button>
+        </div>
+      </SettingsPanel>
 
-              {/* Spacer để match với examples section */}
-              <div className="h-[140px]"></div>
+      {/* Features */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Features</CardTitle>
+          <CardDescription>What this HTML formatter can do</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="space-y-2">
+              <h4 className="font-medium text-green-600">✅ Formatting</h4>
+              <ul className="space-y-1 text-muted-foreground">
+                <li>• Proper indentation</li>
+                <li>• Clean whitespace</li>
+                <li>• Consistent structure</li>
+                <li>• Customizable indent size</li>
+              </ul>
+            </div>
+            <div className="space-y-2">
+              <h4 className="font-medium text-blue-600">🔍 Validation</h4>
+              <ul className="space-y-1 text-muted-foreground">
+                <li>• Tag matching</li>
+                <li>• Unclosed tag detection</li>
+                <li>• Accessibility warnings</li>
+                <li>• Best practice suggestions</li>
+              </ul>
             </div>
           </div>
         </CardContent>
       </Card>
-    </div>
+    </ToolContainer>
   );
 }

@@ -8,9 +8,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import {
+  ToolContainer,
+  ResponsiveTextArea,
+  StatsDisplay,
+} from "@/components/layout";
 
 export const metadata = {
   id: "word-counter",
@@ -59,16 +62,15 @@ export default function WordCounter() {
     };
   }, [text]);
 
+  // Get word frequency
   const getWordFrequency = () => {
     if (!text.trim()) return [];
 
-    // Enhanced word extraction for Vietnamese and Unicode (compatible approach)
     const words = text
       .toLowerCase()
-      // Remove punctuation but keep accented characters and Unicode letters
-      .replace(/[^\u00C0-\u017F\u1EA0-\u1EF9\w\s]/g, "")
+      .replace(/[^\w\s\u00C0-\u017F\u1EA0-\u1EF9]/g, "")
       .split(/\s+/)
-      .filter((word) => word.length > 0);
+      .filter((word) => word.length > 2);
 
     const frequency: Record<string, number> = {};
     words.forEach((word) => {
@@ -82,183 +84,145 @@ export default function WordCounter() {
 
   const wordFrequency = getWordFrequency();
 
+  // Stats configuration for StatsDisplay component
+  const statsConfig = [
+    {
+      label: "Characters",
+      value: stats.characters.toString(),
+      description: "Total characters including spaces",
+    },
+    {
+      label: "Characters (no spaces)",
+      value: stats.charactersNoSpaces.toString(),
+      description: "Characters excluding whitespace",
+    },
+    {
+      label: "Words",
+      value: stats.words.toString(),
+      description: "Word count based on whitespace separation",
+    },
+    {
+      label: "Sentences",
+      value: stats.sentences.toString(),
+      description: "Estimated sentence count",
+    },
+    {
+      label: "Paragraphs",
+      value: stats.paragraphs.toString(),
+      description: "Paragraph count based on line breaks",
+    },
+    {
+      label: "Lines",
+      value: stats.lines.toString(),
+      description: "Number of lines in text",
+    },
+    {
+      label: "Reading Time",
+      value: `${stats.readingTime} min`,
+      description: "Estimated reading time (200 words/min)",
+    },
+    {
+      label: "Speaking Time",
+      value: `${stats.speakingTime} min`,
+      description: "Estimated speaking time (150 words/min)",
+    },
+  ];
+
+  // Example texts for different languages
+  const languageExamples = [
+    {
+      name: "English",
+      text: "The quick brown fox jumps over the lazy dog. This pangram contains every letter of the English alphabet at least once.",
+      category: "Latin-based",
+    },
+    {
+      name: "Tiếng Việt",
+      text: "Chào mừng bạn đến với công cụ đếm từ. Đây là một văn bản tiếng Việt có dấu để kiểm tra tính năng đếm từ.",
+      category: "Latin-based",
+    },
+    {
+      name: "中文",
+      text: "这是一个中文文本示例。中文文字计数与拉丁文字不同，因为中文不使用空格分隔单词。",
+      category: "East Asian",
+    },
+    {
+      name: "日本語",
+      text: "これは日本語のテキストサンプルです。ひらがな、カタカナ、漢字が混在しています。",
+      category: "East Asian",
+    },
+    {
+      name: "한국어",
+      text: "이것은 한국어 텍스트 샘플입니다. 한글은 표음문자이며 공백으로 단어를 구분합니다.",
+      category: "East Asian",
+    },
+    {
+      name: "Русский",
+      text: "Это пример текста на русском языке. Кириллица используется во многих славянских языках.",
+      category: "Cyrillic",
+    },
+    {
+      name: "العربية",
+      text: "هذا مثال على النص العربي. اللغة العربية تُكتب من اليمين إلى اليسار وتحتوي على 28 حرفاً.",
+      category: "Arabic",
+    },
+    {
+      name: "ไทย",
+      text: "นี่คือตัวอย่างข้อความภาษาไทย ภาษาไทยเป็นภาษาที่มีระบบการเขียนที่ไม่ใช้การเว้นวรรคระหว่างคำ",
+      category: "Southeast Asian",
+    },
+  ];
+
   return (
-    <div className="space-y-6">
+    <ToolContainer
+      title="Word Counter"
+      description="Analyze your text with detailed statistics including word count, reading time, and more. Supports multiple languages."
+    >
+      {/* Main Text Input */}
       <Card>
         <CardHeader>
-          <CardTitle>Word Counter</CardTitle>
+          <CardTitle>Text Analysis</CardTitle>
           <CardDescription>
-            Analyze your text with detailed statistics including word count,
-            reading time, and more. Supports multiple languages: Vietnamese
-            (tiếng Việt), English, Chinese (中文), Japanese (日本語), Korean
-            (한국어), Arabic (العربية), Thai (ไทย), Russian (Русский), and all
-            Unicode languages.
+            Enter or paste your text below for comprehensive analysis
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="text">Text to Analyze</Label>
-              <Textarea
-                id="text"
-                placeholder="Enter or paste your text here... 
+          <ResponsiveTextArea
+            placeholder="Enter or paste your text here... 
 Nhập hoặc dán văn bản của bạn vào đây...
 例: テキストをここに入力してください..."
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                rows={10}
-                className="min-h-[200px]"
-              />
-            </div>
+            value={text}
+            onChange={(value) => setText(value)}
+            minHeight={200}
+            showCharacterCount={true}
+            showWordCount={true}
+            showLineCount={true}
+          />
 
-            {/* Multi-language example buttons */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Language Examples:</Label>
-              <div className="flex flex-wrap gap-2">
+          {/* Language Examples */}
+          <div className="mt-4 space-y-3">
+            <h4 className="text-sm font-medium">Try different languages:</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+              {languageExamples.map((example, index) => (
                 <button
-                  onClick={() =>
-                    setText(
-                      "Chào mừng bạn đến với công cụ đếm từ! Đây là một ví dụ về văn bản tiếng Việt. Công cụ này có thể đếm chính xác số từ, ký tự, câu và đoạn văn trong tiếng Việt. Các dấu câu như dấu chấm, dấu hỏi, dấu than... đều được nhận diện đúng cách."
-                    )
-                  }
-                  className="px-3 py-1 text-xs bg-blue-100 hover:bg-blue-200 dark:bg-blue-800 dark:hover:bg-blue-700 rounded transition-colors"
+                  key={index}
+                  onClick={() => setText(example.text)}
+                  className="p-2 text-left text-xs border rounded hover:bg-accent transition-colors"
                 >
-                  🇻🇳 Tiếng Việt
+                  <div className="font-medium">{example.name}</div>
+                  <div className="text-muted-foreground">
+                    {example.category}
+                  </div>
                 </button>
-                <button
-                  onClick={() =>
-                    setText(
-                      "Welcome to the word counter tool! This is an example of English text. The tool can accurately count words, characters, sentences, and paragraphs. Various punctuation marks like periods, question marks, exclamation points are properly recognized."
-                    )
-                  }
-                  className="px-3 py-1 text-xs bg-green-100 hover:bg-green-200 dark:bg-green-800 dark:hover:bg-green-700 rounded transition-colors"
-                >
-                  🇺🇸 English
-                </button>
-                <button
-                  onClick={() =>
-                    setText(
-                      "欢迎使用字数统计工具！这是一个中文文本的示例。该工具可以准确计算中文的字数、字符数、句子数和段落数。各种标点符号如句号、问号、感叹号等都能被正确识别。"
-                    )
-                  }
-                  className="px-3 py-1 text-xs bg-red-100 hover:bg-red-200 dark:bg-red-800 dark:hover:bg-red-700 rounded transition-colors"
-                >
-                  🇨🇳 中文
-                </button>
-                <button
-                  onClick={() =>
-                    setText(
-                      "文字カウントツールへようこそ！これは日本語テキストの例です。このツールは日本語の単語数、文字数、文数、段落数を正確にカウントできます。句点、疑問符、感嘆符などの句読点も適切に認識されます。"
-                    )
-                  }
-                  className="px-3 py-1 text-xs bg-pink-100 hover:bg-pink-200 dark:bg-pink-800 dark:hover:bg-pink-700 rounded transition-colors"
-                >
-                  🇯🇵 日本語
-                </button>
-                <button
-                  onClick={() =>
-                    setText(
-                      "단어 카운터 도구에 오신 것을 환영합니다! 이것은 한국어 텍스트의 예시입니다. 이 도구는 한국어의 단어 수, 문자 수, 문장 수, 단락 수를 정확하게 계산할 수 있습니다. 마침표, 물음표, 느낌표 등의 구두점도 올바르게 인식됩니다."
-                    )
-                  }
-                  className="px-3 py-1 text-xs bg-purple-100 hover:bg-purple-200 dark:bg-purple-800 dark:hover:bg-purple-700 rounded transition-colors"
-                >
-                  🇰🇷 한국어
-                </button>
-                <button
-                  onClick={() =>
-                    setText(
-                      "أهلاً بك في أداة عد الكلمات! هذا مثال على النص العربي. يمكن لهذه الأداة أن تعد بدقة الكلمات والأحرف والجمل والفقرات في النص العربي. علامات الترقيم مثل النقطة وعلامة الاستفهام وعلامة التعجب يتم التعرف عليها بشكل صحيح."
-                    )
-                  }
-                  className="px-3 py-1 text-xs bg-orange-100 hover:bg-orange-200 dark:bg-orange-800 dark:hover:bg-orange-700 rounded transition-colors"
-                >
-                  🇸🇦 العربية
-                </button>
-                <button
-                  onClick={() =>
-                    setText(
-                      "Добро пожаловать в инструмент подсчета слов! Это пример русского текста. Этот инструмент может точно подсчитать слова, символы, предложения и абзацы в русском тексте. Знаки препинания, такие как точки, вопросительные знаки, восклицательные знаки, правильно распознаются."
-                    )
-                  }
-                  className="px-3 py-1 text-xs bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-800 dark:hover:bg-indigo-700 rounded transition-colors"
-                >
-                  🇷🇺 Русский
-                </button>
-                <button
-                  onClick={() =>
-                    setText(
-                      "ยินดีต้อนรับสู่เครื่องมือนับคำ! นี่คือตัวอย่างของข้อความภาษาไทย เครื่องมือนี้สามารถนับคำ อักขระ ประโยค และย่อหน้าในภาษาไทยได้อย่างแม่นยำ เครื่องหมายวรรคตอนต่างๆ เช่น จุด เครื่องหมายคำถาม เครื่องหมายอัศเจรีย์ จะถูกจดจำได้อย่างถูกต้อง"
-                    )
-                  }
-                  className="px-3 py-1 text-xs bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-800 dark:hover:bg-yellow-700 rounded transition-colors"
-                >
-                  🇹🇭 ไทย
-                </button>
-              </div>
+              ))}
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Characters</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-              {stats.characters.toLocaleString()}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {stats.charactersNoSpaces.toLocaleString()} without spaces
-            </p>
-          </CardContent>
-        </Card>
+      {/* Statistics Display */}
+      <StatsDisplay stats={statsConfig} />
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Words</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-3xl font-bold text-green-600 dark:text-green-400">
-              {stats.words.toLocaleString()}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {stats.sentences.toLocaleString()} sentences
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Paragraphs</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
-              {stats.paragraphs.toLocaleString()}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {stats.lines.toLocaleString()} lines
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Reading Time</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
-              {stats.readingTime}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {stats.speakingTime} min speaking
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
+      {/* Word Frequency Analysis */}
       {wordFrequency.length > 0 && (
         <Card>
           <CardHeader>
@@ -268,120 +232,75 @@ Nhập hoặc dán văn bản của bạn vào đây...
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="max-h-32 overflow-y-auto">
-              <div className="flex flex-wrap gap-2">
-                {wordFrequency.map(([word, count]) => (
-                  <Badge key={word} variant="secondary" className="text-sm">
-                    {word} ({count})
-                  </Badge>
-                ))}
-              </div>
+            <div className="space-y-2">
+              {wordFrequency.map(([word, count], index) => (
+                <div
+                  key={word}
+                  className="flex items-center justify-between p-2 border rounded"
+                >
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">{index + 1}</Badge>
+                    <span className="font-mono">{word}</span>
+                  </div>
+                  <Badge>{count}</Badge>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
       )}
 
+      {/* Language Support Information */}
       <Card>
         <CardHeader>
-          <CardTitle>🌍 Supported Languages</CardTitle>
+          <CardTitle>Multi-Language Support</CardTitle>
           <CardDescription>
-            This tool supports all Unicode languages with intelligent text
-            analysis
+            This tool accurately counts words and characters across different
+            writing systems
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
-              <Label className="font-medium text-blue-600">Latin-based:</Label>
-              <p>
-                Vietnamese, English, French, Spanish, German, Italian,
-                Portuguese, etc.
+              <h4 className="font-medium text-blue-600 mb-2">
+                Latin-based Languages
+              </h4>
+              <p className="text-muted-foreground">
+                English, Vietnamese, French, Spanish, German, and other European
+                languages that use spaces to separate words.
               </p>
             </div>
             <div>
-              <Label className="font-medium text-red-600">East Asian:</Label>
-              <p>
-                Chinese (Simplified/Traditional), Japanese
-                (Hiragana/Katakana/Kanji), Korean
+              <h4 className="font-medium text-red-600 mb-2">
+                East Asian Languages
+              </h4>
+              <p className="text-muted-foreground">
+                Chinese, Japanese, and Korean. Special handling for
+                character-based writing systems where words may not be separated
+                by spaces.
               </p>
             </div>
             <div>
-              <Label className="font-medium text-purple-600">
-                Right-to-Left:
-              </Label>
-              <p>Arabic, Hebrew, Persian, Urdu</p>
+              <h4 className="font-medium text-purple-600 mb-2">
+                Right-to-Left Languages
+              </h4>
+              <p className="text-muted-foreground">
+                Arabic, Hebrew, and other RTL scripts with proper character and
+                word counting.
+              </p>
             </div>
             <div>
-              <Label className="font-medium text-green-600">Cyrillic:</Label>
-              <p>Russian, Ukrainian, Bulgarian, Serbian, etc.</p>
-            </div>
-            <div>
-              <Label className="font-medium text-orange-600">
-                Southeast Asian:
-              </Label>
-              <p>Thai, Khmer, Lao, Myanmar, etc.</p>
-            </div>
-            <div>
-              <Label className="font-medium text-indigo-600">
-                South Asian:
-              </Label>
-              <p>Hindi, Bengali, Tamil, Telugu, etc.</p>
-            </div>
-          </div>
-          <div className="mt-4 p-3 bg-muted rounded-lg">
-            <p className="text-xs text-muted-foreground">
-              <strong>Technical Details:</strong> Uses Unicode character ranges
-              (\\u00C0-\\u017F for Latin Extended, \\u1EA0-\\u1EF9 for
-              Vietnamese) to preserve accented characters, diacritics, and
-              special characters across multiple languages. Word counting is
-              based on whitespace separation, which works universally across
-              most writing systems.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Detailed Statistics</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-sm">
-            <div>
-              <Label className="font-medium">Characters (with spaces):</Label>
-              <p>{stats.characters.toLocaleString()}</p>
-            </div>
-            <div>
-              <Label className="font-medium">Characters (no spaces):</Label>
-              <p>{stats.charactersNoSpaces.toLocaleString()}</p>
-            </div>
-            <div>
-              <Label className="font-medium">Words:</Label>
-              <p>{stats.words.toLocaleString()}</p>
-            </div>
-            <div>
-              <Label className="font-medium">Sentences:</Label>
-              <p>{stats.sentences.toLocaleString()}</p>
-            </div>
-            <div>
-              <Label className="font-medium">Paragraphs:</Label>
-              <p>{stats.paragraphs.toLocaleString()}</p>
-            </div>
-            <div>
-              <Label className="font-medium">Lines:</Label>
-              <p>{stats.lines.toLocaleString()}</p>
-            </div>
-            <div>
-              <Label className="font-medium">Reading time:</Label>
-              <p>{stats.readingTime} minutes</p>
-            </div>
-            <div>
-              <Label className="font-medium">Speaking time:</Label>
-              <p>{stats.speakingTime} minutes</p>
+              <h4 className="font-medium text-green-600 mb-2">
+                Cyrillic Scripts
+              </h4>
+              <p className="text-muted-foreground">
+                Russian, Bulgarian, Serbian, and other Slavic languages using
+                Cyrillic alphabet.
+              </p>
             </div>
           </div>
         </CardContent>
       </Card>
-    </div>
+    </ToolContainer>
   );
 }

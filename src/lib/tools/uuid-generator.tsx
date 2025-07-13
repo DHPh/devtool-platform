@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -11,9 +9,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Copy, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  ToolContainer,
+  ModeTabs,
+  ActionButtons,
+  SettingsPanel,
+  FormField,
+  StatsDisplay,
+} from "@/components/layout";
 
 export function UuidGenerator() {
   const [uuids, setUuids] = useState<string[]>([]);
@@ -94,100 +99,109 @@ export function UuidGenerator() {
     toast.success("UUIDs downloaded!");
   };
 
+  // Mode options configuration
+  const modeOptions = [
+    {
+      value: "v4",
+      label: "UUID v4 (Random)",
+      description:
+        "Version 4 UUIDs are randomly generated and provide strong uniqueness guarantees. They are the most commonly used UUID variant.",
+    },
+    {
+      value: "v1",
+      label: "UUID v1 (Timestamp)",
+      description:
+        "Version 1 UUIDs are timestamp-based and include the current time and a node identifier. They can be sorted chronologically but may reveal information about when and where they were generated.",
+    },
+  ];
+
+  // Action buttons configuration
+  const actionButtons = [
+    {
+      label: "Generate",
+      onClick: generateUUIDs,
+      icon: RefreshCw,
+      variant: "default" as const,
+    },
+    {
+      label: "Clear",
+      onClick: clearAll,
+      icon: Trash2,
+      variant: "outline" as const,
+      disabled: uuids.length === 0,
+    },
+    {
+      label: "Copy All",
+      onClick: copyAllUUIDs,
+      icon: Copy,
+      variant: "outline" as const,
+      disabled: uuids.length === 0,
+    },
+    {
+      label: "Download",
+      onClick: downloadUUIDs,
+      icon: RefreshCw,
+      variant: "outline" as const,
+      disabled: uuids.length === 0,
+    },
+  ];
+
+  // Stats configuration
+  const stats = [
+    {
+      label: "Generated",
+      value: uuids.length.toString(),
+      description: "Total UUIDs generated",
+    },
+    {
+      label: "Version",
+      value: version.toUpperCase(),
+      description: "Current UUID version",
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Version Selection */}
-      <Tabs
+    <ToolContainer
+      title="UUID Generator"
+      description="Generate universally unique identifiers (UUIDs) for your applications"
+    >
+      {/* Mode Selection */}
+      <ModeTabs
         value={version}
-        onValueChange={(value) => setVersion(value as "v4" | "v1")}
-      >
-        <TabsList className="flex flex-rows w-full">
-          <TabsTrigger value="v4">UUID v4 (Random)</TabsTrigger>
-          <TabsTrigger value="v1">UUID v1 (Timestamp)</TabsTrigger>
-        </TabsList>
+        onValueChange={(value: string) => setVersion(value as "v4" | "v1")}
+        options={modeOptions}
+      />
 
-        <TabsContent value="v4" className="space-y-4">
-          <div className="text-sm text-muted-foreground">
-            Version 4 UUIDs are randomly generated and provide strong uniqueness
-            guarantees. They are the most commonly used UUID variant.
-          </div>
-        </TabsContent>
+      {/* Settings Panel */}
+      <SettingsPanel title="Generator Settings">
+        <FormField
+          label="Number of UUIDs"
+          description="How many UUIDs to generate (1-100)"
+        >
+          <Input
+            type="number"
+            min="1"
+            max="100"
+            value={count}
+            onChange={(e) =>
+              setCount(
+                Math.max(1, Math.min(100, parseInt(e.target.value) || 1))
+              )
+            }
+          />
+        </FormField>
 
-        <TabsContent value="v1" className="space-y-4">
-          <div className="text-sm text-muted-foreground">
-            Version 1 UUIDs are timestamp-based and include the current time and
-            a node identifier. They can be sorted chronologically but may reveal
-            information about when and where they were generated.
-          </div>
-        </TabsContent>
-      </Tabs>
+        <ActionButtons buttons={actionButtons} />
+      </SettingsPanel>
 
-      {/* Generator Controls */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Generator Settings</CardTitle>
-          <CardDescription>Configure UUID generation options</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center space-x-4">
-            <div className="flex-1">
-              <Label htmlFor="count">Number of UUIDs</Label>
-              <Input
-                id="count"
-                type="number"
-                min="1"
-                max="100"
-                value={count}
-                onChange={(e) =>
-                  setCount(
-                    Math.max(1, Math.min(100, parseInt(e.target.value) || 1))
-                  )
-                }
-                className="mt-1"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={generateUUIDs}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Generate
-              </Button>
-              <Button
-                onClick={clearAll}
-                variant="outline"
-                disabled={uuids.length === 0}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Clear
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Stats Display */}
+      <StatsDisplay stats={stats} />
 
       {/* Generated UUIDs */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Generated UUIDs ({uuids.length})</span>
-            <div className="flex gap-2">
-              <Button
-                onClick={copyAllUUIDs}
-                variant="outline"
-                size="sm"
-                disabled={uuids.length === 0}
-              >
-                <Copy className="h-4 w-4 mr-2" />
-                Copy All
-              </Button>
-              <Button
-                onClick={downloadUUIDs}
-                variant="outline"
-                size="sm"
-                disabled={uuids.length === 0}
-              >
-                Download
-              </Button>
-            </div>
           </CardTitle>
           <CardDescription>
             Click on any UUID to copy it to clipboard
@@ -284,6 +298,6 @@ export function UuidGenerator() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </ToolContainer>
   );
 }

@@ -9,7 +9,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -17,9 +16,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Download, Copy } from "lucide-react";
 import { toast } from "sonner";
+import {
+  ToolContainer,
+  SettingsPanel,
+  FormField,
+  ActionButtons,
+  ResponsiveTextArea,
+} from "@/components/layout";
 
 export const metadata = {
   id: "qr-generator",
@@ -70,126 +75,129 @@ export default function QrGenerator() {
     { name: "Plain Text", value: "Hello, World!" },
   ];
 
+  // Action buttons configuration
+  const actionButtons = [
+    {
+      label: "Download PNG",
+      onClick: downloadQr,
+      icon: Download,
+      variant: "default" as const,
+      disabled: !text.trim(),
+    },
+    {
+      label: "Copy URL",
+      onClick: copyQrUrl,
+      icon: Copy,
+      variant: "outline" as const,
+      disabled: !text.trim(),
+    },
+  ];
+
   return (
-    <div className="space-y-6">
+    <ToolContainer
+      title="QR Code Generator"
+      description="Generate QR codes for URLs, text, email, phone numbers, and more"
+    >
+      {/* Settings Panel */}
+      <SettingsPanel title="QR Code Settings">
+        <FormField
+          label="Text or URL"
+          description="Enter text, URL, email, or any data to encode"
+        >
+          <ResponsiveTextArea
+            placeholder="Enter text, URL, email, or any data..."
+            value={text}
+            onChange={(value) => setText(value)}
+            minHeight={100}
+            showCharacterCount={true}
+          />
+        </FormField>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField label="Size (pixels)" description="QR code dimensions">
+            <Select value={size} onValueChange={setSize}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="100">100x100</SelectItem>
+                <SelectItem value="150">150x150</SelectItem>
+                <SelectItem value="200">200x200</SelectItem>
+                <SelectItem value="300">300x300</SelectItem>
+                <SelectItem value="400">400x400</SelectItem>
+                <SelectItem value="500">500x500</SelectItem>
+              </SelectContent>
+            </Select>
+          </FormField>
+
+          <FormField
+            label="Error Correction"
+            description="Error correction level"
+          >
+            <Select value={errorLevel} onValueChange={setErrorLevel}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="L">Low (7%)</SelectItem>
+                <SelectItem value="M">Medium (15%)</SelectItem>
+                <SelectItem value="Q">Quartile (25%)</SelectItem>
+                <SelectItem value="H">High (30%)</SelectItem>
+              </SelectContent>
+            </Select>
+          </FormField>
+        </div>
+
+        <FormField
+          label="Quick Examples"
+          description="Click to use predefined examples"
+        >
+          <div className="grid grid-cols-2 gap-2">
+            {examples.map((example) => (
+              <Button
+                key={example.name}
+                variant="outline"
+                size="sm"
+                onClick={() => setText(example.value)}
+                className="justify-start text-xs"
+              >
+                {example.name}
+              </Button>
+            ))}
+          </div>
+        </FormField>
+
+        <ActionButtons buttons={actionButtons} />
+      </SettingsPanel>
+
+      {/* QR Code Preview */}
       <Card>
         <CardHeader>
-          <CardTitle>QR Code Generator</CardTitle>
+          <CardTitle>QR Code Preview</CardTitle>
           <CardDescription>
-            Generate QR codes for URLs, text, email, phone numbers, and more
+            Scan with your mobile device to test
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Input Section */}
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="text">Text or URL</Label>
-                <Textarea
-                  id="text"
-                  placeholder="Enter text, URL, email, or any data..."
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  rows={4}
-                />
+          <div className="flex justify-center p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg min-h-[200px] items-center">
+            {text.trim() ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={getQrUrl()}
+                alt="QR Code"
+                className="max-w-full h-auto"
+                style={{ maxHeight: "400px" }}
+              />
+            ) : (
+              <div className="text-center text-muted-foreground">
+                Enter text to generate QR code
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="size">Size (pixels)</Label>
-                  <Select value={size} onValueChange={setSize}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="100">100x100</SelectItem>
-                      <SelectItem value="150">150x150</SelectItem>
-                      <SelectItem value="200">200x200</SelectItem>
-                      <SelectItem value="300">300x300</SelectItem>
-                      <SelectItem value="400">400x400</SelectItem>
-                      <SelectItem value="500">500x500</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="errorLevel">Error Correction</Label>
-                  <Select value={errorLevel} onValueChange={setErrorLevel}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="L">Low (7%)</SelectItem>
-                      <SelectItem value="M">Medium (15%)</SelectItem>
-                      <SelectItem value="Q">Quartile (25%)</SelectItem>
-                      <SelectItem value="H">High (30%)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Quick Examples</Label>
-                <div className="max-h-32 overflow-y-auto">
-                  <div className="grid grid-cols-2 gap-2">
-                    {examples.map((example) => (
-                      <Button
-                        key={example.name}
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setText(example.value)}
-                        className="justify-start text-xs"
-                      >
-                        {example.name}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* QR Code Preview */}
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>QR Code Preview</Label>
-                <div className="flex justify-center p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
-                  {text.trim() ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={getQrUrl()}
-                      alt="QR Code"
-                      className="max-w-full h-auto"
-                      style={{ maxHeight: "400px" }}
-                    />
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Enter text to generate QR code
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {text.trim() && (
-                <div className="flex gap-2">
-                  <Button onClick={downloadQr} className="flex-1">
-                    <Download className="w-4 h-4 mr-2" />
-                    Download PNG
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={copyQrUrl}
-                    className="flex-1"
-                  >
-                    <Copy className="w-4 h-4 mr-2" />
-                    Copy URL
-                  </Button>
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
+      {/* QR Code Information */}
       <Card>
         <CardHeader>
           <CardTitle>QR Code Information</CardTitle>
@@ -197,21 +205,21 @@ export default function QrGenerator() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
-              <Label className="font-medium">Data Length:</Label>
+              <span className="font-medium">Data Length:</span>
               <p>{text.length} characters</p>
             </div>
             <div>
-              <Label className="font-medium">Size:</Label>
+              <span className="font-medium">Size:</span>
               <p>
                 {size}x{size} pixels
               </p>
             </div>
             <div>
-              <Label className="font-medium">Error Correction:</Label>
+              <span className="font-medium">Error Correction:</span>
               <p>{errorLevel} Level</p>
             </div>
             <div>
-              <Label className="font-medium">Format:</Label>
+              <span className="font-medium">Format:</span>
               <p>PNG Image</p>
             </div>
           </div>
@@ -234,6 +242,6 @@ export default function QrGenerator() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </ToolContainer>
   );
 }

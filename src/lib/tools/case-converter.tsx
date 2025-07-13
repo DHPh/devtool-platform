@@ -8,11 +8,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Copy } from "lucide-react";
 import { toast } from "sonner";
+import { ToolContainer, ResponsiveTextArea } from "@/components/layout";
 
 export const metadata = {
   id: "case-converter",
@@ -129,27 +128,26 @@ export default function CaseConverter() {
   );
 
   return (
-    <div className="space-y-6">
+    <ToolContainer
+      title="Case Converter"
+      description="Convert text between different naming conventions and cases including camelCase, snake_case, kebab-case, and more"
+    >
       <Card>
         <CardHeader>
-          <CardTitle>Case Converter</CardTitle>
+          <CardTitle>Input Text</CardTitle>
           <CardDescription>
-            Convert text between different naming conventions and cases
+            Enter the text you want to convert to different cases
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="input">Input Text</Label>
-              <Textarea
-                id="input"
-                placeholder="Enter your text here..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                rows={3}
-              />
-            </div>
-          </div>
+          <ResponsiveTextArea
+            placeholder="Enter your text here...
+Examples: 'Hello World', 'myVariableName', 'some-kebab-case'"
+            value={input}
+            onChange={setInput}
+            minHeight={80}
+            showCharacterCount={true}
+          />
         </CardContent>
       </Card>
 
@@ -177,6 +175,6 @@ export default function CaseConverter() {
           </Card>
         ))}
       </div>
-    </div>
+    </ToolContainer>
   );
 }

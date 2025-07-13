@@ -22,6 +22,22 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  ToolContainer,
+  ActionButtons,
+  SettingsPanel,
+  FormField,
+} from "@/components/layout";
+
+export const metadata = {
+  id: "password-generator",
+  name: "Password Generator",
+  description: "Generate secure passwords with customizable options",
+  category: "Security",
+  tags: ["password", "generator", "security", "random"],
+  path: "/tools/password-generator",
+  icon: "🔒",
+};
 
 interface PasswordOptions {
   length: number;
@@ -33,9 +49,11 @@ interface PasswordOptions {
   excludeAmbiguous: boolean;
 }
 
-export function PasswordGenerator() {
+export default function PasswordGenerator() {
   const [password, setPassword] = useState("");
   const [passwords, setPasswords] = useState<string[]>([]);
+  const [strength, setStrength] = useState(0);
+  const [strengthLabel, setStrengthLabel] = useState("Weak");
   const [options, setOptions] = useState<PasswordOptions>({
     length: 16,
     includeUppercase: true,
@@ -45,8 +63,6 @@ export function PasswordGenerator() {
     excludeSimilar: false,
     excludeAmbiguous: false,
   });
-  const [strength, setStrength] = useState(0);
-  const [strengthLabel, setStrengthLabel] = useState("");
 
   const characterSets = {
     uppercase: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
@@ -118,35 +134,43 @@ export function PasswordGenerator() {
           .join("");
       }
 
-      if (charset === "") return;
+      if (charset === "") continue;
 
       let result = "";
       for (let j = 0; j < options.length; j++) {
         result += charset.charAt(Math.floor(Math.random() * charset.length));
       }
-
       newPasswords.push(result);
     }
-
     setPasswords(newPasswords);
-    toast.success(`Generated ${count} passwords!`);
+    toast.success(`Generated ${newPasswords.length} passwords!`);
   };
 
   const calculateStrength = (pwd: string) => {
     let score = 0;
 
-    // Length bonus
+    // Length scoring
     if (pwd.length >= 8) score += 25;
     if (pwd.length >= 12) score += 25;
     if (pwd.length >= 16) score += 25;
 
-    // Character variety bonus
+    // Character variety
     if (/[a-z]/.test(pwd)) score += 5;
     if (/[A-Z]/.test(pwd)) score += 5;
     if (/[0-9]/.test(pwd)) score += 5;
     if (/[^A-Za-z0-9]/.test(pwd)) score += 10;
 
-    // Penalty for common patterns
+    // Bonus for more character types
+    const charTypes = [
+      /[a-z]/.test(pwd),
+      /[A-Z]/.test(pwd),
+      /[0-9]/.test(pwd),
+      /[^A-Za-z0-9]/.test(pwd),
+    ].filter(Boolean).length;
+    if (charTypes >= 3) score += 5;
+    if (charTypes === 4) score += 10;
+
+    // Penalties
     if (/(.)\1{2,}/.test(pwd)) score -= 10; // Repeated characters
     if (/123|abc|qwe/i.test(pwd)) score -= 10; // Common sequences
 
@@ -165,49 +189,10 @@ export function PasswordGenerator() {
   };
 
   useEffect(() => {
-    const characterSets = {
-      uppercase: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-      lowercase: "abcdefghijklmnopqrstuvwxyz",
-      numbers: "0123456789",
-      symbols: "!@#$%^&*()_+-=[]{}|;:,.<>?",
-      similar: "il1Lo0O",
-      ambiguous: "{}[]()/\\'\"~,;.<>",
-    };
-
-    const generatePasswordEffect = () => {
-      let charset = "";
-
-      if (options.includeUppercase) charset += characterSets.uppercase;
-      if (options.includeLowercase) charset += characterSets.lowercase;
-      if (options.includeNumbers) charset += characterSets.numbers;
-      if (options.includeSymbols) charset += characterSets.symbols;
-
-      if (options.excludeSimilar) {
-        charset = charset
-          .split("")
-          .filter((char) => !characterSets.similar.includes(char))
-          .join("");
-      }
-
-      if (options.excludeAmbiguous) {
-        charset = charset
-          .split("")
-          .filter((char) => !characterSets.ambiguous.includes(char))
-          .join("");
-      }
-
-      if (charset === "") return;
-
-      let result = "";
-      for (let i = 0; i < options.length; i++) {
-        result += charset.charAt(Math.floor(Math.random() * charset.length));
-      }
-
-      setPassword(result);
-      calculateStrength(result);
-    };
-
-    generatePasswordEffect();
+    if (password === "") {
+      generatePassword();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [options]);
 
   const getStrengthIcon = () => {
@@ -217,18 +202,25 @@ export function PasswordGenerator() {
     return <CheckCircle className="h-4 w-4 text-green-500" />;
   };
 
+  const getStrengthColor = () => {
+    if (strength < 30) return "text-red-500";
+    if (strength < 60) return "text-yellow-500";
+    if (strength < 80) return "text-blue-500";
+    return "text-green-500";
+  };
+
   return (
-    <div className="space-y-6">
+    <ToolContainer
+      title="Password Generator"
+      description="Generate secure passwords with customizable options including length, character types, and strength validation"
+    >
       {/* Current Password */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>Generated Password</span>
-            <Button onClick={generatePassword} size="sm">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Generate
-            </Button>
-          </CardTitle>
+          <CardTitle>Generated Password</CardTitle>
+          <CardDescription>
+            Your generated password with strength indicator
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
@@ -238,15 +230,30 @@ export function PasswordGenerator() {
               className="font-mono text-lg"
               placeholder="Click Generate to create a password"
             />
-            <Button onClick={() => copyPassword(password)} disabled={!password}>
-              <Copy className="h-4 w-4" />
-            </Button>
+            <ActionButtons
+              buttons={[
+                {
+                  icon: Copy,
+                  label: "Copy",
+                  onClick: () => copyPassword(password),
+                  disabled: !password,
+                },
+                {
+                  icon: RefreshCw,
+                  label: "Generate",
+                  onClick: generatePassword,
+                },
+              ]}
+            />
           </div>
 
+          {/* Strength Indicator */}
           {password && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label className="flex items-center gap-2">
+                <Label
+                  className={`flex items-center gap-2 ${getStrengthColor()}`}
+                >
                   {getStrengthIcon()}
                   Password Strength: {strengthLabel}
                 </Label>
@@ -261,31 +268,30 @@ export function PasswordGenerator() {
       </Card>
 
       {/* Options */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Password Options</CardTitle>
-          <CardDescription>
-            Customize your password generation settings
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Length */}
-          <div className="space-y-2">
-            <Label>Password Length: {options.length}</Label>
-            <Slider
-              value={[options.length]}
-              onValueChange={(value) =>
-                setOptions((prev) => ({ ...prev, length: value[0] }))
-              }
-              max={128}
-              min={4}
-              step={1}
-              className="w-full"
-            />
-          </div>
+      <SettingsPanel title="Password Options">
+        {/* Length */}
+        <FormField
+          label={`Password Length: ${options.length}`}
+          description="Choose password length between 4 and 128 characters"
+        >
+          <Slider
+            value={[options.length]}
+            onValueChange={(value) =>
+              setOptions((prev) => ({ ...prev, length: value[0] }))
+            }
+            max={128}
+            min={4}
+            step={1}
+            className="w-full"
+          />
+        </FormField>
 
-          {/* Character Types */}
-          <div className="grid grid-cols-2 gap-4">
+        {/* Character Types */}
+        <FormField
+          label="Character Types"
+          description="Select which character types to include"
+        >
+          <div className="grid grid-cols-1 gap-4">
             <div className="flex items-center justify-between">
               <Label htmlFor="uppercase">Uppercase (A-Z)</Label>
               <Switch
@@ -317,7 +323,7 @@ export function PasswordGenerator() {
               />
             </div>
             <div className="flex items-center justify-between">
-              <Label htmlFor="symbols">Symbols (!@#$...)</Label>
+              <Label htmlFor="symbols">Symbols (!@#$%^&*...)</Label>
               <Switch
                 id="symbols"
                 checked={options.includeSymbols}
@@ -327,47 +333,49 @@ export function PasswordGenerator() {
               />
             </div>
           </div>
+        </FormField>
 
-          {/* Exclusions */}
-          <div className="space-y-3">
-            <Label>Exclusions</Label>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="similar" className="text-sm">
-                  Exclude similar characters (il1Lo0O)
-                </Label>
-                <Switch
-                  id="similar"
-                  checked={options.excludeSimilar}
-                  onCheckedChange={(checked) =>
-                    setOptions((prev) => ({ ...prev, excludeSimilar: checked }))
-                  }
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="ambiguous" className="text-sm">
-                  Exclude ambiguous characters ({`{}[]()/\\'"~,;.<>`})
-                </Label>
-                <Switch
-                  id="ambiguous"
-                  checked={options.excludeAmbiguous}
-                  onCheckedChange={(checked) =>
-                    setOptions((prev) => ({
-                      ...prev,
-                      excludeAmbiguous: checked,
-                    }))
-                  }
-                />
-              </div>
+        {/* Exclusions */}
+        <FormField
+          label="Character Exclusions"
+          description="Exclude confusing or problematic characters"
+        >
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="similar" className="text-sm">
+                Exclude similar characters (il1Lo0O)
+              </Label>
+              <Switch
+                id="similar"
+                checked={options.excludeSimilar}
+                onCheckedChange={(checked) =>
+                  setOptions((prev) => ({ ...prev, excludeSimilar: checked }))
+                }
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="ambiguous" className="text-sm">
+                Exclude ambiguous characters ({`{}[]()/\\'"~,;.<>`})
+              </Label>
+              <Switch
+                id="ambiguous"
+                checked={options.excludeAmbiguous}
+                onCheckedChange={(checked) =>
+                  setOptions((prev) => ({
+                    ...prev,
+                    excludeAmbiguous: checked,
+                  }))
+                }
+              />
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </FormField>
+      </SettingsPanel>
 
       {/* Bulk Generation */}
       <Card>
         <CardHeader>
-          <CardTitle>Bulk Password Generation</CardTitle>
+          <CardTitle>Bulk Generation</CardTitle>
           <CardDescription>Generate multiple passwords at once</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -385,23 +393,25 @@ export function PasswordGenerator() {
               Generate 10
             </Button>
             <Button
-              onClick={() => generateMultiplePasswords(25)}
+              onClick={() => generateMultiplePasswords(20)}
               variant="outline"
             >
-              Generate 25
+              Generate 20
             </Button>
           </div>
 
           {passwords.length > 0 && (
-            <div className="space-y-2 max-h-64 overflow-y-auto">
+            <div className="space-y-2 max-h-60 overflow-y-auto">
               {passwords.map((pwd, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-2 p-2 border rounded cursor-pointer hover:bg-accent"
-                  onClick={() => copyPassword(pwd)}
-                >
-                  <span className="font-mono text-sm flex-1">{pwd}</span>
-                  <Copy className="h-4 w-4 text-muted-foreground" />
+                <div key={index} className="flex gap-2 items-center">
+                  <Input value={pwd} readOnly className="font-mono text-sm" />
+                  <Button
+                    onClick={() => copyPassword(pwd)}
+                    size="sm"
+                    variant="ghost"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
                 </div>
               ))}
             </div>
@@ -409,52 +419,47 @@ export function PasswordGenerator() {
         </CardContent>
       </Card>
 
-      {/* Security Tips */}
+      {/* Security Note */}
       <Card>
         <CardHeader>
-          <CardTitle>Password Security Tips</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            Security Information
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 text-sm text-muted-foreground">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h4 className="font-medium text-foreground mb-2">
-                Strong Password Characteristics
-              </h4>
-              <ul className="space-y-1 text-xs">
-                <li>• At least 12 characters long</li>
-                <li>• Mix of uppercase and lowercase letters</li>
-                <li>• Include numbers and symbols</li>
-                <li>• Avoid common words or patterns</li>
-                <li>• Don&apos;t reuse passwords across sites</li>
-              </ul>
+        <CardContent>
+          <div className="space-y-4 text-sm">
+            <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded">
+              <div className="flex items-start gap-2">
+                <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5" />
+                <div>
+                  <strong>Strong Password Tips:</strong>
+                  <ul className="mt-1 list-disc list-inside space-y-1 text-xs">
+                    <li>Use at least 12 characters for better security</li>
+                    <li>
+                      Include a mix of uppercase, lowercase, numbers, and
+                      symbols
+                    </li>
+                    <li>Avoid common words, names, or predictable patterns</li>
+                    <li>Use unique passwords for each account</li>
+                  </ul>
+                </div>
+              </div>
             </div>
-            <div>
-              <h4 className="font-medium text-foreground mb-2">
-                Best Practices
-              </h4>
-              <ul className="space-y-1 text-xs">
-                <li>• Use a password manager</li>
-                <li>• Enable two-factor authentication</li>
-                <li>• Update passwords regularly</li>
-                <li>• Never share passwords</li>
-                <li>• Use different passwords for important accounts</li>
-              </ul>
-            </div>
-          </div>
 
-          <div className="p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded">
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5" />
-              <div className="text-xs">
-                <strong>Security Note:</strong> This tool generates passwords
-                entirely in your browser. No passwords are sent to any server or
-                stored anywhere. For maximum security, consider using a
-                dedicated password manager.
+            <div className="p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5" />
+                <div className="text-xs">
+                  <strong>Security Note:</strong> This tool generates passwords
+                  locally in your browser. For maximum security, consider using
+                  a dedicated password manager.
+                </div>
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
-    </div>
+    </ToolContainer>
   );
 }

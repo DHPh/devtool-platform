@@ -8,17 +8,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import {
-  Copy,
-  Download,
-  FileText,
-  Eye,
-  Maximize2,
-} from "lucide-react";
+import { Copy, Download, FileText, Eye } from "lucide-react";
 import { toast } from "sonner";
+import {
+  ToolContainer,
+  SettingsPanel,
+  FormField,
+  ActionButtons,
+  ResponsiveTextArea,
+  ModeTabs,
+} from "@/components/layout";
 
 export const metadata = {
   id: "markdown-preview",
@@ -66,9 +66,9 @@ function hello() {
 
 [Link example](https://example.com)`);
 
-  const [showPreview, setShowPreview] = useState(true);
-  const [showSource, setShowSource] = useState(true);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [viewMode, setViewMode] = useState<"both" | "source" | "preview">(
+    "both"
+  );
 
   // Enhanced markdown to HTML converter
   const convertMarkdownToHtml = (markdown: string) => {
@@ -303,157 +303,148 @@ function hello() {
     },
   ];
 
+  // View mode options
+  const viewModeOptions = [
+    {
+      value: "both",
+      label: "Split View",
+      description: "View markdown source and preview side by side",
+    },
+    {
+      value: "source",
+      label: "Source Only",
+      description: "View only the markdown source code",
+    },
+    {
+      value: "preview",
+      label: "Preview Only",
+      description: "View only the HTML preview",
+    },
+  ];
+
+  // Action buttons configuration
+  const actionButtons = [
+    {
+      label: "Copy Markdown",
+      onClick: copyMarkdown,
+      icon: Copy,
+      variant: "outline" as const,
+    },
+    {
+      label: "Copy HTML",
+      onClick: copyHtml,
+      icon: Copy,
+      variant: "outline" as const,
+    },
+    {
+      label: "Download MD",
+      onClick: downloadMarkdown,
+      icon: Download,
+      variant: "outline" as const,
+    },
+    {
+      label: "Download HTML",
+      onClick: downloadHtml,
+      icon: Download,
+      variant: "outline" as const,
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Markdown Preview
-          </CardTitle>
-          <CardDescription>
-            Write markdown and see live preview with HTML output
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center space-x-2">
-              <Button
-                variant={showSource ? "default" : "outline"}
-                size="sm"
-                onClick={() => setShowSource(!showSource)}
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Source
-              </Button>
-              <Button
-                variant={showPreview ? "default" : "outline"}
-                size="sm"
-                onClick={() => setShowPreview(!showPreview)}
-              >
-                <Eye className="h-4 w-4 mr-2" />
-                Preview
-              </Button>
-            </div>
-          </div>
+    <ToolContainer
+      title="Markdown Preview"
+      description="Write markdown and see live preview with HTML output"
+    >
+      {/* View Mode Selection */}
+      <ModeTabs
+        value={viewMode}
+        onValueChange={(value: string) =>
+          setViewMode(value as "both" | "source" | "preview")
+        }
+        options={viewModeOptions}
+      />
 
-          <div className="space-y-2">
-            <Label htmlFor="examples">Examples</Label>
-            <div className="flex flex-wrap gap-2">
-              {examples.map((example, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => loadExample(example.code)}
-                >
-                  {example.name}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {/* Dynamic grid layout based on visible panels */}
-          <div
-            className={`grid gap-4 ${
-              showSource && showPreview
-                ? "grid-cols-1 lg:grid-cols-2"
-                : "grid-cols-1"
-            }`}
-          >
-            {showSource && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="input">Markdown Input</Label>
-                  {!showPreview && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsExpanded(!isExpanded)}
-                      className="text-xs"
-                    >
-                      <Maximize2 className="h-3 w-3 mr-1" />
-                      {isExpanded ? "Normal" : "Expand"}
-                    </Button>
-                  )}
-                </div>
-                <Textarea
-                  id="input"
-                  placeholder="Enter markdown here..."
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  className={`font-mono text-sm tool-input textarea-enhanced transition-all duration-300 ${
-                    !showPreview && isExpanded
-                      ? "min-h-[600px]"
-                      : "min-h-[400px]"
-                  }`}
-                />
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={copyMarkdown}>
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy MD
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={downloadMarkdown}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download MD
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {showPreview && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>HTML Preview</Label>
-                  {!showSource && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsExpanded(!isExpanded)}
-                      className="text-xs"
-                    >
-                      <Maximize2 className="h-3 w-3 mr-1" />
-                      {isExpanded ? "Normal" : "Expand"}
-                    </Button>
-                  )}
-                </div>
-                <div
-                  className={`border rounded-lg p-4 tool-output overflow-y-auto transition-all duration-300 ${
-                    !showSource && isExpanded
-                      ? "min-h-[600px] max-h-[800px]"
-                      : "min-h-[400px] max-h-96"
-                  }`}
-                >
-                  <div
-                    className="markdown-preview"
-                    dangerouslySetInnerHTML={{ __html: htmlOutput }}
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={copyHtml}>
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy HTML
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={downloadHtml}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download HTML
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-
+      {/* Settings Panel */}
+      <SettingsPanel title="Editor Settings">
+        <FormField
+          label="Quick Examples"
+          description="Click to load predefined markdown examples"
+        >
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={clearAll}>
-              Clear
-            </Button>
+            {examples.map((example, index) => (
+              <Button
+                key={index}
+                variant="outline"
+                size="sm"
+                onClick={() => loadExample(example.code)}
+              >
+                {example.name}
+              </Button>
+            ))}
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </FormField>
+
+        <ActionButtons buttons={actionButtons} />
+      </SettingsPanel>
+
+      {/* Editor and Preview */}
+      <div
+        className={`grid gap-4 ${
+          viewMode === "both" ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"
+        }`}
+      >
+        {(viewMode === "both" || viewMode === "source") && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Markdown Source
+              </CardTitle>
+              <CardDescription>
+                Write your markdown content here
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveTextArea
+                placeholder="Enter markdown here..."
+                value={input}
+                onChange={(value) => setInput(value)}
+                minHeight={400}
+                showCharacterCount={true}
+                showWordCount={true}
+                showLineCount={true}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {(viewMode === "both" || viewMode === "preview") && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                HTML Preview
+              </CardTitle>
+              <CardDescription>Live preview of your markdown</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="border rounded-lg p-4 min-h-[400px] max-h-[600px] overflow-y-auto">
+                <div
+                  className="markdown-preview prose prose-sm max-w-none dark:prose-invert"
+                  dangerouslySetInnerHTML={{ __html: htmlOutput }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Clear Button */}
+      <div className="flex justify-end">
+        <Button variant="outline" onClick={clearAll}>
+          Clear All
+        </Button>
+      </div>
+    </ToolContainer>
   );
 }
