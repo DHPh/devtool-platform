@@ -1,19 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, ArrowRightLeft } from "lucide-react";
+import { Code, ArrowRightLeft } from "lucide-react";
 import { toast } from "sonner";
+import {
+  ToolHeader,
+  QuickActions,
+  ResultCard,
+  CopyableResult,
+  ResponsiveTextArea,
+  ModeTabs,
+} from "@/components/layout";
+import { Button } from "@/components/ui/button";
 
 export const metadata = {
   id: "html-entities",
@@ -77,19 +75,6 @@ export default function HtmlEntities() {
   const encoded = encodeHtml(input);
   const decoded = decodeHtml(input);
 
-  const copyToClipboard = async (text: string, type: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success(`${type} copied to clipboard!`);
-    } catch {
-      toast.error("Failed to copy to clipboard");
-    }
-  };
-
-  const swapInputOutput = (text: string) => {
-    setInput(text);
-  };
-
   const examples = [
     {
       name: "Basic HTML",
@@ -103,154 +88,221 @@ export default function HtmlEntities() {
       encoded: "Copyright &copy; 2024, Price: &euro;100",
     },
     {
-      name: "Quotes & Apostrophes",
+      name: "Quotes & Apostrophes", 
       original: `"Hello", he said, 'It's working!'`,
       encoded: "&quot;Hello&quot;, he said, &#39;It&#39;s working!&#39;",
     },
   ];
 
+  const copyToClipboard = async (text: string, type: string) => {
+    await navigator.clipboard.writeText(text);
+    toast.success(`${type} copied to clipboard!`);
+  };
+
+  const swapInputOutput = (output: string) => {
+    setInput(output);
+    toast.success("Swapped input and output!");
+  };
+
+  const loadExample = (example: string) => {
+    setInput(example);
+    toast.success("Example loaded!");
+  };
+
+  const clearAll = () => {
+    setInput("");
+  };
+
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>HTML Entities Encoder/Decoder</CardTitle>
-          <CardDescription>
-            Convert special characters to HTML entities and vice versa
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="converter" className="w-full">
-            <TabsList className="w-full flex flex-row">
-              <TabsTrigger value="converter">Converter</TabsTrigger>
-              <TabsTrigger value="examples">Examples</TabsTrigger>
-            </TabsList>
+      <ToolHeader
+        title="HTML Entities"
+        description="Encode and decode HTML entities for special characters"
+        icon={Code}
+      />
 
-            <TabsContent value="converter" className="space-y-4">
+      <QuickActions
+        actions={[
+          {
+            id: "swap",
+            label: "Swap",
+            onClick: () => swapInputOutput(encoded),
+            disabled: !encoded,
+            variant: "outline" as const,
+          },
+          {
+            id: "clear",
+            label: "Clear All",
+            onClick: clearAll,
+            variant: "outline" as const,
+          },
+          ...examples.map((example, index) => ({
+            id: `example-${index}`,
+            label: example.name,
+            onClick: () => loadExample(example.original),
+            variant: "outline" as const,
+          })),
+        ]}
+      />
+
+      <ModeTabs
+        value="converter"
+        onValueChange={() => {}}
+        options={[
+          {
+            value: "converter",
+            label: "Converter",
+            description: "Convert between text and HTML entities",
+          },
+        ]}
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Input */}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Input Text</label>
+            <ResponsiveTextArea
+              value={input}
+              onChange={setInput}
+              placeholder="Enter text or HTML..."
+              minHeight={200}
+              showCharacterCount={true}
+            />
+          </div>
+        </div>
+
+        {/* Output */}
+        <div className="space-y-4">
+          {/* HTML Encoded */}
+          <ResultCard
+            title="HTML Encoded"
+            description="Special characters converted to HTML entities"
+            status={encoded ? "success" : "info"}
+            onCopy={encoded ? () => copyToClipboard(encoded, "Encoded text") : undefined}
+            copyLabel="Copy Encoded"
+          >
+            <div className="space-y-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => swapInputOutput(encoded)}
+                disabled={!encoded}
+                className="mb-2"
+              >
+                <ArrowRightLeft className="h-4 w-4 mr-2" />
+                Use as Input
+              </Button>
+              <CopyableResult
+                value={encoded}
+                placeholder="HTML encoded text will appear here..."
+                fontFamily="mono"
+                rows={6}
+              />
+            </div>
+          </ResultCard>
+
+          {/* HTML Decoded */}
+          <ResultCard
+            title="HTML Decoded"
+            description="HTML entities converted back to special characters"
+            status={decoded ? "success" : "info"}
+            onCopy={decoded ? () => copyToClipboard(decoded, "Decoded text") : undefined}
+            copyLabel="Copy Decoded"
+          >
+            <div className="space-y-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => swapInputOutput(decoded)}
+                disabled={!decoded}
+                className="mb-2"
+              >
+                <ArrowRightLeft className="h-4 w-4 mr-2" />
+                Use as Input
+              </Button>
+              <CopyableResult
+                value={decoded}
+                placeholder="HTML decoded text will appear here..."
+                fontFamily="mono"
+                rows={6}
+              />
+            </div>
+          </ResultCard>
+        </div>
+      </div>
+
+      {/* Examples */}
+      <ResultCard
+        title="Common HTML Entities"
+        status="info"
+        description="Examples of frequently used HTML entities"
+      >
+        <div className="space-y-4">
+          {examples.map((example, index) => (
+            <div key={index} className="border rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-medium">{example.name}</h4>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => loadExample(example.original)}
+                >
+                  Try Example
+                </Button>
+              </div>
               <div className="space-y-2">
-                <Label htmlFor="input">Input</Label>
-                <Textarea
-                  id="input"
-                  placeholder="Enter text or HTML..."
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  rows={4}
-                />
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Original:</p>
+                  <div className="p-2 bg-muted rounded text-sm font-mono">
+                    {example.original}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Encoded:</p>
+                  <div className="p-2 bg-muted rounded text-sm font-mono">
+                    {example.encoded}
+                  </div>
+                </div>
               </div>
+            </div>
+          ))}
+        </div>
+      </ResultCard>
 
-              <div className="grid gap-4">
-                {/* HTML Encoded */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">HTML Encoded</CardTitle>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => swapInputOutput(encoded)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <ArrowRightLeft className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            copyToClipboard(encoded, "Encoded text")
-                          }
-                          className="h-8 w-8 p-0"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="max-h-40 overflow-auto">
-                      <div className="p-3 bg-muted rounded-md">
-                        <code className="text-sm break-all">{encoded}</code>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* HTML Decoded */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">HTML Decoded</CardTitle>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => swapInputOutput(decoded)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <ArrowRightLeft className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            copyToClipboard(decoded, "Decoded text")
-                          }
-                          className="h-8 w-8 p-0"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="max-h-40 overflow-auto">
-                      <div className="p-3 bg-muted rounded-md">
-                        <code className="text-sm break-all">{decoded}</code>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="examples" className="space-y-4">
-              <div className="grid gap-4">
-                {examples.map((example, index) => (
-                  <Card key={index}>
-                    <CardHeader>
-                      <CardTitle className="text-lg">{example.name}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div>
-                        <Label className="text-sm font-medium">Original:</Label>
-                        <div className="p-2 bg-muted rounded-md mt-1 max-h-20 overflow-auto">
-                          <code className="text-sm break-all">
-                            {example.original}
-                          </code>
-                        </div>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Encoded:</Label>
-                        <div className="p-2 bg-muted rounded-md mt-1 max-h-20 overflow-auto">
-                          <code className="text-sm break-all">
-                            {example.encoded}
-                          </code>
-                        </div>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setInput(example.original)}
-                      >
-                        Try This Example
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+      {/* Information */}
+      <ResultCard
+        title="About HTML Entities"
+        status="info"
+        description="Learn about HTML entities and their usage"
+      >
+        <div className="space-y-4 text-sm text-muted-foreground">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="font-medium mb-2">Common Entities</p>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>&amp;lt; = &lt; (less than)</li>
+                <li>&amp;gt; = &gt; (greater than)</li>
+                <li>&amp;amp; = &amp; (ampersand)</li>
+                <li>&amp;quot; = &quot; (quotation mark)</li>
+                <li>&amp;copy; = © (copyright)</li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-medium mb-2">Use Cases</p>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>Display HTML tags as text</li>
+                <li>Prevent XSS attacks</li>
+                <li>Email content encoding</li>
+                <li>XML/XHTML compliance</li>
+              </ul>
+            </div>
+          </div>
+          <p className="text-xs bg-muted p-2 rounded">
+            <strong>Note:</strong> Always encode user input when displaying HTML to prevent security vulnerabilities.
+          </p>
+        </div>
+      </ResultCard>
     </div>
   );
 }

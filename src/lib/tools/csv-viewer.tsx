@@ -14,23 +14,20 @@ import {
   ColumnDef,
 } from "@tanstack/react-table";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  ToolHeader,
+  QuickActions,
+  ResultCard,
+} from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
-  Upload,
-  Download,
   Search,
   ChevronLeft,
   ChevronRight,
   ArrowUpDown,
+  Table,
 } from "lucide-react";
 import { toast } from "sonner";
 import { parseCSV, getDelimiterDisplayName } from "@/lib/utils/csv-parser";
@@ -209,42 +206,60 @@ export default function CSVViewer() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            CSV Data Input
-          </CardTitle>
-          <CardDescription>
-            Upload a CSV file or paste CSV data to view in an interactive table
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="file-upload">Upload CSV File</Label>
-              <Input
-                id="file-upload"
-                type="file"
-                accept=".csv"
-                onChange={handleFileUpload}
-                className="cursor-pointer"
-              />
-            </div>
+      <ToolHeader
+        title="CSV Viewer"
+        description="Upload and view CSV files with interactive table features"
+        icon={Table}
+      />
 
-            <div className="space-y-2">
-              <Label htmlFor="csv-text">Or Paste CSV Data</Label>
-              <textarea
-                id="csv-text"
-                placeholder="CSV with commas: name,age,city&#10;John,30,NYC&#10;Jane,25,LA&#10;&#10;Or with semicolons: name;age;city&#10;John;30;NYC&#10;Jane;25;LA"
-                className="w-full h-24 tool-textarea"
-                onChange={(e) => {
-                  if (e.target.value.trim()) {
-                    handleTextInput(e.target.value);
-                  }
-                }}
-              />
-            </div>
+      <QuickActions
+        actions={[
+          {
+            id: "clear",
+            label: "Clear Data",
+            onClick: clearData,
+            disabled: data.length === 0,
+            variant: "outline" as const,
+          },
+          {
+            id: "export",
+            label: "Export CSV",
+            onClick: exportData,
+            disabled: data.length === 0,
+            variant: "outline" as const,
+          },
+        ]}
+      />
+
+      <ResultCard
+        title="Data Input"
+        description="Upload a CSV file or paste CSV data"
+        status="info"
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="file-upload">Upload CSV File</Label>
+            <Input
+              id="file-upload"
+              type="file"
+              accept=".csv"
+              onChange={handleFileUpload}
+              className="cursor-pointer"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="csv-text">Or Paste CSV Data</Label>
+            <textarea
+              id="csv-text"
+              placeholder="CSV with commas: name,age,city&#10;John,30,NYC&#10;Jane,25,LA&#10;&#10;Or with semicolons: name;age;city&#10;John;30;NYC&#10;Jane;25;LA"
+              className="w-full h-24 tool-textarea"
+              onChange={(e) => {
+                if (e.target.value.trim()) {
+                  handleTextInput(e.target.value);
+                }
+              }}
+            />
           </div>
 
           {data.length > 0 && (
@@ -257,30 +272,16 @@ export default function CSVViewer() {
               {fileName && <Badge variant="secondary">{fileName}</Badge>}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </ResultCard>
 
       {data.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <Search className="h-5 w-5" />
-                Data Table
-              </span>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={exportData}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export CSV
-                </Button>
-                <Button variant="outline" size="sm" onClick={clearData}>
-                  Clear
-                </Button>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Global Search */}
+        <ResultCard
+          title="Data Table"
+          description={`Showing ${data.length} rows with ${columns.length} columns`}
+          status="success"
+        >
+          <div className="space-y-4">{/* Global Search */}
             <div className="flex items-center space-x-2">
               <Search className="h-4 w-4" />
               <Input
@@ -378,8 +379,8 @@ export default function CSVViewer() {
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </ResultCard>
       )}
     </div>
   );

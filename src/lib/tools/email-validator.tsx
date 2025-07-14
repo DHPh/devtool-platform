@@ -1,20 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle, XCircle, Mail, Copy } from "lucide-react";
+import { Mail } from "lucide-react";
 import { toast } from "sonner";
+import {
+  ToolHeader,
+  QuickActions,
+  CommonActions,
+  ActionGroups,
+  SampleDataLoader,
+  CommonSamples,
+  ResultCard,
+  ValidationMessages,
+  CopyableResult,
+  ValidationStatus,
+} from "@/components/layout";
 
 export const metadata = {
   id: "email-validator",
@@ -163,191 +165,168 @@ export default function EmailValidator() {
     }
   };
 
-  const examples = [
-    "user@example.com",
-    "john.doe@company.co.uk",
-    "test.email+tag@domain.org",
-    "user123@sub.domain.com",
-  ];
+  const clearAll = () => {
+    setSingleEmail("");
+    setBulkEmails("");
+    setSingleResult(null);
+    setBulkResults([]);
+  };
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Email Validator</CardTitle>
-          <CardDescription>
-            Validate email addresses and check for common formatting issues
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {/* Single Email Validation */}
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="singleEmail">Single Email Validation</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="singleEmail"
-                    type="email"
-                    placeholder="Enter email address..."
-                    value={singleEmail}
-                    onChange={(e) => setSingleEmail(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button onClick={validateSingleEmail}>
-                    <Mail className="h-4 w-4 mr-2" />
-                    Validate
-                  </Button>
+      {/* Tool Header */}
+      <ToolHeader
+        title="Email Validator"
+        description="Validate email addresses and check for common formatting issues"
+        icon={Mail}
+        badge={{ text: "New", variant: "secondary" }}
+        actions={[
+          {
+            label: "Clear All",
+            onClick: clearAll,
+            variant: "outline",
+          },
+        ]}
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Single Email Validation */}
+        <div className="space-y-4">
+          <h3 className="font-semibold text-lg">Single Email Validation</h3>
+          
+          <div className="space-y-3">
+            <Input
+              placeholder="Enter email address to validate..."
+              value={singleEmail}
+              onChange={(e) => setSingleEmail(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && validateSingleEmail()}
+            />
+
+            <QuickActions
+              actions={[
+                CommonActions.process(validateSingleEmail, "Validate"),
+                CommonActions.clearAll(() => {
+                  setSingleEmail("");
+                  setSingleResult(null);
+                }),
+              ]}
+            />
+
+            <SampleDataLoader
+              samples={CommonSamples.emails}
+              onLoad={(value) => setSingleEmail(value.split("\n")[0])}
+              buttonLabel="Load Example"
+            />
+          </div>
+
+          {/* Single Result */}
+          {singleResult && (
+            <ResultCard
+              title="Validation Result"
+              status={singleResult.isValid ? "success" : "error"}
+              result={singleResult.email}
+              onCopy={() => navigator.clipboard.writeText(singleResult.email)}
+              copyLabel="Copy Email"
+            >
+              <div className="space-y-3">
+                <div className="p-3 bg-muted rounded-md">
+                  <code className="text-sm font-mono">{singleResult.email}</code>
                 </div>
-              </div>
+                
+                <ValidationStatus
+                  isValid={singleResult.isValid}
+                  errorCount={singleResult.errors.length}
+                  warningCount={singleResult.warnings.length}
+                />
 
-              {/* Examples */}
-              <div className="space-y-2">
-                <Label>Examples</Label>
-                <div className="flex flex-wrap gap-2">
-                  {examples.map((example) => (
-                    <Button
-                      key={example}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSingleEmail(example)}
-                      className="text-xs"
-                    >
-                      {example}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Single Result */}
-              {singleResult && (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-2">
-                      {singleResult.isValid ? (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <XCircle className="h-5 w-5 text-red-500" />
-                      )}
-                      <CardTitle
-                        className={`text-lg ${
-                          singleResult.isValid
-                            ? "text-green-500"
-                            : "text-red-500"
-                        }`}
-                      >
-                        {singleResult.isValid ? "Valid Email" : "Invalid Email"}
-                      </CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="space-y-3">
-                      <div className="p-3 bg-muted rounded-md">
-                        <code className="text-sm">{singleResult.email}</code>
-                      </div>
-
-                      {singleResult.errors.length > 0 && (
-                        <div className="space-y-2">
-                          <Label className="text-red-500">Errors:</Label>
-                          {singleResult.errors.map((error, index) => (
-                            <Badge
-                              key={index}
-                              variant="destructive"
-                              className="text-xs"
-                            >
-                              {error}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-
-                      {singleResult.warnings.length > 0 && (
-                        <div className="space-y-2">
-                          <Label className="text-yellow-500">Warnings:</Label>
-                          {singleResult.warnings.map((warning, index) => (
-                            <Badge
-                              key={index}
-                              variant="outline"
-                              className="text-xs border-yellow-500"
-                            >
-                              {warning}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-
-            {/* Bulk Email Validation */}
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="bulkEmails">Bulk Email Validation</Label>
-                <Textarea
-                  id="bulkEmails"
-                  placeholder="Enter multiple email addresses, one per line..."
-                  value={bulkEmails}
-                  onChange={(e) => setBulkEmails(e.target.value)}
-                  rows={6}
+                <ValidationMessages
+                  errors={singleResult.errors}
+                  warnings={singleResult.warnings}
                 />
               </div>
+            </ResultCard>
+          )}
+        </div>
 
-              <div className="flex gap-2">
-                <Button onClick={validateBulkEmails} className="flex-1">
-                  <Mail className="h-4 w-4 mr-2" />
-                  Validate All
-                </Button>
-                {bulkResults.length > 0 && (
-                  <Button variant="outline" onClick={copyValidEmails}>
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy Valid
-                  </Button>
-                )}
-              </div>
+        {/* Bulk Email Validation */}
+        <div className="space-y-4">
+          <h3 className="font-semibold text-lg">Bulk Email Validation</h3>
 
-              {/* Bulk Results */}
-              {bulkResults.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Validation Results</CardTitle>
-                    <CardDescription>
-                      {bulkResults.filter((r) => r.isValid).length} valid out of{" "}
-                      {bulkResults.length} emails
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="max-h-64 overflow-y-auto space-y-2">
-                      {bulkResults.map((result, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center gap-2 p-2 border rounded"
-                        >
-                          {result.isValid ? (
-                            <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-                          ) : (
-                            <XCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
-                          )}
-                          <span className="text-sm font-mono flex-1">
-                            {result.email}
-                          </span>
-                          <Badge
-                            variant={result.isValid ? "default" : "destructive"}
-                            className="text-xs"
-                          >
-                            {result.isValid ? "Valid" : "Invalid"}
-                          </Badge>
-                        </div>
-                      ))}
+          <Textarea
+            placeholder="Enter multiple email addresses (one per line)..."
+            value={bulkEmails}
+            onChange={(e) => setBulkEmails(e.target.value)}
+            rows={6}
+            className="font-mono text-sm"
+          />
+
+          <QuickActions
+            actions={ActionGroups.validator(
+              validateBulkEmails,
+              () => {
+                setBulkEmails("");
+                setBulkResults([]);
+              },
+              () => setBulkEmails(CommonSamples.emails[0].value)
+            )}
+          />
+
+          {bulkResults.length > 0 && (
+            <div className="space-y-4">
+              <ResultCard
+                title="Bulk Validation Results"
+                description={`${bulkResults.length} emails processed`}
+                status={bulkResults.every(r => r.isValid) ? "success" : "warning"}
+              >
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div className="text-center">
+                      <div className="font-bold text-green-600 text-lg">
+                        {bulkResults.filter(r => r.isValid).length}
+                      </div>
+                      <div className="text-muted-foreground">Valid</div>
                     </div>
-                  </CardContent>
-                </Card>
-              )}
+                    <div className="text-center">
+                      <div className="font-bold text-red-600 text-lg">
+                        {bulkResults.filter(r => !r.isValid).length}
+                      </div>
+                      <div className="text-muted-foreground">Invalid</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-bold text-orange-600 text-lg">
+                        {bulkResults.filter(r => r.warnings.length > 0).length}
+                      </div>
+                      <div className="text-muted-foreground">Warnings</div>
+                    </div>
+                  </div>
+
+                  <QuickActions
+                    actions={[
+                      CommonActions.copy(copyValidEmails, bulkResults.filter(r => r.isValid).length === 0)
+                    ]}
+                    showLabels={true}
+                  />
+                </div>
+              </ResultCard>
+
+              <CopyableResult
+                value={bulkResults.map(r => 
+                  `${r.email}: ${r.isValid ? '✓ Valid' : '✗ Invalid'}`
+                ).join('\n')}
+                label="Detailed Results"
+                placeholder="Results will appear here..."
+                rows={8}
+              />
+
+              {/* Show validation messages for all errors/warnings */}
+              <ValidationMessages
+                errors={bulkResults.flatMap(r => r.errors.map(e => `${r.email}: ${e}`))}
+                warnings={bulkResults.flatMap(r => r.warnings.map(w => `${r.email}: ${w}`))}
+              />
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

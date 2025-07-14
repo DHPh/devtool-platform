@@ -1,20 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, Copy } from "lucide-react";
+import { Code } from "lucide-react";
 import { toast } from "sonner";
 import {
   Tooltip,
@@ -22,7 +13,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { regexTesterFAQ, FAQSection } from "@/lib/faq-data";
+import {
+  ToolHeader,
+  QuickActions,
+  ResultCard,
+  ValidationMessages,
+  CopyableResult,
+  ResponsiveTextArea,
+} from "@/components/layout";
 
 interface Match {
   match: string;
@@ -46,35 +44,57 @@ export function RegexTester() {
   const [error, setError] = useState("");
   const [warnings, setWarnings] = useState<string[]>([]);
 
-  useEffect(() => {
-    // Check for flag conflicts
-    const flagWarnings: string[] = [];
-
-    // Global + Sticky conflict
-    if (flags.global && flags.sticky) {
-      flagWarnings.push(
-        "Global (g) and Sticky (y) flags can conflict. Consider using only one."
-      );
+  const sampleData = {
+    email: {
+      pattern: "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b",
+      text: `Contact us at:
+support@example.com
+admin@test.org
+user123@domain.co.uk
+invalid-email@
+another@valid-email.com`
+    },
+    phoneNumbers: {
+      pattern: "\\(\\d{3}\\) \\d{3}-\\d{4}",
+      text: `Call us at:
+(555) 123-4567
+(800) 555-0123
+555-123-4567 (invalid format)
+(999) 888-7766`
+    },
+    urls: {
+      pattern: "https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)",
+      text: `Visit these sites:
+https://www.example.com
+http://test.org
+https://subdomain.website.co.uk/path
+ftp://invalid.com (not http/https)`
     }
+  };
 
-    // Sticky flag warning
-    if (flags.sticky && !flags.global) {
-      flagWarnings.push(
-        "Sticky (y) flag requires careful handling of lastIndex property."
-      );
-    }
+  const flagDescriptions = {
+    global: "Global (g)",
+    ignoreCase: "Ignore Case (i)",
+    multiline: "Multiline (m)",
+    dotAll: "Dot All (s)",
+    unicode: "Unicode (u)",
+    sticky: "Sticky (y)",
+  };
 
-    // Multiline + DotAll information (not conflict, just info)
-    if (flags.multiline && flags.dotAll) {
-      flagWarnings.push(
-        "Info: Multiline (m) affects ^ and $, while DotAll (s) affects . behavior."
-      );
-    }
+  const flagTooltips = {
+    global: "Find all matches - Without this, only first match is found",
+    ignoreCase: "Case insensitive matching - Ignore uppercase/lowercase differences",
+    multiline: "Multiline mode - ^ and $ match line boundaries instead of string boundaries",
+    dotAll: "Dot matches newlines - . matches \\n and \\r characters",
+    unicode: "Unicode mode - Proper Unicode handling for character classes",
+    sticky: "Sticky mode - Match only at lastIndex position (advanced usage)",
+  };
 
-    setWarnings(flagWarnings);
-
+  const testRegex = () => {
     if (!pattern) {
       setMatches([]);
+      setError("");
+      setWarnings([]);
       return;
     }
 
@@ -83,43 +103,28 @@ export function RegexTester() {
         .filter(([, enabled]) => enabled)
         .map(([flag]) => {
           switch (flag) {
-            case "global":
-              return "g";
-            case "ignoreCase":
-              return "i";
-            case "multiline":
-              return "m";
-            case "dotAll":
-              return "s";
-            case "unicode":
-              return "u";
-            case "sticky":
-              return "y";
-            default:
-              return "";
+            case "global": return "g";
+            case "ignoreCase": return "i";
+            case "multiline": return "m";
+            case "dotAll": return "s";
+            case "unicode": return "u";
+            case "sticky": return "y";
+            default: return "";
           }
         })
         .join("");
 
+      // Check for flag conflicts
+      const flagWarnings: string[] = [];
+      if (flags.global && flags.sticky) {
+        flagWarnings.push("Global (g) and Sticky (y) flags can conflict. Consider using only one.");
+      }
+      setWarnings(flagWarnings);
+
       const regex = new RegExp(pattern, flagString);
       const foundMatches: Match[] = [];
 
-      // Handle sticky flag specially
-      if (flags.sticky) {
-        // Sticky flag requires different handling
-        regex.lastIndex = 0;
-        let match;
-        while ((match = regex.exec(text)) !== null) {
-          foundMatches.push({
-            match: match[0],
-            index: match.index,
-            groups: match.slice(1),
-          });
-          if (!flags.global) break;
-          // For sticky, if no global flag, only one match
-          if (!flags.global) break;
-        }
-      } else if (flags.global) {
+      if (flags.global) {
         let match;
         while ((match = regex.exec(text)) !== null) {
           foundMatches.push({
@@ -147,7 +152,26 @@ export function RegexTester() {
       setError(err instanceof Error ? err.message : "Invalid regex pattern");
       setMatches([]);
     }
+  };
+
+  useEffect(() => {
+    testRegex();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pattern, text, flags]);
+
+  const clearAll = () => {
+    setPattern("");
+    setText("");
+    setMatches([]);
+    setError("");
+    setWarnings([]);
+  };
+
+  const loadSample = (sampleKey: keyof typeof sampleData) => {
+    const sample = sampleData[sampleKey];
+    setPattern(sample.pattern);
+    setText(sample.text);
+  };
 
   const copyMatches = async () => {
     const matchText = matches.map((m) => m.match).join("\n");
@@ -155,105 +179,87 @@ export function RegexTester() {
     toast.success("Matches copied to clipboard!");
   };
 
-  const clearAll = () => {
-    setPattern("");
-    setText("");
-    setMatches([]);
-    setError("");
-  };
-
-  const loadSample = () => {
-    setPattern("\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b");
-    setText(`Contact us at:
-support@example.com
-admin@test.org
-user123@domain.co.uk
-invalid-email@
-another@valid-email.com`);
-  };
-
-  const flagDescriptions = {
-    global: "Global (g)",
-    ignoreCase: "Ignore Case (i)",
-    multiline: "Multiline (m)",
-    dotAll: "Dot All (s)",
-    unicode: "Unicode (u)",
-    sticky: "Sticky (y)",
-  };
-
-  const flagTooltips = {
-    global: "Find all matches - Without this, only first match is found",
-    ignoreCase:
-      "Case insensitive matching - Ignore uppercase/lowercase differences",
-    multiline:
-      "Multiline mode - ^ and $ match line boundaries instead of string boundaries",
-    dotAll: "Dot matches newlines - . matches \\n and \\r characters",
-    unicode: "Unicode mode - Proper Unicode handling for character classes",
-    sticky: "Sticky mode - Match only at lastIndex position (advanced usage)",
-  };
-
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        {/* Controls */}
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={clearAll} variant="outline">
-            <Trash2 className="h-4 w-4 mr-2" />
-            Clear All
-          </Button>
-          <Button onClick={loadSample} variant="outline">
-            Load Email Example
-          </Button>
-          <Button
-            onClick={copyMatches}
-            variant="outline"
-            disabled={matches.length === 0}
-          >
-            <Copy className="h-4 w-4 mr-2" />
-            Copy Matches
-          </Button>
-        </div>
+        <ToolHeader
+          title="Regex Tester"
+          description="Test and validate regular expressions with real-time matching"
+          icon={Code}
+        />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Pattern & Flags */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Regular Expression</CardTitle>
-              <CardDescription>
-                Enter your regex pattern and configure flags
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="pattern">Pattern</Label>
-                <Input
-                  id="pattern"
-                  value={pattern}
-                  onChange={(e) => setPattern(e.target.value)}
-                  placeholder="Enter regex pattern..."
-                  className={`font-mono ${
-                    !isValid ? "border-destructive" : ""
-                  }`}
-                />
-                {!isValid && (
-                  <p className="text-destructive text-sm">{error}</p>
-                )}
-                {warnings.length > 0 && (
-                  <div className="space-y-1">
-                    {warnings.map((warning, index) => (
-                      <p
-                        key={index}
-                        className="text-orange-600 dark:text-orange-400 text-sm"
-                      >
-                        ⚠️ {warning}
-                      </p>
-                    ))}
-                  </div>
-                )}
+        <QuickActions
+          actions={[
+            {
+              id: "email",
+              label: "Email Pattern",
+              onClick: () => loadSample("email"),
+            },
+            {
+              id: "phone",
+              label: "Phone Numbers",
+              onClick: () => loadSample("phoneNumbers"),
+            },
+            {
+              id: "urls",
+              label: "URL Pattern",
+              onClick: () => loadSample("urls"),
+            },
+            {
+              id: "test",
+              label: "Test Pattern",
+              onClick: testRegex,
+              variant: "default" as const,
+            },
+            {
+              id: "clear",
+              label: "Clear All",
+              onClick: clearAll,
+              variant: "outline" as const,
+            },
+          ]}
+        />
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Pattern Input */}
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="pattern" className="text-sm font-medium">
+                Regular Expression Pattern
+              </Label>
+              <Input
+                id="pattern"
+                value={pattern}
+                onChange={(e) => setPattern(e.target.value)}
+                placeholder="Enter regex pattern..."
+                className={`font-mono mt-2 ${!isValid ? "border-destructive" : ""}`}
+              />
+              <div className="mt-2 text-sm text-muted-foreground">
+                <p className="font-medium">Generated Regex:</p>
+                <code className="text-xs bg-muted p-1 rounded">
+                  /{pattern}/
+                  {Object.entries(flags)
+                    .filter(([, enabled]) => enabled)
+                    .map(([flag]) => {
+                      switch (flag) {
+                        case "global": return "g";
+                        case "ignoreCase": return "i";
+                        case "multiline": return "m";
+                        case "dotAll": return "s";
+                        case "unicode": return "u";
+                        case "sticky": return "y";
+                        default: return "";
+                      }
+                    })
+                    .join("")}
+                </code>
               </div>
+            </div>
 
-              <div className="flex flex-col gap-3">
-                <Label className="pb-2">Flags</Label>
+            {/* Flags */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Flags</Label>
+              <div className="grid grid-cols-2 gap-3">
                 {Object.entries(flagDescriptions).map(([key, description]) => (
                   <div key={key} className="flex items-center justify-between">
                     <Tooltip>
@@ -276,72 +282,37 @@ another@valid-email.com`);
                   </div>
                 ))}
               </div>
+            </div>
 
-              <div className="text-sm text-muted-foreground">
-                <p className="font-medium">Generated Regex:</p>
-                <code className="text-xs bg-muted p-1 rounded">
-                  /{pattern}/
-                  {Object.entries(flags)
-                    .filter(([, enabled]) => enabled)
-                    .map(([flag]) => {
-                      switch (flag) {
-                        case "global":
-                          return "g";
-                        case "ignoreCase":
-                          return "i";
-                        case "multiline":
-                          return "m";
-                        case "dotAll":
-                          return "s";
-                        case "unicode":
-                          return "u";
-                        case "sticky":
-                          return "y";
-                        default:
-                          return "";
-                      }
-                    })
-                    .join("")}
-                </code>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Test Text */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Test Text</CardTitle>
-              <CardDescription>
-                Enter the text to test against your regex
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Textarea
+            {/* Test Text */}
+            <div>
+              <Label className="text-sm font-medium">
+                Test Text
+              </Label>
+              <ResponsiveTextArea
                 value={text}
-                onChange={(e) => setText(e.target.value)}
+                onChange={setText}
                 placeholder="Enter text to test..."
-                className="min-h-[400px] font-mono text-sm textarea-enhanced"
+                minHeight={200}
+                showCharacterCount={true}
+                className="font-mono mt-2"
               />
-              <div className="text-sm text-muted-foreground mt-2">
-                Characters: {text.length}
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Results */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Matches</span>
-                <Badge variant={matches.length > 0 ? "default" : "secondary"}>
-                  {matches.length}
-                </Badge>
-              </CardTitle>
-              <CardDescription>
-                Regex matches found in the test text
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+          <div className="space-y-4">
+            <ValidationMessages
+              errors={!isValid ? [error] : []}
+              warnings={warnings}
+            />
+
+            <ResultCard
+              title={`Matches (${matches.length})`}
+              status={matches.length > 0 ? "success" : "info"}
+              onCopy={matches.length > 0 ? copyMatches : undefined}
+              copyLabel="Copy All Matches"
+            >
               <div className="space-y-3 max-h-[400px] overflow-y-auto">
                 {matches.length === 0 ? (
                   <p className="text-muted-foreground text-sm text-center py-8">
@@ -361,9 +332,11 @@ another@valid-email.com`);
                           Index: {match.index}
                         </span>
                       </div>
-                      <div className="font-mono text-sm bg-muted p-2 rounded">
-                        {match.match}
-                      </div>
+                      <CopyableResult
+                        value={match.match}
+                        fontFamily="mono"
+                        rows={1}
+                      />
                       {match.groups && match.groups.length > 0 && (
                         <div className="space-y-1">
                           <p className="text-xs font-medium">
@@ -383,405 +356,50 @@ another@valid-email.com`);
                   ))
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </ResultCard>
+          </div>
         </div>
 
         {/* Quick Reference */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Reference</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-                <div className="space-y-2">
-                  <h4 className="font-medium">Character Classes</h4>
-                  <div className="space-y-1 font-mono text-xs">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="cursor-help">
-                          <code>.</code> - Any character
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Matches any single character except newline</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="cursor-help">
-                          <code>\d</code> - Digit (0-9)
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Matches any digit character (0-9)</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="cursor-help">
-                          <code>\w</code> - Word character
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Matches any word character (a-z, A-Z, 0-9, _)</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="cursor-help">
-                          <code>\s</code> - Whitespace
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>
-                          Matches any whitespace character (space, tab, newline)
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="cursor-help">
-                          <code>[abc]</code> - Character set
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>
-                          Matches any one of the characters inside the brackets
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="cursor-help">
-                          <code>[^abc]</code> - Negated set
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Matches any character NOT inside the brackets</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <h4 className="font-medium">Quantifiers</h4>
-                  <div className="space-y-1 font-mono text-xs">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="cursor-help">
-                          <code>*</code> - 0 or more
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>
-                          Matches 0 or more of the preceding character/group
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="cursor-help">
-                          <code>+</code> - 1 or more
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>
-                          Matches 1 or more of the preceding character/group
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="cursor-help">
-                          <code>?</code> - 0 or 1
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>
-                          Matches 0 or 1 of the preceding character/group
-                          (optional)
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="cursor-help">
-                          <code>{`{n}`}</code> - Exactly n
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>
-                          Matches exactly n occurrences of the preceding
-                          character/group
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="cursor-help">
-                          <code>{`{n,m}`}</code> - Between n and m
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>
-                          Matches between n and m occurrences of the preceding
-                          character/group
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="cursor-help">
-                          <code>{`{n,}`}</code> - n or more
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>
-                          Matches n or more occurrences of the preceding
-                          character/group
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <h4 className="font-medium">Anchors</h4>
-                  <div className="space-y-1 font-mono text-xs">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="cursor-help">
-                          <code>^</code> - Start of string
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>
-                          Matches the start of the string (or line in multiline
-                          mode)
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="cursor-help">
-                          <code>$</code> - End of string
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>
-                          Matches the end of the string (or line in multiline
-                          mode)
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="cursor-help">
-                          <code>\b</code> - Word boundary
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>
-                          Matches a word boundary (between word and non-word
-                          characters)
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="cursor-help">
-                          <code>\B</code> - Non-word boundary
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>
-                          Matches a non-word boundary (between two word or two
-                          non-word characters)
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="cursor-help">
-                          <code>(?=...)</code> - Positive lookahead
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>
-                          Matches a group after the main expression without
-                          including it in the result
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="cursor-help">
-                          <code>(?!...)</code> - Negative lookahead
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>
-                          Matches if the group does NOT match after the main
-                          expression
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                </div>
-              </div>
-
-              {/* Flag Conflicts Warning */}
-              <div className="border-t pt-4">
-                <h4 className="font-medium pb-6">
-                  Flag Combinations & Conflicts
-                </h4>
-                <div className="space-y-2 text-sm">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-start space-x-2 cursor-help">
-                        <span className="text-red-500">⚠️</span>
-                        <div>
-                          <span className="font-medium text-red-600 dark:text-red-400">
-                            Global (g) + Sticky (y):
-                          </span>
-                          <span className="text-muted-foreground ml-2">
-                            Can cause conflicts. Use with caution.
-                          </span>
-                        </div>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>
-                        Sticky flag can behave unpredictably with global flag.
-                        The sticky flag requires matching at a specific position
-                        (lastIndex), while global flag finds all matches.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-start space-x-2 cursor-help">
-                        <span className="text-yellow-500">⚠️</span>
-                        <div>
-                          <span className="font-medium text-yellow-600 dark:text-yellow-400">
-                            Sticky (y) alone:
-                          </span>
-                          <span className="text-muted-foreground ml-2">
-                            Requires careful lastIndex handling.
-                          </span>
-                        </div>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>
-                        Sticky flag only matches at the exact position specified
-                        by lastIndex. You need to manually manage the lastIndex
-                        property.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-start space-x-2 cursor-help">
-                        <span className="text-blue-500">ℹ️</span>
-                        <div>
-                          <span className="font-medium text-blue-600 dark:text-blue-400">
-                            Multiline (m) + DotAll (s):
-                          </span>
-                          <span className="text-muted-foreground ml-2">
-                            Compatible. They affect different behaviors.
-                          </span>
-                        </div>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>
-                        Multiline affects ^ and $ anchors to match line
-                        boundaries. DotAll affects . to match newlines. These
-                        work together without conflicts.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-start space-x-2 cursor-help">
-                        <span className="text-green-500">✅</span>
-                        <div>
-                          <span className="font-medium text-green-600 dark:text-green-400">
-                            Unicode (u) + others:
-                          </span>
-                          <span className="text-muted-foreground ml-2">
-                            Fully compatible with all flags.
-                          </span>
-                        </div>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>
-                        Unicode flag enables proper Unicode support and is fully
-                        compatible with all other flags. Recommended for
-                        international text.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
+        <ResultCard
+          title="Quick Reference"
+          status="info"
+          description="Common regex patterns and syntax"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+            <div className="space-y-2">
+              <h4 className="font-medium">Character Classes</h4>
+              <div className="space-y-1 font-mono text-xs">
+                <div><code>\\d</code> - Digits (0-9)</div>
+                <div><code>\\w</code> - Word characters (a-z, A-Z, 0-9, _)</div>
+                <div><code>\\s</code> - Whitespace</div>
+                <div><code>.</code> - Any character (except newline)</div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* How to Use Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>How to Use the Regex Tester</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-medium mb-3">Step-by-Step Guide</h4>
-                <ol className="space-y-2 text-sm list-decimal list-inside">
-                  <li>
-                    Enter your regular expression pattern in the Pattern field
-                  </li>
-                  <li>Paste or type your test text in the Test Text area</li>
-                  <li>Configure flags as needed (Global, Ignore Case, etc.)</li>
-                  <li>View real-time matches in the Matches panel</li>
-                  <li>
-                    Copy results or use the sample email pattern to get started
-                  </li>
-                </ol>
-              </div>
-              <div>
-                <h4 className="font-medium mb-3">Pro Tips</h4>
-                <ul className="space-y-2 text-sm list-disc list-inside text-muted-foreground">
-                  <li>Use capturing groups ( ) to extract specific parts</li>
-                  <li>
-                    Test edge cases with empty strings and special characters
-                  </li>
-                  <li>
-                    Enable Global flag to find all matches, not just the first
-                  </li>
-                  <li>Use word boundaries \\b for precise word matching</li>
-                  <li>Escape special characters with backslash when needed</li>
-                </ul>
+            <div className="space-y-2">
+              <h4 className="font-medium">Quantifiers</h4>
+              <div className="space-y-1 font-mono text-xs">
+                <div><code>*</code> - 0 or more</div>
+                <div><code>+</code> - 1 or more</div>
+                <div><code>?</code> - 0 or 1</div>
+                <div><code>{"{n}"}</code> - Exactly n</div>
+                <div><code>{"{n,m}"}</code> - Between n and m</div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* FAQ Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Frequently Asked Questions</CardTitle>
-            <CardDescription>
-              Common questions about regex testing and pattern matching
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <FAQSection items={regexTesterFAQ} />
-          </CardContent>
-        </Card>
+            <div className="space-y-2">
+              <h4 className="font-medium">Anchors</h4>
+              <div className="space-y-1 font-mono text-xs">
+                <div><code>^</code> - Start of string</div>
+                <div><code>$</code> - End of string</div>
+                <div><code>\\b</code> - Word boundary</div>
+                <div><code>\\B</code> - Non-word boundary</div>
+              </div>
+            </div>
+          </div>
+        </ResultCard>
       </div>
     </TooltipProvider>
   );
 }
+
+export default RegexTester;

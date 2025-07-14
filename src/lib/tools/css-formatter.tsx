@@ -1,16 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { FileText, Download } from "lucide-react";
+import { toast } from "sonner";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+  ToolHeader,
+  QuickActions,
+  ResultCard,
+  CopyableResult,
+  ResponsiveTextArea,
+  ModeTabs,
+} from "@/components/layout";
 import {
   Select,
   SelectContent,
@@ -18,9 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Copy, Download, FileText, Minimize, Maximize } from "lucide-react";
-import { toast } from "sonner";
+import { Label } from "@/components/ui/label";
 
 export const metadata = {
   id: "css-formatter",
@@ -95,38 +93,13 @@ export default function CssFormatter() {
     }
   };
 
-  const copyOutput = () => {
-    navigator.clipboard.writeText(output);
-    toast.success("Copied to clipboard!");
-  };
-
-  const downloadOutput = () => {
-    const blob = new Blob([output], { type: "text/css" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = mode === "format" ? "formatted.css" : "minified.css";
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Downloaded!");
-  };
-
-  const clearAll = () => {
-    setInput("");
-    setOutput("");
-  };
-
-  const loadExample = (example: string) => {
-    setInput(example);
-  };
-
   const examples = [
     {
       name: "Basic CSS",
       code: ".header { color: red; background: blue; } .footer { margin: 10px; padding: 5px; }",
     },
     {
-      name: "Responsive CSS",
+      name: "Responsive CSS", 
       code: "@media (max-width: 768px) { .container { width: 100%; } .sidebar { display: none; } }",
     },
     {
@@ -139,48 +112,113 @@ export default function CssFormatter() {
     },
   ];
 
+  const loadExample = (code: string) => {
+    setInput(code);
+    toast.success("Example loaded!");
+  };
+
+  const copyOutput = async () => {
+    await navigator.clipboard.writeText(output);
+    toast.success("Copied to clipboard!");
+  };
+
+  const downloadOutput = () => {
+    const blob = new Blob([output], { type: "text/css" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `formatted-styles.css`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Downloaded!");
+  };
+
+  const clearAll = () => {
+    setInput("");
+    setOutput("");
+  };
+
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            CSS Formatter
-          </CardTitle>
-          <CardDescription>
-            Format, beautify, or minify CSS code with customizable indentation
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="mode">Mode</Label>
-              <Select
-                value={mode}
-                onValueChange={(value: "format" | "minify") => setMode(value)}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Select mode" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="format">Format</SelectItem>
-                  <SelectItem value="minify">Minify</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      <ToolHeader
+        title="CSS Formatter"
+        description="Format, beautify, or minify CSS code with customizable indentation"
+        icon={FileText}
+      />
 
-            {mode === "format" && (
-              <>
+      <ModeTabs
+        value={mode}
+        onValueChange={(value) => setMode(value as "format" | "minify")}
+        options={[
+          {
+            value: "format",
+            label: "Format",
+            description: "Beautify CSS with proper indentation and formatting",
+          },
+          {
+            value: "minify",
+            label: "Minify",
+            description: "Compress CSS by removing whitespace and unnecessary characters",
+          },
+        ]}
+      />
+
+      <QuickActions
+        actions={[
+          {
+            id: "format",
+            label: mode === "format" ? "Format CSS" : "Minify CSS",
+            onClick: formatCss,
+            variant: "default" as const,
+          },
+          {
+            id: "clear",
+            label: "Clear All",
+            onClick: clearAll,
+            variant: "outline" as const,
+          },
+          ...examples.map(example => ({
+            id: `example-${example.name.toLowerCase().replace(/\s+/g, '-')}`,
+            label: example.name,
+            onClick: () => loadExample(example.code),
+            variant: "outline" as const,
+          })),
+        ]}
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Input */}
+        <div className="space-y-4">
+          <div>
+            <Label className="block text-sm font-medium mb-2">Input CSS</Label>
+            <ResponsiveTextArea
+              value={input}
+              onChange={setInput}
+              placeholder="Enter CSS code here..."
+              minHeight={300}
+              showCharacterCount={true}
+              allowFileUpload={true}
+              acceptedFileTypes=".css"
+            />
+          </div>
+
+          {mode === "format" && (
+            <ResultCard
+              title="Format Settings"
+              description="Customize CSS formatting options"
+              status="info"
+            >
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="indent-size">Indent Size</Label>
                   <Select value={indentSize} onValueChange={setIndentSize}>
-                    <SelectTrigger className="w-[120px]">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="2">2</SelectItem>
-                      <SelectItem value="4">4</SelectItem>
-                      <SelectItem value="8">8</SelectItem>
+                      <SelectItem value="2">2 spaces</SelectItem>
+                      <SelectItem value="4">4 spaces</SelectItem>
+                      <SelectItem value="8">8 spaces</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -188,7 +226,7 @@ export default function CssFormatter() {
                 <div className="space-y-2">
                   <Label htmlFor="indent-type">Indent Type</Label>
                   <Select value={indentType} onValueChange={setIndentType}>
-                    <SelectTrigger className="w-[120px]">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -197,92 +235,72 @@ export default function CssFormatter() {
                     </SelectContent>
                   </Select>
                 </div>
-              </>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="examples">Examples</Label>
-            <div className="flex flex-wrap gap-2">
-              {examples.map((example, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => loadExample(example.code)}
-                >
-                  {example.name}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="input">Input CSS</Label>
-            <Textarea
-              id="input"
-              placeholder="Enter CSS code here..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              className="min-h-[200px] font-mono text-sm tool-input textarea-enhanced"
-            />
-          </div>
-
-          <div className="flex gap-2">
-            <Button onClick={formatCss} className="flex items-center gap-2">
-              {mode === "format" ? (
-                <Maximize className="h-4 w-4" />
-              ) : (
-                <Minimize className="h-4 w-4" />
-              )}
-              {mode === "format" ? "Format" : "Minify"}
-            </Button>
-            <Button variant="outline" onClick={clearAll}>
-              Clear
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {output && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              {mode === "format" ? "Formatted" : "Minified"} CSS
-            </CardTitle>
-            <CardDescription>
-              <div className="flex gap-2">
-                <Badge variant="outline">
-                  {output.split("\n").length} lines
-                </Badge>
-                <Badge variant="outline">{output.length} characters</Badge>
               </div>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={copyOutput}>
-                <Copy className="h-4 w-4 mr-2" />
-                Copy
-              </Button>
-              <Button variant="outline" size="sm" onClick={downloadOutput}>
-                <Download className="h-4 w-4 mr-2" />
-                Download
-              </Button>
-            </div>
+            </ResultCard>
+          )}
+        </div>
 
-            <div className="relative">
-              <Textarea
+        {/* Output */}
+        <div className="space-y-4">
+          <ResultCard
+            title={mode === "format" ? "Formatted CSS" : "Minified CSS"}
+            description={`${output.split("\n").length} lines, ${output.length} characters`}
+            status={output ? "success" : "info"}
+            onCopy={output ? copyOutput : undefined}
+            copyLabel="Copy CSS"
+          >
+            <div className="space-y-2">
+              {output && (
+                <div className="flex gap-2 mb-4">
+                  <Download
+                    className="h-4 w-4 cursor-pointer text-muted-foreground hover:text-foreground"
+                    onClick={downloadOutput}
+                  />
+                </div>
+              )}
+              <CopyableResult
                 value={output}
-                readOnly
-                className="min-h-[200px] font-mono text-sm tool-output textarea-enhanced"
-                placeholder="Formatted CSS will appear here..."
+                placeholder={`${mode === "format" ? "Formatted" : "Minified"} CSS will appear here...`}
+                fontFamily="mono"
+                rows={12}
               />
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </ResultCard>
+        </div>
+      </div>
+
+      {/* Information */}
+      <ResultCard
+        title="About CSS Formatting"
+        status="info"
+        description="Learn about CSS formatting and optimization"
+      >
+        <div className="space-y-4 text-sm text-muted-foreground">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="font-medium mb-2">Format Benefits</p>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>Improved code readability</li>
+                <li>Consistent indentation</li>
+                <li>Better debugging experience</li>
+                <li>Easier maintenance</li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-medium mb-2">Minify Benefits</p>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>Reduced file size</li>
+                <li>Faster page load times</li>
+                <li>Lower bandwidth usage</li>
+                <li>Production optimization</li>
+              </ul>
+            </div>
+          </div>
+          <p className="text-xs bg-muted p-2 rounded">
+            <strong>Tip:</strong> Use formatted CSS during development and minified CSS for production.
+          </p>
+        </div>
+      </ResultCard>
     </div>
   );
 }

@@ -2,26 +2,21 @@
 
 import { useState } from "react";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Copy, Download, FileText, AlertTriangle } from "lucide-react";
+import { FileText } from "lucide-react";
 import { toast } from "sonner";
 import {
-  ToolContainer,
+  ToolHeader,
+  QuickActions,
+  ResultCard,
+  ValidationMessages,
+  CopyableResult,
   ResponsiveTextArea,
-  ActionButtons,
   SettingsPanel,
   FormField,
   ModeTabs,
@@ -184,6 +179,19 @@ export default function HtmlFormatter() {
     }
   };
 
+  const sampleData = {
+    basic: `<div><h1>Title</h1><p>This is a paragraph with <strong>bold</strong> and <em>italic</em> text.</p><ul><li>Item 1</li><li>Item 2</li></ul></div>`,
+    form: `<form><div><label for="name">Name:</label><input type="text" id="name" required></div><div><label for="email">Email:</label><input type="email" id="email" required></div><button type="submit">Submit</button></form>`,
+    table: `<table><thead><tr><th>Name</th><th>Age</th><th>City</th></tr></thead><tbody><tr><td>John</td><td>30</td><td>New York</td></tr><tr><td>Jane</td><td>25</td><td>London</td></tr></tbody></table>`,
+  };
+
+  const clearInput = () => {
+    setInput("");
+    setOutput("");
+    setErrors([]);
+    setWarnings([]);
+  };
+
   const downloadFile = (content: string, filename: string) => {
     const blob = new Blob([content], { type: "text/html" });
     const url = URL.createObjectURL(blob);
@@ -197,31 +205,51 @@ export default function HtmlFormatter() {
     toast.success("File downloaded!");
   };
 
-  const exampleHtmls = [
-    {
-      name: "Basic HTML",
-      content: `<div><h1>Title</h1><p>This is a paragraph with <strong>bold</strong> and <em>italic</em> text.</p><ul><li>Item 1</li><li>Item 2</li></ul></div>`,
-    },
-    {
-      name: "HTML Form",
-      content: `<form><div><label for="name">Name:</label><input type="text" id="name" required></div><div><label for="email">Email:</label><input type="email" id="email" required></div><button type="submit">Submit</button></form>`,
-    },
-    {
-      name: "HTML Table",
-      content: `<table><thead><tr><th>Name</th><th>Age</th><th>City</th></tr></thead><tbody><tr><td>John</td><td>30</td><td>New York</td></tr><tr><td>Jane</td><td>25</td><td>London</td></tr></tbody></table>`,
-    },
-  ];
-
   const tabOptions = [
     { value: "input", label: "Input" },
     { value: "output", label: "Formatted" },
   ];
 
   return (
-    <ToolContainer
-      title="HTML Formatter"
-      description="Format and beautify HTML code with proper indentation and validation"
-    >
+    <div className="space-y-6">
+      <ToolHeader
+        title="HTML Formatter"
+        description="Format and beautify HTML code with proper indentation and validation"
+        icon={FileText}
+      />
+
+      <QuickActions
+        actions={[
+          {
+            id: "basic",
+            label: "Basic HTML",
+            onClick: () => setInput(sampleData.basic),
+          },
+          {
+            id: "form",
+            label: "HTML Form",
+            onClick: () => setInput(sampleData.form),
+          },
+          {
+            id: "table",
+            label: "HTML Table",
+            onClick: () => setInput(sampleData.table),
+          },
+          {
+            id: "format",
+            label: "Format HTML",
+            onClick: formatHtml,
+            variant: "default" as const,
+          },
+          {
+            id: "clear",
+            label: "Clear",
+            onClick: clearInput,
+            variant: "outline" as const,
+          },
+        ]}
+      />
+
       <ModeTabs
         value={activeTab}
         onValueChange={setActiveTab}
@@ -229,14 +257,11 @@ export default function HtmlFormatter() {
       />
 
       {activeTab === "input" ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>HTML Input</CardTitle>
-            <CardDescription>
-              Enter your HTML code to format and validate
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              HTML Input
+            </label>
             <ResponsiveTextArea
               placeholder="Enter your HTML code here...
 Example: <div><p>Hello World</p></div>"
@@ -246,103 +271,32 @@ Example: <div><p>Hello World</p></div>"
               showCharacterCount={true}
               showLineCount={true}
             />
-
-            <div className="flex gap-2 flex-wrap">
-              {exampleHtmls.map((example, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setInput(example.content)}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  {example.name}
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              Formatted Output
-              <ActionButtons
-                buttons={[
-                  {
-                    icon: Copy,
-                    label: "Copy",
-                    onClick: () => copyToClipboard(output),
-                    disabled: !output,
-                  },
-                  {
-                    icon: Download,
-                    label: "Download",
-                    onClick: () => downloadFile(output, "formatted.html"),
-                    disabled: !output,
-                  },
-                ]}
-              />
-            </CardTitle>
-            <CardDescription>
-              Your formatted and validated HTML code
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveTextArea
+        <div className="space-y-4">
+          <ResultCard
+            title="Formatted Output"
+            status={output ? "success" : "info"}
+            description="Your formatted and validated HTML code"
+            onCopy={() => copyToClipboard(output)}
+            onDownload={() => downloadFile(output, "formatted.html")}
+            copyLabel="Copy HTML"
+            downloadLabel="Download HTML"
+          >
+            <CopyableResult
               value={output}
-              onChange={() => {}} // Read-only
               placeholder="Formatted HTML will appear here..."
-              minHeight={300}
-              readOnly={true}
-              showCharacterCount={true}
-              showLineCount={true}
+              fontFamily="mono"
+              rows={15}
             />
+          </ResultCard>
 
-            {/* Validation Results */}
-            {(errors.length > 0 || warnings.length > 0) && (
-              <div className="mt-4 space-y-2">
-                {errors.length > 0 && (
-                  <div className="p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded">
-                    <div className="flex items-center gap-2 text-red-600 dark:text-red-400 font-medium mb-2">
-                      <AlertTriangle className="h-4 w-4" />
-                      Errors Found:
-                    </div>
-                    <ul className="text-sm space-y-1">
-                      {errors.map((error, index) => (
-                        <li
-                          key={index}
-                          className="text-red-600 dark:text-red-400"
-                        >
-                          • {error}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {warnings.length > 0 && (
-                  <div className="p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded">
-                    <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 font-medium mb-2">
-                      <AlertTriangle className="h-4 w-4" />
-                      Warnings:
-                    </div>
-                    <ul className="text-sm space-y-1">
-                      {warnings.map((warning, index) => (
-                        <li
-                          key={index}
-                          className="text-yellow-600 dark:text-yellow-400"
-                        >
-                          • {warning}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          <ValidationMessages
+            errors={errors}
+            warnings={warnings}
+          />
+        </div>
       )}
 
       {/* Settings */}
@@ -378,43 +332,35 @@ Example: <div><p>Hello World</p></div>"
             </SelectContent>
           </Select>
         </FormField>
-
-        <div className="pt-4">
-          <Button onClick={formatHtml} className="w-full">
-            Format HTML
-          </Button>
-        </div>
       </SettingsPanel>
 
       {/* Features */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Features</CardTitle>
-          <CardDescription>What this HTML formatter can do</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div className="space-y-2">
-              <h4 className="font-medium text-green-600">✅ Formatting</h4>
-              <ul className="space-y-1 text-muted-foreground">
-                <li>• Proper indentation</li>
-                <li>• Clean whitespace</li>
-                <li>• Consistent structure</li>
-                <li>• Customizable indent size</li>
-              </ul>
-            </div>
-            <div className="space-y-2">
-              <h4 className="font-medium text-blue-600">🔍 Validation</h4>
-              <ul className="space-y-1 text-muted-foreground">
-                <li>• Tag matching</li>
-                <li>• Unclosed tag detection</li>
-                <li>• Accessibility warnings</li>
-                <li>• Best practice suggestions</li>
-              </ul>
-            </div>
+      <ResultCard
+        title="Features"
+        description="What this HTML formatter can do"
+        status="info"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div className="space-y-2">
+            <h4 className="font-medium text-green-600">✅ Formatting</h4>
+            <ul className="space-y-1 text-muted-foreground">
+              <li>• Proper indentation</li>
+              <li>• Clean whitespace</li>
+              <li>• Consistent structure</li>
+              <li>• Customizable indent size</li>
+            </ul>
           </div>
-        </CardContent>
-      </Card>
-    </ToolContainer>
+          <div className="space-y-2">
+            <h4 className="font-medium text-blue-600">🔍 Validation</h4>
+            <ul className="space-y-1 text-muted-foreground">
+              <li>• Tag matching</li>
+              <li>• Unclosed tag detection</li>
+              <li>• Accessibility warnings</li>
+              <li>• Best practice suggestions</li>
+            </ul>
+          </div>
+        </div>
+      </ResultCard>
+    </div>
   );
 }

@@ -1,18 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { FileText } from "lucide-react";
 import {
-  ToolContainer,
-  ResponsiveTextArea,
-  StatsDisplay,
+  ToolHeader,
+  QuickActions,
+  ResultCard,
 } from "@/components/layout";
 
 export const metadata = {
@@ -84,50 +79,6 @@ export default function WordCounter() {
 
   const wordFrequency = getWordFrequency();
 
-  // Stats configuration for StatsDisplay component
-  const statsConfig = [
-    {
-      label: "Characters",
-      value: stats.characters.toString(),
-      description: "Total characters including spaces",
-    },
-    {
-      label: "Characters (no spaces)",
-      value: stats.charactersNoSpaces.toString(),
-      description: "Characters excluding whitespace",
-    },
-    {
-      label: "Words",
-      value: stats.words.toString(),
-      description: "Word count based on whitespace separation",
-    },
-    {
-      label: "Sentences",
-      value: stats.sentences.toString(),
-      description: "Estimated sentence count",
-    },
-    {
-      label: "Paragraphs",
-      value: stats.paragraphs.toString(),
-      description: "Paragraph count based on line breaks",
-    },
-    {
-      label: "Lines",
-      value: stats.lines.toString(),
-      description: "Number of lines in text",
-    },
-    {
-      label: "Reading Time",
-      value: `${stats.readingTime} min`,
-      description: "Estimated reading time (200 words/min)",
-    },
-    {
-      label: "Speaking Time",
-      value: `${stats.speakingTime} min`,
-      description: "Estimated speaking time (150 words/min)",
-    },
-  ];
-
   // Example texts for different languages
   const languageExamples = [
     {
@@ -173,134 +124,189 @@ export default function WordCounter() {
   ];
 
   return (
-    <ToolContainer
-      title="Word Counter"
-      description="Analyze your text with detailed statistics including word count, reading time, and more. Supports multiple languages."
-    >
-      {/* Main Text Input */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Text Analysis</CardTitle>
-          <CardDescription>
-            Enter or paste your text below for comprehensive analysis
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveTextArea
-            placeholder="Enter or paste your text here... 
+    <div className="space-y-6">
+      <ToolHeader
+        title="Word Counter"
+        description="Analyze your text with detailed statistics including word count, reading time, and more. Supports multiple languages."
+        icon={FileText}
+      />
+
+      <QuickActions
+        actions={[
+          {
+            id: "clear",
+            label: "Clear Text",
+            onClick: () => setText(""),
+            variant: "outline" as const,
+          },
+          ...languageExamples.slice(0, 4).map((example) => ({
+            id: example.name.toLowerCase(),
+            label: example.name,
+            onClick: () => setText(example.text),
+          })),
+        ]}
+      />
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Text Input Section */}
+        <div className="space-y-4">
+          <ResultCard
+            title="Text Analysis"
+            description="Enter or paste your text below for comprehensive analysis"
+            status="info"
+          >
+            <div className="space-y-4">
+              <Textarea
+                placeholder="Enter or paste your text here... 
 Nhập hoặc dán văn bản của bạn vào đây...
 例: テキストをここに入力してください..."
-            value={text}
-            onChange={(value) => setText(value)}
-            minHeight={200}
-            showCharacterCount={true}
-            showWordCount={true}
-            showLineCount={true}
-          />
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                className="min-h-[200px] font-mono text-sm"
+              />
 
-          {/* Language Examples */}
-          <div className="mt-4 space-y-3">
-            <h4 className="text-sm font-medium">Try different languages:</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
-              {languageExamples.map((example, index) => (
-                <button
-                  key={index}
-                  onClick={() => setText(example.text)}
-                  className="p-2 text-left text-xs border rounded hover:bg-accent transition-colors"
-                >
-                  <div className="font-medium">{example.name}</div>
-                  <div className="text-muted-foreground">
-                    {example.category}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Statistics Display */}
-      <StatsDisplay stats={statsConfig} />
-
-      {/* Word Frequency Analysis */}
-      {wordFrequency.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Most Frequent Words</CardTitle>
-            <CardDescription>
-              Top 10 most commonly used words in your text
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {wordFrequency.map(([word, count], index) => (
-                <div
-                  key={word}
-                  className="flex items-center justify-between p-2 border rounded"
-                >
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">{index + 1}</Badge>
-                    <span className="font-mono">{word}</span>
-                  </div>
-                  <Badge>{count}</Badge>
+              {/* Language Examples */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium">Try different languages:</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {languageExamples.map((example, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setText(example.text)}
+                      className="p-2 text-left text-xs border rounded hover:bg-accent transition-colors"
+                    >
+                      <div className="font-medium">{example.name}</div>
+                      <div className="text-muted-foreground">
+                        {example.category}
+                      </div>
+                    </button>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </ResultCard>
+        </div>
+
+        {/* Statistics Section */}
+        <div className="space-y-4">
+          <ResultCard
+            title="Text Statistics"
+            description="Comprehensive analysis of your text"
+            status={text ? "success" : "info"}
+          >
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div className="text-center p-3 border rounded">
+                  <div className="text-2xl font-bold text-blue-600">{stats.characters}</div>
+                  <div className="text-sm text-muted-foreground">Characters</div>
+                </div>
+                <div className="text-center p-3 border rounded">
+                  <div className="text-2xl font-bold text-green-600">{stats.words}</div>
+                  <div className="text-sm text-muted-foreground">Words</div>
+                </div>
+                <div className="text-center p-3 border rounded">
+                  <div className="text-2xl font-bold text-purple-600">{stats.sentences}</div>
+                  <div className="text-sm text-muted-foreground">Sentences</div>
+                </div>
+                <div className="text-center p-3 border rounded">
+                  <div className="text-2xl font-bold text-orange-600">{stats.readingTime}</div>
+                  <div className="text-sm text-muted-foreground">Min to Read</div>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="text-center p-3 border rounded">
+                  <div className="text-2xl font-bold text-cyan-600">{stats.charactersNoSpaces}</div>
+                  <div className="text-sm text-muted-foreground">No Spaces</div>
+                </div>
+                <div className="text-center p-3 border rounded">
+                  <div className="text-2xl font-bold text-red-600">{stats.lines}</div>
+                  <div className="text-sm text-muted-foreground">Lines</div>
+                </div>
+                <div className="text-center p-3 border rounded">
+                  <div className="text-2xl font-bold text-indigo-600">{stats.paragraphs}</div>
+                  <div className="text-sm text-muted-foreground">Paragraphs</div>
+                </div>
+                <div className="text-center p-3 border rounded">
+                  <div className="text-2xl font-bold text-pink-600">{stats.speakingTime}</div>
+                  <div className="text-sm text-muted-foreground">Min to Speak</div>
+                </div>
+              </div>
+            </div>
+          </ResultCard>
+
+          {/* Word Frequency Analysis */}
+          {wordFrequency.length > 0 && (
+            <ResultCard
+              title="Most Frequent Words"
+              description="Top 10 most commonly used words in your text"
+              status="success"
+            >
+              <div className="space-y-2">
+                {wordFrequency.map(([word, count], index) => (
+                  <div
+                    key={word}
+                    className="flex items-center justify-between p-2 border rounded"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">{index + 1}</Badge>
+                      <span className="font-mono">{word}</span>
+                    </div>
+                    <Badge>{count}</Badge>
+                  </div>
+                ))}
+              </div>
+            </ResultCard>
+          )}
+        </div>
+      </div>
 
       {/* Language Support Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Multi-Language Support</CardTitle>
-          <CardDescription>
-            This tool accurately counts words and characters across different
-            writing systems
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <h4 className="font-medium text-blue-600 mb-2">
-                Latin-based Languages
-              </h4>
-              <p className="text-muted-foreground">
-                English, Vietnamese, French, Spanish, German, and other European
-                languages that use spaces to separate words.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-medium text-red-600 mb-2">
-                East Asian Languages
-              </h4>
-              <p className="text-muted-foreground">
-                Chinese, Japanese, and Korean. Special handling for
-                character-based writing systems where words may not be separated
-                by spaces.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-medium text-purple-600 mb-2">
-                Right-to-Left Languages
-              </h4>
-              <p className="text-muted-foreground">
-                Arabic, Hebrew, and other RTL scripts with proper character and
-                word counting.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-medium text-green-600 mb-2">
-                Cyrillic Scripts
-              </h4>
-              <p className="text-muted-foreground">
-                Russian, Bulgarian, Serbian, and other Slavic languages using
-                Cyrillic alphabet.
-              </p>
-            </div>
+      <ResultCard
+        title="Multi-Language Support"
+        description="This tool accurately counts words and characters across different writing systems"
+        status="info"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div>
+            <h4 className="font-medium text-blue-600 mb-2">
+              Latin-based Languages
+            </h4>
+            <p className="text-muted-foreground">
+              English, Vietnamese, French, Spanish, German, and other European
+              languages that use spaces to separate words.
+            </p>
           </div>
-        </CardContent>
-      </Card>
-    </ToolContainer>
+          <div>
+            <h4 className="font-medium text-red-600 mb-2">
+              East Asian Languages
+            </h4>
+            <p className="text-muted-foreground">
+              Chinese, Japanese, and Korean. Special handling for
+              character-based writing systems where words may not be separated
+              by spaces.
+            </p>
+          </div>
+          <div>
+            <h4 className="font-medium text-purple-600 mb-2">
+              Right-to-Left Languages
+            </h4>
+            <p className="text-muted-foreground">
+              Arabic, Hebrew, and other RTL scripts with proper character and
+              word counting.
+            </p>
+          </div>
+          <div>
+            <h4 className="font-medium text-green-600 mb-2">
+              Cyrillic Scripts
+            </h4>
+            <p className="text-muted-foreground">
+              Russian, Bulgarian, Serbian, and other Slavic languages using
+              Cyrillic alphabet.
+            </p>
+          </div>
+        </div>
+      </ResultCard>
+    </div>
   );
 }

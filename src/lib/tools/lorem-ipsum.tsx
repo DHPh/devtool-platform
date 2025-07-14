@@ -1,13 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -18,10 +11,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Copy, RefreshCw } from "lucide-react";
-import { TwoColumnToolLayout } from "@/components/layout";
+import { RefreshCw, FileText } from "lucide-react";
 import { toast } from "sonner";
+import {
+  ToolHeader,
+  QuickActions,
+  ResultCard,
+  CopyableResult,
+} from "@/components/layout";
 
 export const metadata = {
   id: "lorem-ipsum",
@@ -216,119 +213,105 @@ export default function LoremIpsum() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Lorem Ipsum Generator</CardTitle>
-          <CardDescription>
-            Generate placeholder text for your designs and mockups
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <TwoColumnToolLayout
-            leftTitle="Generator Settings"
-            leftDescription="Configure your lorem ipsum generation options"
-            leftChildren={
-              <div className="space-y-4">
+      <ToolHeader
+        title="Lorem Ipsum Generator"
+        description="Generate placeholder text for your designs and mockups"
+        icon={FileText}
+      />
+
+      <QuickActions
+        actions={presets.map((preset) => ({
+          id: preset.name.toLowerCase().replace(/\s+/g, "-"),
+          label: preset.name,
+          onClick: () => {
+            setCount(preset.count);
+            setType(preset.type);
+          },
+        }))}
+      />
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Settings Section */}
+        <div className="space-y-4">
+          <ResultCard
+            title="Generator Settings"
+            description="Configure your lorem ipsum generation options"
+            status="info"
+          >
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Quick Presets</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {presets.map((preset) => (
-                      <Button
-                        key={preset.name}
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setCount(preset.count);
-                          setType(preset.type);
-                        }}
-                        className="text-xs"
-                      >
-                        {preset.name}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="count">Count</Label>
-                    <Input
-                      id="count"
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={count}
-                      onChange={(e) => setCount(parseInt(e.target.value) || 1)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="type">Type</Label>
-                    <Select value={type} onValueChange={setType}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="words">Words</SelectItem>
-                        <SelectItem value="sentences">Sentences</SelectItem>
-                        <SelectItem value="paragraphs">Paragraphs</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="startWithLorem"
-                    checked={startWithLorem}
-                    onChange={(e) => setStartWithLorem(e.target.checked)}
-                    className="rounded"
+                  <Label htmlFor="count">Count</Label>
+                  <Input
+                    id="count"
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={count}
+                    onChange={(e) => setCount(parseInt(e.target.value) || 1)}
                   />
-                  <Label htmlFor="startWithLorem" className="text-sm">
-                    Start with &quot;Lorem ipsum...&quot;
-                  </Label>
                 </div>
 
-                <Button onClick={generateLorem} className="w-full">
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Generate Lorem Ipsum
-                </Button>
+                <div className="space-y-2">
+                  <Label htmlFor="type">Type</Label>
+                  <Select value={type} onValueChange={setType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="words">Words</SelectItem>
+                      <SelectItem value="sentences">Sentences</SelectItem>
+                      <SelectItem value="paragraphs">Paragraphs</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            }
-            rightTitle="Generated Text"
-            rightDescription="Your generated lorem ipsum text"
-            rightActions={
-              generated
-                ? [
-                    {
-                      label: "Copy",
-                      icon: <Copy className="h-4 w-4" />,
-                      onClick: copyToClipboard,
-                    },
-                  ]
-                : undefined
-            }
-            rightChildren={
-              <>
-                <Textarea
-                  value={generated}
-                  readOnly
-                  placeholder="Generated lorem ipsum will appear here..."
-                  rows={12}
-                  className="font-mono text-sm max-h-80 overflow-y-auto"
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="startWithLorem"
+                  checked={startWithLorem}
+                  onChange={(e) => setStartWithLorem(e.target.checked)}
+                  className="rounded"
                 />
-                {generated && (
-                  <div className="text-xs text-muted-foreground mt-2">
-                    Generated: {generated.split(" ").length} words,{" "}
-                    {generated.split(".").length - 1} sentences
-                  </div>
-                )}
-              </>
-            }
-          />
-        </CardContent>
-      </Card>
+                <Label htmlFor="startWithLorem" className="text-sm">
+                  Start with &quot;Lorem ipsum...&quot;
+                </Label>
+              </div>
+
+              <Button onClick={generateLorem} className="w-full">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Generate Lorem Ipsum
+              </Button>
+            </div>
+          </ResultCard>
+        </div>
+
+        {/* Output Section */}
+        <div>
+          <ResultCard
+            title="Generated Text"
+            description="Your generated lorem ipsum text"
+            status={generated ? "success" : "info"}
+            onCopy={generated ? () => copyToClipboard() : undefined}
+            copyLabel="Copy Text"
+          >
+            <CopyableResult
+              value={generated}
+              placeholder="Generated lorem ipsum will appear here..."
+              fontFamily="mono"
+              rows={12}
+            />
+            {generated && (
+              <div className="text-xs text-muted-foreground mt-2">
+                Generated: {generated.split(" ").length} words,{" "}
+                {generated.split(".").length - 1} sentences
+              </div>
+            )}
+          </ResultCard>
+        </div>
+      </div>
     </div>
   );
 }

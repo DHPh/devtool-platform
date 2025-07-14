@@ -4,11 +4,17 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Download, Upload, Trash2 } from "lucide-react";
-import { TwoColumnToolLayout } from "@/components/layout";
+import { Download, FileText } from "lucide-react";
 import { toast } from "sonner";
+import {
+  ToolHeader,
+  QuickActions,
+  ResultCard,
+  ValidationMessages,
+  CopyableResult,
+  FileUploadZone,
+} from "@/components/layout";
 
 export function JsonFormatter() {
   const [input, setInput] = useState("");
@@ -62,9 +68,9 @@ export function JsonFormatter() {
     }
   };
 
-  const copyToClipboard = async () => {
-    await navigator.clipboard.writeText(output);
-    toast.success("Copied to clipboard!");
+  const copyToClipboard = async (text: string, type: string) => {
+    await navigator.clipboard.writeText(text);
+    toast.success(`${type} copied to clipboard!`);
   };
 
   const downloadJson = () => {
@@ -80,16 +86,9 @@ export function JsonFormatter() {
     toast.success("JSON downloaded!");
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const content = e.target?.result as string;
-        setInput(content);
-      };
-      reader.readAsText(file);
-    }
+  const handleFileUpload = (content: string, fileName: string) => {
+    setInput(content);
+    toast.success(`Loaded ${fileName}`);
   };
 
   const clearAll = () => {
@@ -124,136 +123,165 @@ export function JsonFormatter() {
 
   return (
     <div className="space-y-6">
-      {/* Controls */}
-      <div className="flex flex-wrap gap-2">
-        <Button onClick={formatJson} disabled={!input.trim()}>
-          Format JSON
-        </Button>
-        <Button onClick={minifyJson} variant="outline" disabled={!input.trim()}>
-          Minify JSON
-        </Button>
-        <Button
-          onClick={validateJson}
-          variant="outline"
-          disabled={!input.trim()}
-        >
-          Validate JSON
-        </Button>
-        <Button onClick={clearAll} variant="outline">
-          <Trash2 className="h-4 w-4 mr-2" />
-          Clear All
-        </Button>
-        <Button onClick={() => setInput(sampleJson)} variant="outline">
-          Load Sample
-        </Button>
-      </div>
-
-      <TwoColumnToolLayout
-        leftTitle="Input JSON"
-        leftDescription="Paste your JSON data here"
-        leftActions={[
-          {
-            label: "Upload",
-            icon: <Upload className="h-4 w-4" />,
-            onClick: () => document.getElementById("file-upload")?.click(),
-          },
-        ]}
-        leftChildren={
-          <>
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Paste your JSON here..."
-              className="min-h-[400px] font-mono text-sm tool-input textarea-enhanced"
-            />
-            {!isValid && error && (
-              <p className="text-destructive text-sm mt-2">{error}</p>
-            )}
-            <input
-              id="file-upload"
-              type="file"
-              accept=".json"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-          </>
-        }
-        rightTitle="Formatted JSON"
-        rightDescription="Formatted and validated JSON output"
-        rightActions={[
-          {
-            label: "Copy",
-            icon: <Copy className="h-4 w-4" />,
-            onClick: copyToClipboard,
-            disabled: !output,
-          },
-          {
-            label: "Download",
-            icon: <Download className="h-4 w-4" />,
-            onClick: downloadJson,
-            disabled: !output,
-          },
-        ]}
-        rightChildren={
-          <Textarea
-            value={output}
-            readOnly
-            placeholder="Formatted JSON will appear here..."
-            className="min-h-[400px] font-mono text-sm tool-output textarea-enhanced"
-          />
-        }
+      <ToolHeader
+        title="JSON Formatter"
+        description="Format, minify, and validate JSON data with syntax highlighting"
+        icon={FileText}
       />
 
-      {/* Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Settings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="format" className="w-full">
-            <TabsList>
-              <TabsTrigger value="format">Format Options</TabsTrigger>
-              <TabsTrigger value="validation">Validation</TabsTrigger>
-            </TabsList>
-            <TabsContent value="format" className="space-y-4">
-              <div className="space-y-2">
-                <Label>Indent Size</Label>
-                <div className="flex gap-2">
-                  {[2, 4, 8].map((size) => (
-                    <Button
-                      key={size}
-                      variant={indentSize === size ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setIndentSize(size)}
-                    >
-                      {size} spaces
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </TabsContent>
-            <TabsContent value="validation" className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">JSON Status:</span>
-                  <span
-                    className={`text-sm ${
-                      isValid ? "text-green-600" : "text-red-600"
-                    }`}
+      <QuickActions
+        actions={[
+          {
+            id: "format",
+            label: "Format JSON",
+            onClick: formatJson,
+            disabled: !input.trim(),
+          },
+          {
+            id: "minify",
+            label: "Minify JSON",
+            onClick: minifyJson,
+            disabled: !input.trim(),
+          },
+          {
+            id: "validate",
+            label: "Validate",
+            onClick: validateJson,
+            disabled: !input.trim(),
+          },
+          {
+            id: "sample",
+            label: "Load Sample",
+            onClick: () => setInput(sampleJson),
+            variant: "outline" as const,
+          },
+          {
+            id: "clear",
+            label: "Clear All",
+            onClick: clearAll,
+            variant: "outline" as const,
+          },
+        ]}
+      />
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Input Section */}
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="json-input" className="text-sm font-medium">
+              Input JSON
+            </Label>
+            <div className="mt-2">
+              <Textarea
+                id="json-input"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Paste your JSON here..."
+                className="min-h-[400px] font-mono text-sm"
+              />
+            </div>
+          </div>
+
+          <FileUploadZone
+            onFileSelect={handleFileUpload}
+            acceptedTypes={[".json"]}
+            placeholder="Drop JSON files here or click to upload"
+          />
+
+          {error && (
+            <ValidationMessages
+              errors={[error]}
+              warnings={[]}
+            />
+          )}
+        </div>
+
+        {/* Output Section */}
+        <div className="space-y-4">
+          <ResultCard
+            title="Formatted JSON"
+            description="Formatted and validated JSON output"
+            status={output ? (isValid ? "success" : "error") : "info"}
+            onCopy={() => copyToClipboard(output, "Formatted JSON")}
+            copyLabel="Copy JSON"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={downloadJson}
+                disabled={!output}
+                className="h-8"
+              >
+                <Download className="h-4 w-4 mr-1" />
+                Download
+              </Button>
+            </div>
+            <CopyableResult
+              value={output}
+              placeholder="Formatted JSON will appear here..."
+              fontFamily="mono"
+              rows={20}
+            />
+          </ResultCard>
+        </div>
+      </div>
+
+      {/* Settings Panel */}
+      <ResultCard
+        title="Settings & Options"
+        status="info"
+      >
+        <Tabs defaultValue="format" className="w-full">
+          <TabsList>
+            <TabsTrigger value="format">Format Options</TabsTrigger>
+            <TabsTrigger value="validation">Validation Info</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="format" className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Indent Size</Label>
+              <div className="flex gap-2">
+                {[2, 4, 8].map((size) => (
+                  <Button
+                    key={size}
+                    variant={indentSize === size ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setIndentSize(size)}
                   >
-                    {input ? (isValid ? "✓ Valid" : "✗ Invalid") : "No input"}
-                  </span>
-                </div>
-                {input && (
-                  <div className="text-sm text-muted-foreground">
-                    Characters: {input.length}
-                  </div>
-                )}
+                    {size} spaces
+                  </Button>
+                ))}
               </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="validation" className="space-y-4 mt-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">JSON Status:</span>
+                <span
+                  className={`text-sm font-medium ${
+                    isValid ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  {input ? (isValid ? "✓ Valid" : "✗ Invalid") : "No input"}
+                </span>
+              </div>
+              {input && (
+                <div className="text-sm text-muted-foreground">
+                  Characters: {input.length.toLocaleString()}
+                </div>
+              )}
+              {output && (
+                <div className="text-sm text-muted-foreground">
+                  Output size: {output.length.toLocaleString()} characters
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </ResultCard>
     </div>
   );
 }

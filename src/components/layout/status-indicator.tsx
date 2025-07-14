@@ -42,7 +42,7 @@ export function StatusIndicator({
         return {
           variant: "destructive" as const,
           icon: XCircle,
-          color: "text-destructive",
+          color: "text-white",
           bgColor: "bg-destructive/10 border-destructive/20",
         };
       case "warning":

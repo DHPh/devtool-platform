@@ -1,16 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { GitCompare, Copy, Download, FileText } from "lucide-react";
+import { toast } from "sonner";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+  ToolHeader,
+  QuickActions,
+  ResultCard,
+  ResponsiveTextArea,
+} from "@/components/layout";
 import {
   Select,
   SelectContent,
@@ -18,9 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Download, FileText, GitCompare } from "lucide-react";
-import { toast } from "sonner";
 
 export const metadata = {
   id: "diff-checker",
@@ -64,6 +62,11 @@ export default function DiffChecker() {
   };
 
   const calculateDiff = () => {
+    if (!text1 || !text2) {
+      toast.error("Please enter both texts to compare");
+      return;
+    }
+
     const processed1 = preprocessText(text1);
     const processed2 = preprocessText(text2);
 
@@ -75,11 +78,9 @@ export default function DiffChecker() {
       tokens1 = processed1.split("\n");
       tokens2 = processed2.split("\n");
     } else if (diffLevel === "word") {
-      // Split by words but preserve whitespace info
       tokens1 = processed1.split(/(\s+)/).filter((token) => token.length > 0);
       tokens2 = processed2.split(/(\s+)/).filter((token) => token.length > 0);
     } else {
-      // Character level
       tokens1 = processed1.split("");
       tokens2 = processed2.split("");
     }
@@ -204,6 +205,7 @@ export default function DiffChecker() {
 
     setDiffResult(diff);
     setStats({ additions, deletions, changes });
+    toast.success("Diff calculated successfully!");
   };
 
   // LCS calculation for word/character diff
@@ -258,6 +260,11 @@ export default function DiffChecker() {
   };
 
   const copyResults = () => {
+    if (diffResult.length === 0) {
+      toast.error("No diff results to copy");
+      return;
+    }
+
     const diffText = diffResult
       .map((line) => {
         const prefix =
@@ -271,6 +278,11 @@ export default function DiffChecker() {
   };
 
   const downloadResults = () => {
+    if (diffResult.length === 0) {
+      toast.error("No diff results to download");
+      return;
+    }
+
     const diffText = diffResult
       .map((line) => {
         const prefix =
@@ -294,305 +306,292 @@ export default function DiffChecker() {
     setText2("");
     setDiffResult([]);
     setStats({ additions: 0, deletions: 0, changes: 0 });
+    toast.success("All data cleared!");
+  };
+
+  const loadSampleTexts = () => {
+    setText1(`Hello World!
+This is a sample text.
+Line 3
+Line 4
+Common line
+Another line`);
+    setText2(`Hello Universe!
+This is a sample text.
+New Line 3
+Line 4 modified
+Common line
+New line added`);
+    toast.success("Sample texts loaded!");
+  };
+
+  const swapTexts = () => {
+    const temp = text1;
+    setText1(text2);
+    setText2(temp);
+    toast.success("Texts swapped!");
   };
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <GitCompare className="h-5 w-5" />
-            Text Diff Checker
-          </CardTitle>
-          <CardDescription>
-            Compare two texts and highlight differences with various options
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="diff-type">Diff Type</Label>
-              <Select
-                value={diffType}
-                onValueChange={(value: "unified" | "split") =>
-                  setDiffType(value)
-                }
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Select diff type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unified">Unified View</SelectItem>
-                  <SelectItem value="split">Split View</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      <ToolHeader
+        title="Text Diff Checker"
+        description="Compare two texts and highlight differences with various comparison options"
+        icon={GitCompare}
+      />
 
-            <div className="space-y-2">
-              <Label htmlFor="diff-level">Diff Level</Label>
-              <Select
-                value={diffLevel}
-                onValueChange={(value: "line" | "word" | "char") =>
-                  setDiffLevel(value)
-                }
-              >
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Select diff level" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="line">By Line</SelectItem>
-                  <SelectItem value="word">By Word</SelectItem>
-                  <SelectItem value="char">By Character</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                {diffLevel === "line"
-                  ? "Compare line by line (traditional diff)"
-                  : diffLevel === "word"
-                  ? "Compare word by word (great for prose)"
-                  : "Compare character by character (most detailed)"}
-              </p>
-            </div>
+      <QuickActions
+        actions={[
+          {
+            id: "compare",
+            label: "Compare Texts",
+            onClick: calculateDiff,
+            disabled: !text1 || !text2,
+            variant: "default" as const,
+          },
+          {
+            id: "sample",
+            label: "Load Sample",
+            onClick: loadSampleTexts,
+            variant: "outline" as const,
+          },
+          {
+            id: "swap",
+            label: "Swap Texts",
+            onClick: swapTexts,
+            disabled: !text1 && !text2,
+            variant: "outline" as const,
+          },
+          {
+            id: "clear",
+            label: "Clear All",
+            onClick: clearAll,
+            variant: "outline" as const,
+          },
+        ]}
+      />
 
+      <ResultCard
+        title="Comparison Settings"
+        description="Configure how the texts should be compared"
+        status="info"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="diff-type">View Type</Label>
+            <Select
+              value={diffType}
+              onValueChange={(value: "unified" | "split") =>
+                setDiffType(value)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select view type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unified">Unified View</SelectItem>
+                <SelectItem value="split">Split View</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="diff-level">Comparison Level</Label>
+            <Select
+              value={diffLevel}
+              onValueChange={(value: "line" | "word" | "char") =>
+                setDiffLevel(value)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select comparison level" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="line">By Line</SelectItem>
+                <SelectItem value="word">By Word</SelectItem>
+                <SelectItem value="char">By Character</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-4">
             <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
+              <Switch
                 id="ignore-whitespace"
                 checked={ignoreWhitespace}
-                onChange={(e) => setIgnoreWhitespace(e.target.checked)}
-                className="rounded border-gray-300"
+                onCheckedChange={setIgnoreWhitespace}
               />
-              <div className="space-y-1">
-                <Label htmlFor="ignore-whitespace" className="text-sm">
-                  Ignore whitespace
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Treat multiple spaces, tabs, and line breaks as single spaces
-                </p>
-              </div>
+              <Label htmlFor="ignore-whitespace">Ignore Whitespace</Label>
             </div>
-
             <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
+              <Switch
                 id="ignore-case"
                 checked={ignoreCase}
-                onChange={(e) => setIgnoreCase(e.target.checked)}
-                className="rounded border-gray-300"
+                onCheckedChange={setIgnoreCase}
               />
-              <div className="space-y-1">
-                <Label htmlFor="ignore-case" className="text-sm">
-                  Ignore case
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Make comparison case-insensitive (A = a)
-                </p>
-              </div>
+              <Label htmlFor="ignore-case">Ignore Case</Label>
             </div>
           </div>
+        </div>
+      </ResultCard>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="text1">Original Text</Label>
-              <Textarea
-                id="text1"
-                placeholder="Enter original text here..."
-                value={text1}
-                onChange={(e) => setText1(e.target.value)}
-                className="min-h-[300px] font-mono text-sm code-input"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="text2">Modified Text</Label>
-              <Textarea
-                id="text2"
-                placeholder="Enter modified text here..."
-                value={text2}
-                onChange={(e) => setText2(e.target.value)}
-                className="min-h-[300px] font-mono text-sm code-input"
-              />
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <div>
+            <Label className="block text-sm font-medium mb-2">Original Text</Label>
+            <ResponsiveTextArea
+              value={text1}
+              onChange={setText1}
+              placeholder="Enter original text here..."
+              minHeight={300}
+              showCharacterCount={true}
+            />
           </div>
+        </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={calculateDiff} className="flex items-center gap-2">
-              <GitCompare className="h-4 w-4" />
-              Compare
-            </Button>
-            <Button variant="outline" onClick={clearAll}>
-              Clear All
-            </Button>
+        <div className="space-y-4">
+          <div>
+            <Label className="block text-sm font-medium mb-2">Modified Text</Label>
+            <ResponsiveTextArea
+              value={text2}
+              onChange={setText2}
+              placeholder="Enter modified text here..."
+              minHeight={300}
+              showCharacterCount={true}
+            />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {diffResult.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Diff Results
-            </CardTitle>
-            <CardDescription>
-              <div className="flex gap-4">
-                <Badge
-                  variant="outline"
-                  className="bg-green-50 text-green-700 border-green-300"
-                >
-                  +{stats.additions} additions
-                </Badge>
-                <Badge
-                  variant="outline"
-                  className="bg-red-50 text-red-700 border-red-300"
-                >
-                  -{stats.deletions} deletions
-                </Badge>
-                <Badge
-                  variant="outline"
-                  className="bg-blue-50 text-blue-700 border-blue-300"
-                >
-                  {stats.changes} changes
-                </Badge>
-              </div>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={copyResults}>
-                <Copy className="h-4 w-4 mr-2" />
-                Copy
-              </Button>
-              <Button variant="outline" size="sm" onClick={downloadResults}>
-                <Download className="h-4 w-4 mr-2" />
-                Download
-              </Button>
+        <ResultCard
+          title="Diff Results"
+          description={`Found ${stats.additions} additions, ${stats.deletions} deletions, and ${stats.changes} changes`}
+          status="success"
+        >
+          <div className="space-y-4">
+            {/* Stats */}
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                +{stats.additions} additions
+              </Badge>
+              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300">
+                -{stats.deletions} deletions
+              </Badge>
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+                {stats.changes} changes
+              </Badge>
             </div>
 
-            <div className="border rounded-lg p-4 code-block max-h-96 overflow-y-auto">
+            {/* Copy/Download Actions */}
+            <div className="flex gap-2">
+              <button
+                onClick={copyResults}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-md transition-colors"
+              >
+                <Copy className="h-4 w-4" />
+                Copy Results
+              </button>
+              <button
+                onClick={downloadResults}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-md transition-colors"
+              >
+                <Download className="h-4 w-4" />
+                Download
+              </button>
+            </div>
+
+            {/* Diff Display */}
+            <div className="border rounded-lg overflow-auto max-h-96">
               {diffType === "unified" ? (
                 // Unified View - single column with +/- indicators
-                <div className="font-mono text-sm space-y-1">
+                <div className="font-mono text-sm">
                   {diffResult.map((line, index) => (
                     <div
                       key={index}
-                      className={`diff-line flex flex-rows items-center gap-2 ${
+                      className={`px-4 py-1 border-l-2 ${
                         line.type === "added"
-                          ? "diff-added"
+                          ? "bg-green-50 text-green-800 border-green-300 dark:bg-green-900/20 dark:text-green-100 dark:border-green-700"
                           : line.type === "removed"
-                          ? "diff-removed"
-                          : "diff-unchanged"
+                          ? "bg-red-50 text-red-800 border-red-300 dark:bg-red-900/20 dark:text-red-100 dark:border-red-700"
+                          : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600"
                       }`}
                     >
-                      <span className="flex items-center w-12 text-right mr-3 text-gray-500 dark:text-gray-400 select-none flex-shrink-0 text-xs">
+                      <span className="text-gray-400 w-8 inline-block text-right mr-4 select-none">
                         {line.lineNumber}
                       </span>
-                      <span className="flex items-center w-6 text-center mr-3 select-none flex-shrink-0 font-bold">
-                        {line.type === "added"
-                          ? "+"
-                          : line.type === "removed"
-                          ? "-"
-                          : " "}
+                      <span className="w-4 inline-block mr-2 font-bold">
+                        {line.type === "added" ? "+" : line.type === "removed" ? "-" : " "}
                       </span>
-                      <span className="flex-1 whitespace-pre-wrap break-words">
+                      <span className="whitespace-pre-wrap break-words">
                         {line.text || " "}
                       </span>
                     </div>
                   ))}
                 </div>
               ) : (
-                // Split View - side by side comparison with synchronized rows
-                <div className="grid grid-cols-2 gap-4">
+                // Split View - side by side comparison
+                <div className="grid grid-cols-2 gap-4 p-4">
                   <div className="space-y-2">
-                    <div className="font-semibold text-sm text-red-600 dark:text-red-400 border-b pb-2">
+                    <div className="font-semibold text-sm text-red-600 dark:text-red-400 border-b pb-2 flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
                       Original Text
                     </div>
                     <div className="font-mono text-sm space-y-1">
-                      {diffResult.map((line, index) => {
-                        // Show all lines but only display content for non-added lines
-                        if (line.type === "added") {
-                          // Show empty space for added lines to maintain sync
-                          return (
-                            <div
-                              key={`orig-empty-${index}`}
-                              className="diff-line flex items-center gap-2 opacity-0"
-                            >
-                              <span className="w-8 text-right text-gray-500 dark:text-gray-400 select-none text-xs"></span>
-                              <span className="flex-1 whitespace-pre-wrap break-words">
-                                &nbsp;
-                              </span>
-                            </div>
-                          );
-                        }
-
-                        return (
+                      {diffResult
+                        .filter(line => line.type !== "added")
+                        .map((line, index) => (
                           <div
                             key={`orig-${index}`}
-                            className={`diff-line flex items-center gap-2 ${
+                            className={`px-2 py-1 rounded ${
                               line.type === "removed"
-                                ? "diff-removed"
-                                : "diff-unchanged"
+                                ? "bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-100"
+                                : "bg-gray-50 dark:bg-gray-800"
                             }`}
                           >
-                            <span className="w-8 text-right text-gray-500 dark:text-gray-400 select-none text-xs">
+                            <span className="text-gray-400 w-6 inline-block text-right mr-2 select-none text-xs">
                               {line.lineNumber}
                             </span>
-                            <span className="flex-1 whitespace-pre-wrap break-words">
+                            <span className="whitespace-pre-wrap break-words">
                               {line.text || " "}
                             </span>
                           </div>
-                        );
-                      })}
+                        ))}
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <div className="font-semibold text-sm text-green-600 dark:text-green-400 border-b pb-2">
+                    <div className="font-semibold text-sm text-green-600 dark:text-green-400 border-b pb-2 flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
                       Modified Text
                     </div>
                     <div className="font-mono text-sm space-y-1">
-                      {diffResult.map((line, index) => {
-                        // Show all lines but only display content for non-removed lines
-                        if (line.type === "removed") {
-                          // Show empty space for removed lines to maintain sync
-                          return (
-                            <div
-                              key={`mod-empty-${index}`}
-                              className="diff-line flex items-center gap-2 opacity-0"
-                            >
-                              <span className="w-8 text-right text-gray-500 dark:text-gray-400 select-none text-xs"></span>
-                              <span className="flex-1 whitespace-pre-wrap break-words">
-                                &nbsp;
-                              </span>
-                            </div>
-                          );
-                        }
-
-                        return (
+                      {diffResult
+                        .filter(line => line.type !== "removed")
+                        .map((line, index) => (
                           <div
                             key={`mod-${index}`}
-                            className={`diff-line flex items-center gap-2 ${
+                            className={`px-2 py-1 rounded ${
                               line.type === "added"
-                                ? "diff-added"
-                                : "diff-unchanged"
+                                ? "bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-100"
+                                : "bg-gray-50 dark:bg-gray-800"
                             }`}
                           >
-                            <span className="w-8 text-right text-gray-500 dark:text-gray-400 select-none text-xs">
+                            <span className="text-gray-400 w-6 inline-block text-right mr-2 select-none text-xs">
                               {line.lineNumber}
                             </span>
-                            <span className="flex-1 whitespace-pre-wrap break-words">
+                            <span className="whitespace-pre-wrap break-words">
                               {line.text || " "}
                             </span>
                           </div>
-                        );
-                      })}
+                        ))}
                     </div>
                   </div>
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </ResultCard>
       )}
     </div>
   );

@@ -2,25 +2,25 @@
 
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Copy, RefreshCw, Trash2 } from "lucide-react";
+import { Copy, RefreshCw, Hash } from "lucide-react";
 import { toast } from "sonner";
 import {
-  ToolContainer,
-  ModeTabs,
-  ActionButtons,
-  SettingsPanel,
-  FormField,
-  StatsDisplay,
+  ToolHeader,
+  QuickActions,
+  ResultCard,
 } from "@/components/layout";
 
-export function UuidGenerator() {
+export const metadata = {
+  id: "uuid-generator",
+  name: "UUID Generator",
+  description: "Generate universally unique identifiers (UUIDs) for your applications",
+  category: "Generators",
+  tags: ["uuid", "generator", "unique", "identifier"],
+  path: "/tools/uuid-generator",
+  icon: "🔑",
+};
+
+export default function UuidGenerator() {
   const [uuids, setUuids] = useState<string[]>([]);
   const [count, setCount] = useState(1);
   const [version, setVersion] = useState<"v4" | "v1">("v4");
@@ -85,162 +85,180 @@ export function UuidGenerator() {
     setUuids([]);
   };
 
-  const downloadUUIDs = () => {
-    const content = uuids.join("\n");
-    const blob = new Blob([content], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `uuids-${new Date().toISOString().split("T")[0]}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success("UUIDs downloaded!");
-  };
-
-  // Mode options configuration
-  const modeOptions = [
-    {
-      value: "v4",
-      label: "UUID v4 (Random)",
-      description:
-        "Version 4 UUIDs are randomly generated and provide strong uniqueness guarantees. They are the most commonly used UUID variant.",
-    },
-    {
-      value: "v1",
-      label: "UUID v1 (Timestamp)",
-      description:
-        "Version 1 UUIDs are timestamp-based and include the current time and a node identifier. They can be sorted chronologically but may reveal information about when and where they were generated.",
-    },
-  ];
-
-  // Action buttons configuration
-  const actionButtons = [
-    {
-      label: "Generate",
-      onClick: generateUUIDs,
-      icon: RefreshCw,
-      variant: "default" as const,
-    },
-    {
-      label: "Clear",
-      onClick: clearAll,
-      icon: Trash2,
-      variant: "outline" as const,
-      disabled: uuids.length === 0,
-    },
-    {
-      label: "Copy All",
-      onClick: copyAllUUIDs,
-      icon: Copy,
-      variant: "outline" as const,
-      disabled: uuids.length === 0,
-    },
-    {
-      label: "Download",
-      onClick: downloadUUIDs,
-      icon: RefreshCw,
-      variant: "outline" as const,
-      disabled: uuids.length === 0,
-    },
-  ];
-
-  // Stats configuration
-  const stats = [
-    {
-      label: "Generated",
-      value: uuids.length.toString(),
-      description: "Total UUIDs generated",
-    },
-    {
-      label: "Version",
-      value: version.toUpperCase(),
-      description: "Current UUID version",
-    },
-  ];
-
   return (
-    <ToolContainer
-      title="UUID Generator"
-      description="Generate universally unique identifiers (UUIDs) for your applications"
-    >
-      {/* Mode Selection */}
-      <ModeTabs
-        value={version}
-        onValueChange={(value: string) => setVersion(value as "v4" | "v1")}
-        options={modeOptions}
+    <div className="space-y-6">
+      <ToolHeader
+        title="UUID Generator"
+        description="Generate universally unique identifiers (UUIDs) for your applications"
+        icon={Hash}
       />
 
-      {/* Settings Panel */}
-      <SettingsPanel title="Generator Settings">
-        <FormField
-          label="Number of UUIDs"
-          description="How many UUIDs to generate (1-100)"
-        >
-          <Input
-            type="number"
-            min="1"
-            max="100"
-            value={count}
-            onChange={(e) =>
-              setCount(
-                Math.max(1, Math.min(100, parseInt(e.target.value) || 1))
-              )
-            }
-          />
-        </FormField>
+      <QuickActions
+        actions={[
+          {
+            id: "generate-1",
+            label: "Generate 1 UUID",
+            onClick: () => {
+              setCount(1);
+              generateUUIDs();
+            },
+          },
+          {
+            id: "generate-5",
+            label: "Generate 5 UUIDs",
+            onClick: () => {
+              setCount(5);
+              generateUUIDs();
+            },
+          },
+          {
+            id: "generate-10",
+            label: "Generate 10 UUIDs",
+            onClick: () => {
+              setCount(10);
+              generateUUIDs();
+            },
+          },
+          {
+            id: "toggle-version",
+            label: version === "v4" ? "Switch to v1" : "Switch to v4",
+            onClick: () => setVersion(version === "v4" ? "v1" : "v4"),
+            variant: "outline" as const,
+          },
+          {
+            id: "clear",
+            label: "Clear All",
+            onClick: clearAll,
+            variant: "outline" as const,
+          },
+        ]}
+      />
 
-        <ActionButtons buttons={actionButtons} />
-      </SettingsPanel>
-
-      {/* Stats Display */}
-      <StatsDisplay stats={stats} />
-
-      {/* Generated UUIDs */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>Generated UUIDs ({uuids.length})</span>
-          </CardTitle>
-          <CardDescription>
-            Click on any UUID to copy it to clipboard
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2 max-h-[400px] overflow-y-auto">
-            {uuids.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">
-                No UUIDs generated yet. Click &quot;Generate&quot; to create
-                some.
-              </p>
-            ) : (
-              uuids.map((uuid, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer transition-colors"
-                  onClick={() => copyUUID(uuid)}
-                >
-                  <code className="font-mono text-sm flex-1">{uuid}</code>
-                  <Copy className="h-4 w-4 text-muted-foreground" />
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Settings Section */}
+        <div className="space-y-4">
+          <ResultCard
+            title="Generator Settings"
+            description="Configure UUID generation options"
+            status="info"
+          >
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">UUID Version</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setVersion("v4")}
+                    className={`px-3 py-2 text-sm rounded border ${
+                      version === "v4"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background"
+                    }`}
+                  >
+                    Version 4 (Random)
+                  </button>
+                  <button
+                    onClick={() => setVersion("v1")}
+                    className={`px-3 py-2 text-sm rounded border ${
+                      version === "v1"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background"
+                    }`}
+                  >
+                    Version 1 (Timestamp)
+                  </button>
                 </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              </div>
 
-      {/* UUID Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>About UUIDs</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 text-sm text-muted-foreground">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Number of UUIDs</label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={count}
+                  onChange={(e) =>
+                    setCount(
+                      Math.max(1, Math.min(100, parseInt(e.target.value) || 1))
+                    )
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  Generate between 1-100 UUIDs at once
+                </p>
+              </div>
+
+              <button
+                onClick={generateUUIDs}
+                className="w-full px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 flex items-center justify-center gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Generate {count} UUID{count > 1 ? "s" : ""}
+              </button>
+            </div>
+          </ResultCard>
+
+          {/* Stats */}
+          <ResultCard
+            title="Statistics"
+            description="Information about generated UUIDs"
+            status={uuids.length > 0 ? "success" : "info"}
+          >
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center p-3 border rounded">
+                <div className="text-2xl font-bold text-blue-600">{uuids.length}</div>
+                <div className="text-sm text-muted-foreground">Generated</div>
+              </div>
+              <div className="text-center p-3 border rounded">
+                <div className="text-2xl font-bold text-green-600">{version.toUpperCase()}</div>
+                <div className="text-sm text-muted-foreground">Version</div>
+              </div>
+            </div>
+          </ResultCard>
+        </div>
+
+        {/* Generated UUIDs Section */}
+        <div>
+          <ResultCard
+            title={`Generated UUIDs (${uuids.length})`}
+            description="Click on any UUID to copy it to clipboard"
+            status={uuids.length > 0 ? "success" : "info"}
+            onCopy={uuids.length > 0 ? () => copyAllUUIDs() : undefined}
+            copyLabel="Copy All"
+          >
+            {uuids.length > 0 ? (
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {uuids.map((uuid, index) => (
+                  <div
+                    key={index}
+                    onClick={() => copyUUID(uuid)}
+                    className="p-3 border rounded font-mono text-sm cursor-pointer hover:bg-accent transition-colors flex items-center justify-between"
+                  >
+                    <span>{uuid}</span>
+                    <Copy className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground py-8">
+                No UUIDs generated yet. Click generate to create some!
+              </div>
+            )}
+          </ResultCard>
+        </div>
+      </div>
+
+      {/* About UUIDs Section */}
+      <ResultCard
+        title="About UUIDs"
+        description="Learn about different UUID versions and their use cases"
+        status="info"
+      >
+        <div className="space-y-4 text-sm">
           <div>
             <h4 className="font-medium text-foreground mb-2">
               What are UUIDs?
             </h4>
-            <p>
+            <p className="text-muted-foreground">
               Universally Unique Identifiers (UUIDs) are 128-bit numbers used to
               uniquely identify information in computer systems. They are
               designed to be unique across all systems without requiring a
@@ -250,10 +268,10 @@ export function UuidGenerator() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <h4 className="font-medium text-foreground mb-2">
+              <h4 className="font-medium text-blue-600 mb-2">
                 UUID v4 (Random)
               </h4>
-              <ul className="space-y-1 text-xs">
+              <ul className="space-y-1 text-xs text-muted-foreground">
                 <li>• Generated using random numbers</li>
                 <li>• No embedded information</li>
                 <li>• Most commonly used</li>
@@ -261,10 +279,10 @@ export function UuidGenerator() {
               </ul>
             </div>
             <div>
-              <h4 className="font-medium text-foreground mb-2">
+              <h4 className="font-medium text-green-600 mb-2">
                 UUID v1 (Timestamp)
               </h4>
-              <ul className="space-y-1 text-xs">
+              <ul className="space-y-1 text-xs text-muted-foreground">
                 <li>• Based on timestamp and MAC address</li>
                 <li>• Sortable by creation time</li>
                 <li>• May reveal creation time/location</li>
@@ -275,10 +293,10 @@ export function UuidGenerator() {
 
           <div>
             <h4 className="font-medium text-foreground mb-2">Format</h4>
-            <p className="font-mono text-xs">
+            <p className="font-mono text-xs text-muted-foreground">
               xxxxxxxx-xxxx-Mxxx-Nxxx-xxxxxxxxxxxx
             </p>
-            <p className="text-xs mt-1">
+            <p className="text-xs mt-1 text-muted-foreground">
               Where M indicates the version (1 or 4) and N indicates the
               variant.
             </p>
@@ -288,7 +306,7 @@ export function UuidGenerator() {
             <h4 className="font-medium text-foreground mb-2">
               Common Use Cases
             </h4>
-            <ul className="space-y-1 text-xs">
+            <ul className="space-y-1 text-xs text-muted-foreground">
               <li>• Database primary keys</li>
               <li>• API request/response identifiers</li>
               <li>• File and resource naming</li>
@@ -296,8 +314,8 @@ export function UuidGenerator() {
               <li>• Session and transaction IDs</li>
             </ul>
           </div>
-        </CardContent>
-      </Card>
-    </ToolContainer>
+        </div>
+      </ResultCard>
+    </div>
   );
 }

@@ -1,18 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Copy, ArrowUpDown, Trash2 } from "lucide-react";
+import { ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import {
-  TwoColumnToolLayout,
-  ModeTabs,
-  ActionButtons,
-  ToolContainer,
+  ToolHeader,
+  QuickActions,
+  ResultCard,
+  CopyableResult,
   ResponsiveTextArea,
+  ModeTabs,
 } from "@/components/layout";
 
-export function Base64Encoder() {
+export const metadata = {
+  id: "base64-encoder",
+  name: "Base64 Encoder/Decoder",
+  description: "Convert text to Base64 and back with ease",
+  category: "Encoding",
+  tags: ["base64", "encoder", "decoder", "encode", "decode"],
+  path: "/tools/base64-encoder",
+  icon: "🔐",
+};
+
+export default function Base64Encoder() {
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
   const [mode, setMode] = useState<"encode" | "decode">("encode");
@@ -50,10 +60,9 @@ export function Base64Encoder() {
     toast.success("Copied to clipboard!");
   };
 
-  const swapInputOutput = () => {
-    setInput(output);
-    setOutput("");
-    setMode(mode === "encode" ? "decode" : "encode");
+  const sampleData = {
+    encode: "Hello, World! This is a sample text to encode.",
+    decode: "SGVsbG8sIFdvcmxkISBUaGlzIGlzIGEgc2FtcGxlIHRleHQgdG8gZW5jb2RlLg=="
   };
 
   const clearAll = () => {
@@ -63,20 +72,26 @@ export function Base64Encoder() {
 
   const loadSample = () => {
     if (mode === "encode") {
-      setInput("Hello, World! This is a sample text to encode.");
+      setInput(sampleData.encode);
     } else {
-      setInput(
-        "SGVsbG8sIFdvcmxkISBUaGlzIGlzIGEgc2FtcGxlIHRleHQgdG8gZW5jb2RlLg=="
-      );
+      setInput(sampleData.decode);
     }
   };
 
+  const swapInputOutput = () => {
+    setInput(output);
+    setOutput("");
+    setMode(mode === "encode" ? "decode" : "encode");
+  };
+
   return (
-    <ToolContainer
-      title="Base64 Encoder/Decoder"
-      description="Convert text to Base64 and back with ease"
-      className="space-y-6"
-    >
+    <div className="space-y-6">
+      <ToolHeader
+        title="Base64 Encoder/Decoder"
+        description="Convert text to Base64 and back with ease"
+        icon={ArrowUpDown}
+      />
+
       <ModeTabs
         value={mode}
         onValueChange={(value) => setMode(value as "encode" | "decode")}
@@ -94,114 +109,112 @@ export function Base64Encoder() {
         ]}
       />
 
-      <ActionButtons
-        buttons={[
+      <QuickActions
+        actions={[
           {
+            id: "process",
             label: mode === "encode" ? "Encode" : "Decode",
             onClick: handleProcess,
-            disabled: !input.trim(),
-            variant: "default",
+            variant: "default" as const,
           },
           {
+            id: "swap",
             label: "Swap",
-            icon: ArrowUpDown,
             onClick: swapInputOutput,
             disabled: !output,
+            variant: "outline" as const,
           },
           {
-            label: "Clear All",
-            icon: Trash2,
-            onClick: clearAll,
-          },
-          {
+            id: "sample",
             label: "Load Sample",
             onClick: loadSample,
+            variant: "outline" as const,
+          },
+          {
+            id: "clear",
+            label: "Clear All",
+            onClick: clearAll,
+            variant: "outline" as const,
           },
         ]}
       />
 
-      <TwoColumnToolLayout
-        leftTitle={mode === "encode" ? "Plain Text" : "Base64 String"}
-        leftDescription={
-          mode === "encode"
-            ? "Enter the text you want to encode"
-            : "Enter the Base64 string you want to decode"
-        }
-        leftChildren={
-          <ResponsiveTextArea
-            value={input}
-            onChange={setInput}
-            placeholder={
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Input */}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              {mode === "encode" ? "Plain Text" : "Base64 String"}
+            </label>
+            <ResponsiveTextArea
+              value={input}
+              onChange={setInput}
+              placeholder={
+                mode === "encode"
+                  ? "Enter text to encode..."
+                  : "Enter Base64 string to decode..."
+              }
+              minHeight={300}
+              showCharacterCount={true}
+              allowFileUpload={true}
+              acceptedFileTypes=".txt,.json,.html,.css,.js,.md"
+            />
+          </div>
+        </div>
+
+        {/* Output */}
+        <div className="space-y-4">
+          <ResultCard
+            title={mode === "encode" ? "Base64 String" : "Plain Text"}
+            description={
               mode === "encode"
-                ? "Enter text to encode..."
-                : "Enter Base64 string to decode..."
+                ? "Base64 encoded result"
+                : "Decoded plain text result"
             }
-            minHeight={300}
-            showCharacterCount={true}
-            allowFileUpload={true}
-            acceptedFileTypes=".txt,.json,.html,.css,.js,.md"
-          />
-        }
-        rightTitle={mode === "encode" ? "Base64 String" : "Plain Text"}
-        rightDescription={
-          mode === "encode"
-            ? "Base64 encoded result"
-            : "Decoded plain text result"
-        }
-        rightActions={[
-          {
-            label: "Copy",
-            icon: <Copy className="h-4 w-4" />,
-            onClick: copyToClipboard,
-            disabled: !output,
-          },
-        ]}
-        rightChildren={
-          <ResponsiveTextArea
-            value={output}
-            onChange={() => {}} // Read-only
-            readOnly={true}
-            placeholder={
-              mode === "encode"
-                ? "Base64 encoded text will appear here..."
-                : "Decoded text will appear here..."
-            }
-            minHeight={300}
-            showCharacterCount={true}
-          />
-        }
-      />
+            status={output ? "success" : "info"}
+            onCopy={output ? copyToClipboard : undefined}
+            copyLabel="Copy Result"
+          >
+            <CopyableResult
+              value={output}
+              placeholder={
+                mode === "encode"
+                  ? "Base64 encoded text will appear here..."
+                  : "Decoded text will appear here..."
+              }
+              fontFamily="mono"
+              rows={12}
+            />
+          </ResultCard>
+        </div>
+      </div>
 
       {/* Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>About Base64 Encoding</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
+      <ResultCard
+        title="About Base64 Encoding"
+        status="info"
+        description="Learn about Base64 encoding and its use cases"
+      >
+        <div className="space-y-4 text-sm text-muted-foreground">
           <p>
             Base64 is a binary-to-text encoding scheme that represents binary
             data in an ASCII string format. It&apos;s commonly used in web
             development, email attachments, and data transmission.
           </p>
-          <div className="space-y-1">
-            <p>
-              <strong>Use cases:</strong>
-            </p>
+          <div className="space-y-2">
+            <p className="font-medium">Use cases:</p>
             <ul className="list-disc pl-5 space-y-1">
-              <li>
-                Encoding binary data for transmission over text-based protocols
-              </li>
+              <li>Encoding binary data for transmission over text-based protocols</li>
               <li>Embedding images or files in HTML/CSS (data URIs)</li>
               <li>Storing binary data in JSON or XML</li>
               <li>Email attachments (MIME encoding)</li>
             </ul>
           </div>
-          <p className="text-xs">
-            Note: Base64 encoding increases the size of data by approximately
-            33%.
+          <p className="text-xs bg-muted p-2 rounded">
+            <strong>Note:</strong> Base64 encoding increases the size of data by approximately 33%.
           </p>
-        </CardContent>
-      </Card>
-    </ToolContainer>
+        </div>
+      </ResultCard>
+    </div>
   );
 }

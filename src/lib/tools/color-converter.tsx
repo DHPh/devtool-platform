@@ -1,15 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { Palette, Copy } from "lucide-react";
+import { toast } from "sonner";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  ToolHeader,
+  QuickActions,
+  ResultCard,
+} from "@/components/layout";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata = {
@@ -176,20 +177,75 @@ export default function ColorConverter() {
     setColorValues({ hex, rgb, hsl: { h, s, l }, cmyk });
   };
 
+  const copyColor = async (format: string, value: string) => {
+    await navigator.clipboard.writeText(value);
+    toast.success(`${format} value copied to clipboard!`);
+  };
+
+  const loadColorPreset = (color: string) => {
+    updateFromHex(color);
+    toast.success("Color preset loaded!");
+  };
+
+  const randomColor = () => {
+    const randomHex = "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+    updateFromHex(randomHex);
+    toast.success("Random color generated!");
+  };
+
+  const resetColor = () => {
+    updateFromHex("#3b82f6");
+  };
+
+  const colorPresets = [
+    { name: "Blue", color: "#3b82f6" },
+    { name: "Red", color: "#ef4444" },
+    { name: "Green", color: "#22c55e" },
+    { name: "Purple", color: "#a855f7" },
+    { name: "Orange", color: "#f97316" },
+    { name: "Pink", color: "#ec4899" },
+  ];
+
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Color Converter</CardTitle>
-          <CardDescription>
-            Convert between different color formats: HEX, RGB, HSL, and CMYK
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Color Preview */}
+      <ToolHeader
+        title="Color Converter"
+        description="Convert between different color formats: HEX, RGB, HSL, and CMYK"
+        icon={Palette}
+      />
+
+      <QuickActions
+        actions={[
+          {
+            id: "random",
+            label: "Random Color",
+            onClick: randomColor,
+            variant: "default" as const,
+          },
+          {
+            id: "reset",
+            label: "Reset",
+            onClick: resetColor,
+            variant: "outline" as const,
+          },
+          ...colorPresets.map(preset => ({
+            id: preset.name.toLowerCase(),
+            label: preset.name,
+            onClick: () => loadColorPreset(preset.color),
+            variant: "outline" as const,
+          })),
+        ]}
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Color Preview */}
+        <div className="space-y-4">
+          <ResultCard
+            title="Color Preview"
+            description="Visual representation of the current color"
+            status="info"
+          >
             <div className="space-y-4">
-              <Label>Color Preview</Label>
               <div
                 className="w-full h-32 rounded-lg border-2 border-gray-200 dark:border-gray-700"
                 style={{ backgroundColor: colorValues.hex }}
@@ -197,13 +253,20 @@ export default function ColorConverter() {
               <div className="flex flex-wrap gap-2">
                 <Badge variant="secondary">{colorValues.hex}</Badge>
                 <Badge variant="outline">
-                  rgb({colorValues.rgb.r}, {colorValues.rgb.g},{" "}
-                  {colorValues.rgb.b})
+                  rgb({colorValues.rgb.r}, {colorValues.rgb.g}, {colorValues.rgb.b})
                 </Badge>
               </div>
             </div>
+          </ResultCard>
+        </div>
 
-            {/* Color Inputs */}
+        {/* Color Inputs */}
+        <div className="space-y-4">
+          <ResultCard
+            title="Color Input"
+            description="Enter color values in different formats"
+            status="info"
+          >
             <div className="space-y-6">
               {/* HEX */}
               <div className="space-y-2">
@@ -315,36 +378,110 @@ export default function ColorConverter() {
                 </div>
               </div>
             </div>
-          </div>
+          </ResultCard>
+        </div>
+      </div>
 
-          {/* Color Information */}
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="p-4 border rounded-lg">
+      {/* Color Values */}
+      <ResultCard
+        title="Color Values"
+        description="All color format values for the current color"
+        status="success"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="p-4 border rounded-lg">
+            <div className="flex items-center justify-between mb-2">
               <Label className="text-sm font-medium">HEX</Label>
-              <p className="text-lg font-mono">{colorValues.hex}</p>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => copyColor("HEX", colorValues.hex)}
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
             </div>
-            <div className="p-4 border rounded-lg">
+            <p className="text-lg font-mono">{colorValues.hex}</p>
+          </div>
+          <div className="p-4 border rounded-lg">
+            <div className="flex items-center justify-between mb-2">
               <Label className="text-sm font-medium">RGB</Label>
-              <p className="text-lg font-mono">
-                {colorValues.rgb.r}, {colorValues.rgb.g}, {colorValues.rgb.b}
-              </p>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => copyColor("RGB", `rgb(${colorValues.rgb.r}, ${colorValues.rgb.g}, ${colorValues.rgb.b})`)}
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
             </div>
-            <div className="p-4 border rounded-lg">
+            <p className="text-lg font-mono">
+              {colorValues.rgb.r}, {colorValues.rgb.g}, {colorValues.rgb.b}
+            </p>
+          </div>
+          <div className="p-4 border rounded-lg">
+            <div className="flex items-center justify-between mb-2">
               <Label className="text-sm font-medium">HSL</Label>
-              <p className="text-lg font-mono">
-                {colorValues.hsl.h}°, {colorValues.hsl.s}%, {colorValues.hsl.l}%
-              </p>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => copyColor("HSL", `hsl(${colorValues.hsl.h}, ${colorValues.hsl.s}%, ${colorValues.hsl.l}%)`)}
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
             </div>
-            <div className="p-4 border rounded-lg">
+            <p className="text-lg font-mono">
+              {colorValues.hsl.h}°, {colorValues.hsl.s}%, {colorValues.hsl.l}%
+            </p>
+          </div>
+          <div className="p-4 border rounded-lg">
+            <div className="flex items-center justify-between mb-2">
               <Label className="text-sm font-medium">CMYK</Label>
-              <p className="text-lg font-mono">
-                {colorValues.cmyk.c}%, {colorValues.cmyk.m}%,{" "}
-                {colorValues.cmyk.y}%, {colorValues.cmyk.k}%
-              </p>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => copyColor("CMYK", `cmyk(${colorValues.cmyk.c}%, ${colorValues.cmyk.m}%, ${colorValues.cmyk.y}%, ${colorValues.cmyk.k}%)`)}
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
+            </div>
+            <p className="text-lg font-mono">
+              {colorValues.cmyk.c}%, {colorValues.cmyk.m}%, {colorValues.cmyk.y}%, {colorValues.cmyk.k}%
+            </p>
+          </div>
+        </div>
+      </ResultCard>
+
+      {/* Information */}
+      <ResultCard
+        title="About Color Formats"
+        status="info"
+        description="Learn about different color representation formats"
+      >
+        <div className="space-y-4 text-sm text-muted-foreground">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="font-medium mb-2">Color Formats</p>
+              <ul className="list-disc pl-4 space-y-1">
+                <li><strong>HEX:</strong> Hexadecimal notation (#RRGGBB)</li>
+                <li><strong>RGB:</strong> Red, Green, Blue (0-255 each)</li>
+                <li><strong>HSL:</strong> Hue, Saturation, Lightness</li>
+                <li><strong>CMYK:</strong> Cyan, Magenta, Yellow, Black</li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-medium mb-2">Use Cases</p>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>Web design and CSS styling</li>
+                <li>Graphic design and branding</li>
+                <li>Print media (CMYK)</li>
+                <li>Digital art and photography</li>
+              </ul>
             </div>
           </div>
-        </CardContent>
-      </Card>
+          <p className="text-xs bg-muted p-2 rounded">
+            <strong>Note:</strong> RGB and HSL are best for digital displays, while CMYK is used for print media.
+          </p>
+        </div>
+      </ResultCard>
     </div>
   );
 }

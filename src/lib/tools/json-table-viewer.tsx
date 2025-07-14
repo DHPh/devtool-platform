@@ -14,12 +14,12 @@ import {
   ColumnDef,
 } from "@tanstack/react-table";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  ToolHeader,
+  QuickActions,
+  ResultCard,
+  FileUploadZone,
+  ResponsiveTextArea,
+} from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,19 +27,17 @@ import { Badge } from "@/components/ui/badge";
 import {
   Upload,
   Download,
-  Search,
   ChevronLeft,
   ChevronRight,
   ArrowUpDown,
+  Table,
 } from "lucide-react";
 import { toast } from "sonner";
-import { parseJSON, detectColumnType } from "@/lib/utils/json-parser";
 
 export const metadata = {
   id: "json-table-viewer",
   name: "JSON Table Viewer",
-  description:
-    "Convert JSON data to interactive table with filtering and sorting",
+  description: "Convert JSON data to interactive table with filtering and sorting",
   category: "Data Processing",
   tags: ["json", "table", "data", "viewer"],
   path: "/tools/json-table-viewer",
@@ -51,158 +49,215 @@ interface JSONRow {
 }
 
 export default function JSONTableViewer() {
+  const [jsonInput, setJsonInput] = useState("");
   const [data, setData] = useState<JSONRow[]>([]);
   const [columns, setColumns] = useState<ColumnDef<JSONRow>[]>([]);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [fileName, setFileName] = useState("");
-  const [hasNestedData, setHasNestedData] = useState(false);
 
-  const createColumns = (data: JSONRow[]): ColumnDef<JSONRow>[] => {
-    if (data.length === 0) return [];
-
-    const columnHelper = createColumnHelper<JSONRow>();
-    const allKeys = new Set<string>();
-
-    // Collect all possible keys from all rows
-    data.forEach((row) => {
-      Object.keys(row).forEach((key) => allKeys.add(key));
-    });
-
-    const keys = Array.from(allKeys).sort();
-
-    return keys.map((key) => {
-      // Detect column type for better rendering
-      const columnValues = data.map((row) => row[key]);
-      const columnType = detectColumnType(columnValues);
-
-      return columnHelper.accessor((row) => row[key], {
-        id: key,
-        header: ({ column }) => (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="h-auto p-0 font-semibold hover:bg-transparent"
-          >
-            {key}
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        ),
-        cell: (info) => {
-          const value = info.getValue();
-
-          if (value === null || value === undefined) {
-            return <span className="text-gray-400 italic">null</span>;
-          }
-
-          if (typeof value === "boolean") {
-            return (
-              <Badge variant={value ? "default" : "secondary"}>
-                {String(value)}
-              </Badge>
-            );
-          }
-
-          if (typeof value === "number") {
-            return <span className="font-mono">{value.toLocaleString()}</span>;
-          }
-
-          // Handle date values
-          if (columnType === "date" && typeof value === "string") {
-            return <span className="font-mono text-blue-600">{value}</span>;
-          }
-
-          const stringValue = String(value);
-
-          // Handle JSON strings (arrays/objects)
-          if (stringValue.startsWith("[") || stringValue.startsWith("{")) {
-            return (
-              <span
-                title={stringValue}
-                className="truncate block max-w-xs text-purple-600 font-mono text-sm"
-              >
-                {stringValue.length > 50
-                  ? `${stringValue.substring(0, 50)}...`
-                  : stringValue}
-              </span>
-            );
-          }
-
-          // Handle long text
-          if (stringValue.length > 100) {
-            return (
-              <span title={stringValue} className="truncate block max-w-xs">
-                {stringValue.substring(0, 100)}...
-              </span>
-            );
-          }
-
-          return <span>{stringValue}</span>;
-        },
-      });
-    });
+  const parseJSON = (text: string): JSONRow[] => {
+    try {
+      const parsed = JSON.parse(text);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(item => typeof item === 'object' && item !== null);
+      } else if (typeof parsed === 'object' && parsed !== null) {
+        return [parsed];
+      }
+      return [];
+    } catch {
+      return [];
+    }
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const flattenObject = (obj: Record<string, unknown>, prefix = '', maxDepth = 3, currentDepth = 0): Record<string, unknown> => {
+    if (currentDepth >= maxDepth) {
+      return { [prefix]: JSON.stringify(obj) };
+    }
 
-    if (!file.name.endsWith(".json")) {
-      toast.error("Please select a JSON file");
+    const flattened: Record<string, unknown> = {};
+    
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        const newKey = prefix ? `${prefix}.${key}` : key;
+        const value = obj[key];
+        
+        if (value === null || value === undefined) {
+          flattened[newKey] = value;
+        } else if (typeof value === 'object' && !Array.isArray(value)) {
+          Object.assign(flattened, flattenObject(value as Record<string, unknown>, newKey, maxDepth, currentDepth + 1));
+        } else if (Array.isArray(value)) {
+          flattened[newKey] = JSON.stringify(value);
+        } else {
+          flattened[newKey] = value;
+        }
+      }
+    }
+    
+    return flattened;
+  };
+
+  const processJSONData = (text: string) => {
+    const parsedData = parseJSON(text);
+    
+    if (parsedData.length === 0) {
+      toast.error("Could not parse JSON data. Please check the format.");
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      try {
-        const result = parseJSON(text, { maxDepth: 15 });
-        setData(result.data);
-        setColumns(createColumns(result.data));
-        setFileName(file.name);
-        setHasNestedData(result.hasNestedData);
-        toast.success(
-          `Loaded ${result.rowCount} rows from ${file.name}${
-            result.hasNestedData ? " (nested data flattened)" : ""
-          }`
-        );
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Unknown error";
-        toast.error(`Error parsing JSON: ${errorMessage}`);
-      }
-    };
-    reader.readAsText(file);
+    // Flatten nested objects
+    const flattenedData = parsedData.map(item => flattenObject(item));
+    setData(flattenedData);
+
+    // Create columns
+    const allKeys = new Set<string>();
+    flattenedData.forEach(item => {
+      Object.keys(item).forEach(key => allKeys.add(key));
+    });
+
+    const columnHelper = createColumnHelper<JSONRow>();
+    const newColumns = Array.from(allKeys).map(key =>
+      columnHelper.accessor(key, {
+        header: key,
+        cell: (info) => {
+          const value = info.getValue();
+          if (value === null) return <span className="text-gray-400">null</span>;
+          if (value === undefined) return <span className="text-gray-400">undefined</span>;
+          if (typeof value === 'boolean') {
+            return <Badge variant={value ? "default" : "secondary"}>{String(value)}</Badge>;
+          }
+          if (typeof value === 'number') {
+            return <span className="font-mono">{value}</span>;
+          }
+          return <span className="break-all">{String(value)}</span>;
+        },
+      })
+    );
+
+    setColumns(newColumns);
+    toast.success(`Loaded ${flattenedData.length} rows with ${allKeys.size} columns`);
   };
 
-  const handleTextInput = (text: string) => {
-    try {
-      const result = parseJSON(text, { maxDepth: 15 });
-      setData(result.data);
-      setColumns(createColumns(result.data));
-      setFileName("Manual Input");
-      setHasNestedData(result.hasNestedData);
-      toast.success(
-        `Loaded ${result.rowCount} rows${
-          result.hasNestedData ? " (nested data flattened)" : ""
-        }`
-      );
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
-      console.error("JSON parsing error:", error);
-      toast.error(`Error parsing JSON: ${errorMessage}`);
+  const handleFileUpload = (content: string, fileName: string) => {
+    setJsonInput(content);
+    setFileName(fileName);
+    processJSONData(content);
+  };
+
+  const parseJSONData = () => {
+    if (!jsonInput.trim()) {
+      toast.error("Please enter JSON data");
+      return;
     }
+    processJSONData(jsonInput);
+  };
+
+  const loadSampleData = () => {
+    const sampleJSON = JSON.stringify([
+      {
+        "id": 1,
+        "name": "John Doe",
+        "email": "john@example.com",
+        "age": 30,
+        "active": true,
+        "address": {
+          "street": "123 Main St",
+          "city": "New York",
+          "zipCode": "10001"
+        },
+        "skills": ["JavaScript", "React", "Node.js"]
+      },
+      {
+        "id": 2,
+        "name": "Jane Smith",
+        "email": "jane@example.com",
+        "age": 25,
+        "active": false,
+        "address": {
+          "street": "456 Oak Ave",
+          "city": "Los Angeles",
+          "zipCode": "90210"
+        },
+        "skills": ["Python", "Django", "PostgreSQL"]
+      },
+      {
+        "id": 3,
+        "name": "Bob Johnson",
+        "email": "bob@example.com",
+        "age": 35,
+        "active": true,
+        "address": {
+          "street": "789 Pine Rd",
+          "city": "Chicago",
+          "zipCode": "60601"
+        },
+        "skills": ["Java", "Spring", "MySQL"]
+      }
+    ], null, 2);
+    
+    setJsonInput(sampleJSON);
+    processJSONData(sampleJSON);
+    setFileName('sample-data.json');
+  };
+
+  const clearData = () => {
+    setJsonInput("");
+    setData([]);
+    setColumns([]);
+    setFileName("");
+    setGlobalFilter("");
+    setSorting([]);
+    setColumnFilters([]);
+    toast.success("Data cleared");
+  };
+
+  const downloadCSV = () => {
+    if (data.length === 0) {
+      toast.error("No data to download");
+      return;
+    }
+
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row => headers.map(header => {
+        const value = row[header];
+        const stringValue = value === null || value === undefined ? '' : String(value);
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName.replace(/\.json$/i, '.csv') || 'json-data.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("CSV exported successfully");
+  };
+
+  const downloadJSON = () => {
+    if (data.length === 0) {
+      toast.error("No data to download");
+      return;
+    }
+
+    const jsonContent = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonContent], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName || 'processed-data.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("JSON exported successfully");
   };
 
   const table = useReactTable({
     data,
     columns,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     state: {
       sorting,
       columnFilters,
@@ -211,245 +266,149 @@ export default function JSONTableViewer() {
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
     initialState: {
       pagination: {
-        pageSize: 20,
+        pageSize: 10,
       },
     },
   });
 
-  const exportData = () => {
-    if (data.length === 0) return;
-
-    const jsonContent = JSON.stringify(data, null, 2);
-
-    const blob = new Blob([jsonContent], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = fileName.replace(".json", "_processed.json") || "data.json";
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Data exported!");
-  };
-
-  const exportCSV = () => {
-    if (data.length === 0) return;
-
-    const allKeys = new Set<string>();
-    data.forEach((row) => Object.keys(row).forEach((key) => allKeys.add(key)));
-    const headers = Array.from(allKeys).sort();
-
-    const csvContent = [
-      headers.join(","),
-      ...data.map((row) =>
-        headers
-          .map((header) => {
-            const value = row[header];
-            return value === null || value === undefined
-              ? ""
-              : `"${String(value).replace(/"/g, '""')}"`;
-          })
-          .join(",")
-      ),
-    ].join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = fileName.replace(".json", "_converted.csv") || "data.csv";
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Data exported as CSV!");
-  };
-
-  const clearData = () => {
-    setData([]);
-    setColumns([]);
-    setFileName("");
-    setHasNestedData(false);
-    setGlobalFilter("");
-    setColumnFilters([]);
-    setSorting([]);
-  };
-
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            JSON Data Input
-          </CardTitle>
-          <CardDescription>
-            Upload a JSON file or paste JSON data to view in an interactive
-            table
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="file-upload">Upload JSON File</Label>
-              <Input
-                id="file-upload"
-                type="file"
-                accept=".json"
-                onChange={handleFileUpload}
-                className="cursor-pointer"
-              />
-            </div>
+      <ToolHeader
+        title="JSON Table Viewer"
+        description="Convert JSON data to interactive table with filtering and sorting"
+        icon={Table}
+      />
 
-            <div className="space-y-2">
-              <Label htmlFor="json-text">Or Paste JSON Data</Label>
-              <textarea
-                id="json-text"
-                placeholder={`Examples:
-Simple: [{"name": "John", "age": 30}, {"name": "Jane", "age": 25}]
-Nested: [{"user": {"name": "John", "contact": {"email": "john@test.com"}}, "active": true}]
-Mixed: [{"id": 1, "data": [1,2,3], "info": {"status": "active"}}]`}
-                className="w-full h-24 tool-textarea"
-                onBlur={(e) => {
-                  if (e.target.value.trim()) {
-                    handleTextInput(e.target.value);
-                  }
-                }}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const textarea = document.getElementById(
-                    "json-text"
-                  ) as HTMLTextAreaElement;
-                  if (textarea && textarea.value.trim()) {
-                    handleTextInput(textarea.value);
-                  }
-                }}
-              >
-                Parse JSON
-              </Button>
-            </div>
-          </div>
+      <QuickActions
+        actions={[
+          {
+            id: "sample",
+            label: "Load Sample JSON",
+            onClick: loadSampleData,
+            variant: "outline" as const,
+          },
+          {
+            id: "parse",
+            label: "Parse JSON",
+            onClick: parseJSONData,
+            disabled: !jsonInput.trim(),
+            variant: "default" as const,
+          },
+          {
+            id: "clear",
+            label: "Clear All",
+            onClick: clearData,
+            variant: "outline" as const,
+          },
+        ]}
+      />
 
-          {data.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="outline">{data.length} rows</Badge>
-              <Badge variant="outline">{columns.length} columns</Badge>
-              {hasNestedData && (
-                <Badge variant="outline" className="text-blue-600">
-                  Nested data flattened
-                </Badge>
-              )}
-              {fileName && <Badge variant="secondary">{fileName}</Badge>}
+      <ResultCard
+        title="JSON Data Input"
+        description="Upload a JSON file or paste JSON data to view in an interactive table"
+        status="info"
+      >
+        <div className="space-y-4">
+          {fileName && (
+            <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded">
+              <Upload className="h-4 w-4" />
+              <span className="text-sm">{fileName}</span>
             </div>
           )}
-        </CardContent>
-      </Card>
+
+          <FileUploadZone
+            onFileSelect={handleFileUpload}
+            acceptedTypes={['.json']}
+            maxSizeInMB={10}
+            placeholder="Upload JSON file"
+          />
+
+          <div className="space-y-2">
+            <Label htmlFor="json-input">Or Paste JSON Data</Label>
+            <ResponsiveTextArea
+              value={jsonInput}
+              onChange={setJsonInput}
+              placeholder="Paste your JSON data here..."
+              minHeight={200}
+              showCharacterCount={true}
+            />
+          </div>
+        </div>
+      </ResultCard>
 
       {data.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <Search className="h-5 w-5" />
-                Data Table
-              </span>
+        <ResultCard
+          title="JSON Table"
+          description={`Showing ${table.getFilteredRowModel().rows.length} of ${data.length} rows`}
+          status="success"
+        >
+          <div className="space-y-4">
+            <div className="flex gap-4 items-center">
+              <div className="flex-1">
+                <Input
+                  placeholder="Search across all columns..."
+                  value={globalFilter}
+                  onChange={(e) => setGlobalFilter(e.target.value)}
+                  className="max-w-sm"
+                />
+              </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={exportData}>
+                <Button variant="outline" size="sm" onClick={downloadCSV}>
                   <Download className="h-4 w-4 mr-2" />
-                  Export JSON
+                  Download CSV
                 </Button>
-                <Button variant="outline" size="sm" onClick={exportCSV}>
+                <Button variant="outline" size="sm" onClick={downloadJSON}>
                   <Download className="h-4 w-4 mr-2" />
-                  Export CSV
+                  Download JSON
                 </Button>
-                <Button variant="outline" size="sm" onClick={clearData}>
-                  Clear
-                </Button>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Global Search */}
-            <div className="flex items-center space-x-2">
-              <Search className="h-4 w-4" />
-              <Input
-                placeholder="Search all columns..."
-                value={globalFilter ?? ""}
-                onChange={(event) =>
-                  setGlobalFilter(String(event.target.value))
-                }
-                className="max-w-sm"
-              />
-            </div>
-
-            {/* Table */}
-            <div className="border rounded-md">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    {table.getHeaderGroups().map((headerGroup) => (
-                      <tr
-                        key={headerGroup.id}
-                        className="border-b bg-gray-50 dark:bg-gray-900"
-                      >
-                        {headerGroup.headers.map((header) => (
-                          <th
-                            key={header.id}
-                            className="px-4 py-3 text-left font-medium"
-                          >
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext()
-                                )}
-                          </th>
-                        ))}
-                      </tr>
-                    ))}
-                  </thead>
-                  <tbody>
-                    {table.getRowModel().rows.map((row) => (
-                      <tr
-                        key={row.id}
-                        className="border-b hover:bg-gray-50 dark:hover:bg-gray-900"
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <td key={cell.id} className="px-4 py-3">
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
               </div>
             </div>
 
-            {/* Pagination */}
+            <div className="border rounded-lg overflow-auto max-h-96">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <tr key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <th
+                          key={header.id}
+                          className="p-3 text-left font-medium cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                          onClick={header.column.getToggleSortingHandler()}
+                        >
+                          <div className="flex items-center gap-2">
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            <ArrowUpDown className="h-4 w-4" />
+                          </div>
+                        </th>
+                      ))}
+                    </tr>
+                  ))}
+                </thead>
+                <tbody>
+                  {table.getRowModel().rows.map((row) => (
+                    <tr key={row.id} className="border-t hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                      {row.getVisibleCells().map((cell) => (
+                        <td key={cell.id} className="p-3">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-700 dark:text-gray-300">
-                  Showing{" "}
-                  {table.getState().pagination.pageIndex *
-                    table.getState().pagination.pageSize +
-                    1}{" "}
-                  to{" "}
-                  {Math.min(
-                    (table.getState().pagination.pageIndex + 1) *
-                      table.getState().pagination.pageSize,
-                    table.getFilteredRowModel().rows.length
-                  )}{" "}
-                  of {table.getFilteredRowModel().rows.length} entries
-                </span>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -470,8 +429,8 @@ Mixed: [{"id": 1, "data": [1,2,3], "info": {"status": "active"}}]`}
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </ResultCard>
       )}
     </div>
   );

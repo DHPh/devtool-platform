@@ -14,12 +14,11 @@ import {
   ColumnDef,
 } from "@tanstack/react-table";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  ToolHeader,
+  QuickActions,
+  ResultCard,
+  FileUploadZone,
+} from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,23 +31,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Upload,
   Download,
-  Search,
   ChevronLeft,
   ChevronRight,
   ArrowUpDown,
   BarChart3,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
-import { parseCSV, getDelimiterDisplayName } from "@/lib/utils/csv-parser";
-import { parseJSON } from "@/lib/utils/json-parser";
 
 export const metadata = {
   id: "data-explorer",
   name: "Data Explorer",
-  description:
-    "Advanced data analysis with statistics, filtering, and visualization",
+  description: "Advanced data analysis with statistics, filtering, and visualization",
   category: "Data Processing",
   tags: ["data", "analysis", "statistics", "explorer"],
   path: "/tools/data-explorer",
@@ -80,16 +75,11 @@ export default function DataExplorer() {
   const [globalFilter, setGlobalFilter] = useState("");
   const [fileName, setFileName] = useState("");
   const [stats, setStats] = useState<ColumnStats[]>([]);
-  const [selectedFormat, setSelectedFormat] = useState<
-    "auto" | "csv" | "json" | "tsv"
-  >("auto");
-  const [detectedDelimiter, setDetectedDelimiter] = useState<string>("");
-  const [hasNestedData, setHasNestedData] = useState(false);
+  const [selectedFormat, setSelectedFormat] = useState<"auto" | "csv" | "json" | "tsv">("auto");
+  const [textData, setTextData] = useState("");
 
   const detectColumnType = (values: unknown[]): ColumnStats["type"] => {
-    const nonNullValues = values.filter(
-      (v) => v !== null && v !== undefined && v !== ""
-    );
+    const nonNullValues = values.filter(v => v !== null && v !== undefined && v !== "");
     if (nonNullValues.length === 0) return "string";
 
     let numberCount = 0;
@@ -98,248 +88,216 @@ export default function DataExplorer() {
 
     for (const value of nonNullValues) {
       const strValue = String(value).trim();
-
-      if (strValue === "true" || strValue === "false") {
-        booleanCount++;
-      } else if (!isNaN(Number(strValue)) && strValue !== "") {
+      
+      if (!isNaN(Number(strValue)) && strValue !== "") {
         numberCount++;
+      } else if (strValue.toLowerCase() === "true" || strValue.toLowerCase() === "false") {
+        booleanCount++;
       } else if (!isNaN(Date.parse(strValue))) {
         dateCount++;
       }
     }
 
     const total = nonNullValues.length;
-    if (booleanCount === total) return "boolean";
-    if (numberCount === total) return "number";
-    if (dateCount === total) return "date";
-    if (numberCount > total * 0.8) return "number";
-    if (booleanCount > total * 0.8) return "boolean";
-    if (dateCount > total * 0.8) return "date";
-
-    return numberCount > 0 || booleanCount > 0 || dateCount > 0
-      ? "mixed"
-      : "string";
+    if (numberCount / total > 0.8) return "number";
+    if (booleanCount / total > 0.8) return "boolean";
+    if (dateCount / total > 0.8) return "date";
+    if (numberCount > 0 || booleanCount > 0 || dateCount > 0) return "mixed";
+    return "string";
   };
 
   const calculateStats = (data: DataRow[]): ColumnStats[] => {
     if (data.length === 0) return [];
 
-    const allKeys = new Set<string>();
-    data.forEach((row) => Object.keys(row).forEach((key) => allKeys.add(key)));
-
-    return Array.from(allKeys).map((column) => {
-      const values = data.map((row) => row[column]);
-      const nonNullValues = values.filter(
-        (v) => v !== null && v !== undefined && v !== ""
-      );
+    const columnNames = Object.keys(data[0]);
+    return columnNames.map(column => {
+      const values = data.map(row => row[column]);
+      const nonNullValues = values.filter(v => v !== null && v !== undefined && v !== "");
       const type = detectColumnType(values);
+      
+      const uniqueValues = [...new Set(values.map(v => String(v)))];
+      const valueCounts = values.reduce((acc: Record<string, number>, val) => {
+        const str = String(val);
+        acc[str] = (acc[str] || 0) + 1;
+        return acc;
+      }, {});
+      
+      const mostCommon = Object.entries(valueCounts)
+        .sort(([,a], [,b]) => b - a)[0]?.[0];
 
-      const stat: ColumnStats = {
+      const stats: ColumnStats = {
         column,
         type,
         count: values.length,
         nullCount: values.length - nonNullValues.length,
-        uniqueCount: new Set(nonNullValues.map((v) => String(v))).size,
+        uniqueCount: uniqueValues.length,
+        mostCommon,
       };
 
-      if (type === "number" || type === "mixed") {
-        const numericValues = nonNullValues
-          .map((v) => Number(v))
-          .filter((n) => !isNaN(n));
-
-        if (numericValues.length > 0) {
-          stat.min = Math.min(...numericValues);
-          stat.max = Math.max(...numericValues);
-          stat.avg =
-            numericValues.reduce((a, b) => a + b, 0) / numericValues.length;
-          stat.sum = numericValues.reduce((a, b) => a + b, 0);
+      if (type === "number") {
+        const numbers = nonNullValues.map(v => Number(v)).filter(n => !isNaN(n));
+        if (numbers.length > 0) {
+          stats.min = Math.min(...numbers);
+          stats.max = Math.max(...numbers);
+          stats.avg = numbers.reduce((a, b) => a + b, 0) / numbers.length;
+          stats.sum = numbers.reduce((a, b) => a + b, 0);
         }
       }
 
-      // Most common value
-      const valueCounts = new Map<string, number>();
-      nonNullValues.forEach((v) => {
-        const strValue = String(v);
-        valueCounts.set(strValue, (valueCounts.get(strValue) || 0) + 1);
+      return stats;
+    });
+  };
+
+  const parseCSV = (text: string): DataRow[] => {
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) return [];
+    
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    return lines.slice(1).map(line => {
+      const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+      const row: DataRow = {};
+      headers.forEach((header, index) => {
+        row[header] = values[index] || '';
       });
-
-      if (valueCounts.size > 0) {
-        const mostCommonEntry = Array.from(valueCounts.entries()).sort(
-          (a, b) => b[1] - a[1]
-        )[0];
-        stat.mostCommon = mostCommonEntry[0];
-      }
-
-      return stat;
+      return row;
     });
   };
 
-  const parseData = (text: string, format: string): DataRow[] => {
-    if (
-      format === "json" ||
-      (format === "auto" && text.trim().startsWith("["))
-    ) {
-      setDetectedDelimiter(""); // Clear delimiter for JSON
-      try {
-        const result = parseJSON(text, { maxDepth: 15 });
-        setHasNestedData(result.hasNestedData);
-        return result.data;
-      } catch (error) {
-        throw new Error(
-          `JSON parsing error: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }`
-        );
+  const parseJSON = (text: string): DataRow[] => {
+    try {
+      const parsed = JSON.parse(text);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      } else if (typeof parsed === 'object' && parsed !== null) {
+        return [parsed];
       }
+      return [];
+    } catch {
+      return [];
     }
-
-    // Enhanced CSV/TSV parsing with auto-delimiter detection
-    let format_to_use = format;
-    if (format === "auto") {
-      if (text.trim().startsWith("[")) {
-        format_to_use = "json";
-      } else if (text.includes("\t")) {
-        format_to_use = "tsv";
-      } else {
-        format_to_use = "csv";
-      }
-    }
-
-    if (format_to_use === "json") {
-      setDetectedDelimiter(""); // Clear delimiter for JSON
-      try {
-        const result = parseJSON(text, { maxDepth: 15 });
-        setHasNestedData(result.hasNestedData);
-        return result.data;
-      } catch (error) {
-        throw new Error(
-          `JSON parsing error: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }`
-        );
-      }
-    }
-
-    // Use shared CSV parser
-    const result = parseCSV(text, {
-      delimiter: format_to_use === "tsv" ? "\t" : undefined, // Let auto-detection work for CSV
-      hasHeader: true,
-      skipEmptyLines: true,
-    });
-
-    console.log("Parse result:", {
-      delimiter: result.delimiter,
-      rowCount: result.rowCount,
-      headers: result.headers,
-    });
-
-    // Store detected delimiter for UI display
-    setDetectedDelimiter(result.delimiter);
-    // CSV data is not nested
-    setHasNestedData(false);
-
-    return result.data;
   };
 
-  const createColumns = (data: DataRow[]): ColumnDef<DataRow>[] => {
-    if (data.length === 0) return [];
+  const parseTSV = (text: string): DataRow[] => {
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) return [];
+    
+    const headers = lines[0].split('\t').map(h => h.trim());
+    return lines.slice(1).map(line => {
+      const values = line.split('\t').map(v => v.trim());
+      const row: DataRow = {};
+      headers.forEach((header, index) => {
+        row[header] = values[index] || '';
+      });
+      return row;
+    });
+  };
 
+  const processData = (text: string, format: string) => {
+    let parsedData: DataRow[] = [];
+    
+    if (format === "csv" || (format === "auto" && text.includes(','))) {
+      parsedData = parseCSV(text);
+    } else if (format === "json" || (format === "auto" && text.trim().startsWith('['))) {
+      parsedData = parseJSON(text);
+    } else if (format === "tsv" || (format === "auto" && text.includes('\t'))) {
+      parsedData = parseTSV(text);
+    } else {
+      // Default to CSV
+      parsedData = parseCSV(text);
+    }
+
+    if (parsedData.length === 0) {
+      toast.error("Could not parse the data. Please check the format.");
+      return;
+    }
+
+    setData(parsedData);
+    const newStats = calculateStats(parsedData);
+    setStats(newStats);
+
+    // Create columns for table
     const columnHelper = createColumnHelper<DataRow>();
-    const allKeys = new Set<string>();
-
-    data.forEach((row) => Object.keys(row).forEach((key) => allKeys.add(key)));
-    const keys = Array.from(allKeys).sort();
-
-    return keys.map((key) =>
-      columnHelper.accessor((row) => row[key], {
-        id: key,
-        header: ({ column }) => (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="h-auto p-0 font-semibold hover:bg-transparent"
-          >
-            {key}
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        ),
+    const newColumns = Object.keys(parsedData[0]).map(key =>
+      columnHelper.accessor(key, {
+        header: key,
         cell: (info) => {
           const value = info.getValue();
-          if (value === null || value === undefined) {
-            return <span className="text-gray-400 italic">null</span>;
-          }
-          if (typeof value === "boolean") {
-            return (
-              <Badge variant={value ? "default" : "secondary"}>
-                {String(value)}
-              </Badge>
-            );
-          }
-          if (typeof value === "number") {
-            return <span className="font-mono">{value.toLocaleString()}</span>;
-          }
-          const stringValue = String(value);
-          if (stringValue.length > 100) {
-            return (
-              <span title={stringValue} className="truncate block max-w-xs">
-                {stringValue.substring(0, 100)}...
-              </span>
-            );
-          }
-          return <span>{stringValue}</span>;
+          return value !== null && value !== undefined ? String(value) : '';
         },
       })
     );
+    setColumns(newColumns);
+
+    toast.success(`Loaded ${parsedData.length} rows with ${Object.keys(parsedData[0]).length} columns`);
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      try {
-        let format = selectedFormat;
-        if (format === "auto") {
-          if (file.name.endsWith(".json")) format = "json";
-          else if (file.name.endsWith(".tsv")) format = "tsv";
-          else format = "csv";
-        }
-
-        const parsedData = parseData(text, format);
-        setData(parsedData);
-        setColumns(createColumns(parsedData));
-        setStats(calculateStats(parsedData));
-        setFileName(file.name);
-        toast.success(`Loaded ${parsedData.length} rows from ${file.name}`);
-      } catch {
-        toast.error("Error parsing file");
-      }
-    };
-    reader.readAsText(file);
+  const handleFileUpload = (content: string, fileName: string) => {
+    setFileName(fileName);
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    const detectedFormat = extension === 'json' ? 'json' : extension === 'tsv' ? 'tsv' : 'csv';
+    processData(content, selectedFormat === 'auto' ? detectedFormat : selectedFormat);
   };
 
-  const handleTextInput = (text: string) => {
-    try {
-      const parsedData = parseData(text, selectedFormat);
-      setData(parsedData);
-      setColumns(createColumns(parsedData));
-      setStats(calculateStats(parsedData));
-      setFileName("Manual Input");
-      toast.success(`Loaded ${parsedData.length} rows`);
-    } catch {
-      toast.error("Error parsing data");
+  const handleTextProcess = () => {
+    if (!textData.trim()) {
+      toast.error("Please enter some data to process");
+      return;
     }
+    processData(textData, selectedFormat);
+  };
+
+  const loadSampleData = () => {
+    const sampleCSV = `name,age,city,salary,active
+John Doe,30,New York,75000,true
+Jane Smith,25,Los Angeles,65000,false
+Bob Johnson,35,Chicago,80000,true
+Alice Brown,28,Houston,70000,true
+Charlie Wilson,32,Phoenix,72000,false`;
+    
+    setTextData(sampleCSV);
+    processData(sampleCSV, 'csv');
+    setFileName('sample-data.csv');
+  };
+
+  const clearData = () => {
+    setData([]);
+    setColumns([]);
+    setStats([]);
+    setTextData("");
+    setFileName("");
+    setGlobalFilter("");
+    setSorting([]);
+    setColumnFilters([]);
+    toast.success("Data cleared");
+  };
+
+  const downloadCSV = () => {
+    if (data.length === 0) {
+      toast.error("No data to download");
+      return;
+    }
+
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row => headers.map(header => 
+        `"${String(row[header] || '')}"`
+      ).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName || 'data-export.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Data exported successfully");
   };
 
   const table = useReactTable({
     data,
     columns,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     state: {
       sorting,
       columnFilters,
@@ -348,93 +306,61 @@ export default function DataExplorer() {
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
     initialState: {
       pagination: {
-        pageSize: 25,
+        pageSize: 10,
       },
     },
   });
 
-  const exportData = (format: "json" | "csv") => {
-    if (data.length === 0) return;
-
-    let content: string;
-    let mimeType: string;
-    let extension: string;
-
-    if (format === "json") {
-      content = JSON.stringify(data, null, 2);
-      mimeType = "application/json";
-      extension = ".json";
-    } else {
-      const allKeys = new Set<string>();
-      data.forEach((row) =>
-        Object.keys(row).forEach((key) => allKeys.add(key))
-      );
-      const headers = Array.from(allKeys).sort();
-
-      const exportDelimiter = detectedDelimiter || ",";
-
-      content = [
-        headers.join(exportDelimiter),
-        ...data.map((row) =>
-          headers
-            .map((header) => {
-              const value = row[header];
-              return value === null || value === undefined
-                ? ""
-                : `"${String(value).replace(/"/g, '""')}"`;
-            })
-            .join(exportDelimiter)
-        ),
-      ].join("\n");
-      mimeType = "text/csv";
-      extension = ".csv";
-    }
-
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = (fileName.split(".")[0] || "data") + "_processed" + extension;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success(`Data exported as ${format.toUpperCase()}!`);
-  };
-
-  const clearData = () => {
-    setData([]);
-    setColumns([]);
-    setStats([]);
-    setFileName("");
-    setDetectedDelimiter("");
-    setHasNestedData(false);
-    setGlobalFilter("");
-    setColumnFilters([]);
-    setSorting([]);
-  };
-
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Data Input
-          </CardTitle>
-          <CardDescription>
-            Upload or paste data for advanced analysis and exploration
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <ToolHeader
+        title="Data Explorer"
+        description="Advanced data analysis with statistics, filtering, and visualization"
+        icon={BarChart3}
+      />
+
+      <QuickActions
+        actions={[
+          {
+            id: "sample",
+            label: "Load Sample Data",
+            onClick: loadSampleData,
+            variant: "outline" as const,
+          },
+          {
+            id: "process",
+            label: "Process Data",
+            onClick: handleTextProcess,
+            disabled: !textData.trim(),
+            variant: "default" as const,
+          },
+          {
+            id: "clear",
+            label: "Clear All",
+            onClick: clearData,
+            variant: "outline" as const,
+          },
+        ]}
+      />
+
+      <ResultCard
+        title="Data Input"
+        description="Upload a file or paste data for analysis"
+        status="info"
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="format-select">Data Format</Label>
               <Select
                 value={selectedFormat}
-                onValueChange={(value: typeof selectedFormat) =>
-                  setSelectedFormat(value)
-                }
+                onValueChange={(value: typeof selectedFormat) => setSelectedFormat(value)}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -448,246 +374,136 @@ export default function DataExplorer() {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="file-upload">Upload File</Label>
-              <Input
-                id="file-upload"
-                type="file"
-                accept=".csv,.json,.tsv,.txt"
-                onChange={handleFileUpload}
-                className="cursor-pointer"
-              />
-            </div>
-
-            <div className="flex items-end">
-              <Button
-                variant="outline"
-                onClick={clearData}
-                disabled={data.length === 0}
-              >
-                Clear Data
-              </Button>
-            </div>
+            {fileName && (
+              <div className="space-y-2">
+                <Label>Current File</Label>
+                <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                  <FileText className="h-4 w-4" />
+                  <span className="text-sm">{fileName}</span>
+                </div>
+              </div>
+            )}
           </div>
+
+          <FileUploadZone
+            onFileSelect={handleFileUpload}
+            acceptedTypes={['.csv', '.json', '.tsv', '.txt']}
+            maxSizeInMB={10}
+            placeholder="Upload CSV, JSON, TSV, or text files"
+          />
 
           <div className="space-y-2">
-            <Label htmlFor="data-text">Or Paste Data</Label>
+            <Label htmlFor="text-data">Or Paste Data</Label>
             <textarea
-              id="data-text"
-              placeholder='Paste your data here...&#10;&#10;CSV: name,age,city&#10;John,30,NYC&#10;&#10;CSV (;): name;age;city&#10;John;30;NYC&#10;&#10;JSON: [{"name":"John","age":30}]&#10;&#10;Nested JSON: [{"user":{"name":"John","contact":{"email":"john@test.com"}}}]'
-              className="w-full h-32 tool-textarea"
-              onBlur={(e) => {
-                if (e.target.value.trim()) {
-                  handleTextInput(e.target.value);
-                }
-              }}
+              id="text-data"
+              value={textData}
+              onChange={(e) => setTextData(e.target.value)}
+              placeholder="Paste CSV, JSON, or TSV data here..."
+              className="w-full h-32 p-3 border rounded-lg resize-none font-mono text-sm"
             />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const textarea = document.getElementById(
-                  "data-text"
-                ) as HTMLTextAreaElement;
-                if (textarea && textarea.value.trim()) {
-                  handleTextInput(textarea.value);
-                }
-              }}
-            >
-              Process Data
-            </Button>
           </div>
-
-          {data.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="outline">{data.length} rows</Badge>
-              <Badge variant="outline">{columns.length} columns</Badge>
-              {detectedDelimiter && (
-                <Badge variant="outline">
-                  Format: {getDelimiterDisplayName(detectedDelimiter)}
-                </Badge>
-              )}
-              {hasNestedData && (
-                <Badge variant="outline" className="text-blue-600">
-                  Nested data flattened
-                </Badge>
-              )}
-              {fileName && <Badge variant="secondary">{fileName}</Badge>}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        </div>
+      </ResultCard>
 
       {stats.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Column Statistics
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Column</th>
-                    <th className="text-left p-2">Type</th>
-                    <th className="text-left p-2">Count</th>
-                    <th className="text-left p-2">Null</th>
-                    <th className="text-left p-2">Unique</th>
-                    <th className="text-left p-2">Min</th>
-                    <th className="text-left p-2">Max</th>
-                    <th className="text-left p-2">Avg</th>
-                    <th className="text-left p-2">Most Common</th>
-                  </tr>
+        <ResultCard
+          title="Data Statistics"
+          description={`Analysis of ${data.length} rows and ${stats.length} columns`}
+          status="success"
+        >
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <Button onClick={downloadCSV} className="flex items-center gap-2">
+                <Download className="h-4 w-4" />
+                Download CSV
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {stats.map((stat) => (
+                <div key={stat.column} className="p-4 border rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium">{stat.column}</h4>
+                    <Badge variant="outline">{stat.type}</Badge>
+                  </div>
+                  <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+                    <div>Count: {stat.count}</div>
+                    <div>Unique: {stat.uniqueCount}</div>
+                    <div>Null: {stat.nullCount}</div>
+                    {stat.type === 'number' && (
+                      <>
+                        <div>Min: {stat.min?.toFixed(2)}</div>
+                        <div>Max: {stat.max?.toFixed(2)}</div>
+                        <div>Avg: {stat.avg?.toFixed(2)}</div>
+                      </>
+                    )}
+                    {stat.mostCommon && (
+                      <div>Most common: {stat.mostCommon}</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </ResultCard>
+      )}
+
+      {data.length > 0 && (
+        <ResultCard
+          title="Data Table"
+          description={`Showing ${table.getFilteredRowModel().rows.length} of ${data.length} rows`}
+          status="success"
+        >
+          <div className="space-y-4">
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <Input
+                  placeholder="Search across all columns..."
+                  value={globalFilter}
+                  onChange={(e) => setGlobalFilter(e.target.value)}
+                  className="max-w-sm"
+                />
+              </div>
+            </div>
+
+            <div className="border rounded-lg overflow-auto max-h-96">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <tr key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <th
+                          key={header.id}
+                          className="p-3 text-left font-medium cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                          onClick={header.column.getToggleSortingHandler()}
+                        >
+                          <div className="flex items-center gap-2">
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            <ArrowUpDown className="h-4 w-4" />
+                          </div>
+                        </th>
+                      ))}
+                    </tr>
+                  ))}
                 </thead>
                 <tbody>
-                  {stats.map((stat) => (
-                    <tr key={stat.column} className="border-b">
-                      <td className="p-2 font-medium">{stat.column}</td>
-                      <td className="p-2">
-                        <Badge variant="outline">{stat.type}</Badge>
-                      </td>
-                      <td className="p-2">{stat.count}</td>
-                      <td className="p-2">{stat.nullCount}</td>
-                      <td className="p-2">{stat.uniqueCount}</td>
-                      <td className="p-2 font-mono">
-                        {stat.min !== undefined
-                          ? stat.min.toLocaleString()
-                          : "-"}
-                      </td>
-                      <td className="p-2 font-mono">
-                        {stat.max !== undefined
-                          ? stat.max.toLocaleString()
-                          : "-"}
-                      </td>
-                      <td className="p-2 font-mono">
-                        {stat.avg !== undefined ? stat.avg.toFixed(2) : "-"}
-                      </td>
-                      <td
-                        className="p-2 max-w-xs truncate"
-                        title={stat.mostCommon}
-                      >
-                        {stat.mostCommon || "-"}
-                      </td>
+                  {table.getRowModel().rows.map((row) => (
+                    <tr key={row.id} className="border-t hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                      {row.getVisibleCells().map((cell) => (
+                        <td key={cell.id} className="p-3">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {data.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <Search className="h-5 w-5" />
-                Data Table
-              </span>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => exportData("json")}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Export JSON
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => exportData("csv")}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Export CSV
-                </Button>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Global Search */}
-            <div className="flex items-center space-x-2">
-              <Search className="h-4 w-4" />
-              <Input
-                placeholder="Search all columns..."
-                value={globalFilter ?? ""}
-                onChange={(event) =>
-                  setGlobalFilter(String(event.target.value))
-                }
-                className="max-w-sm"
-              />
-            </div>
-
-            {/* Table */}
-            <div className="border rounded-md">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    {table.getHeaderGroups().map((headerGroup) => (
-                      <tr
-                        key={headerGroup.id}
-                        className="border-b bg-gray-50 dark:bg-gray-900"
-                      >
-                        {headerGroup.headers.map((header) => (
-                          <th
-                            key={header.id}
-                            className="px-4 py-3 text-left font-medium"
-                          >
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext()
-                                )}
-                          </th>
-                        ))}
-                      </tr>
-                    ))}
-                  </thead>
-                  <tbody>
-                    {table.getRowModel().rows.map((row) => (
-                      <tr
-                        key={row.id}
-                        className="border-b hover:bg-gray-50 dark:hover:bg-gray-900"
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <td key={cell.id} className="px-4 py-3">
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Pagination */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-700 dark:text-gray-300">
-                  Showing{" "}
-                  {table.getState().pagination.pageIndex *
-                    table.getState().pagination.pageSize +
-                    1}{" "}
-                  to{" "}
-                  {Math.min(
-                    (table.getState().pagination.pageIndex + 1) *
-                      table.getState().pagination.pageSize,
-                    table.getFilteredRowModel().rows.length
-                  )}{" "}
-                  of {table.getFilteredRowModel().rows.length} entries
-                </span>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -708,8 +524,8 @@ export default function DataExplorer() {
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </ResultCard>
       )}
     </div>
   );

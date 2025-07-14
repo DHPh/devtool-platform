@@ -1,17 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Copy } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Type } from "lucide-react";
 import { toast } from "sonner";
-import { ToolContainer, ResponsiveTextArea } from "@/components/layout";
+import {
+  ToolHeader,
+  QuickActions,
+  ResultCard,
+  CopyableResult,
+} from "@/components/layout";
 
 export const metadata = {
   id: "case-converter",
@@ -127,54 +125,76 @@ export default function CaseConverter() {
     })
   );
 
-  return (
-    <ToolContainer
-      title="Case Converter"
-      description="Convert text between different naming conventions and cases including camelCase, snake_case, kebab-case, and more"
-    >
-      <Card>
-        <CardHeader>
-          <CardTitle>Input Text</CardTitle>
-          <CardDescription>
-            Enter the text you want to convert to different cases
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveTextArea
-            placeholder="Enter your text here...
-Examples: 'Hello World', 'myVariableName', 'some-kebab-case'"
-            value={input}
-            onChange={setInput}
-            minHeight={80}
-            showCharacterCount={true}
-          />
-        </CardContent>
-      </Card>
+  const sampleTexts = [
+    "Hello World Example",
+    "myVariableName",
+    "some-kebab-case",
+    "user_account_settings",
+  ];
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto">
-        {results.map(({ name, result }) => (
-          <Card key={name}>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">{name}</CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyToClipboard(result, name)}
-                  className="h-8 w-8 p-0"
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="p-3 bg-muted rounded-md max-h-20 overflow-auto">
-                <code className="text-sm break-all">{result}</code>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+  return (
+    <div className="space-y-6">
+      <ToolHeader
+        title="Case Converter"
+        description="Convert text between different naming conventions and cases including camelCase, snake_case, kebab-case, and more"
+        icon={Type}
+      />
+
+      <QuickActions
+        actions={[
+          ...sampleTexts.map((sample, index) => ({
+            id: `sample-${index}`,
+            label: sample,
+            onClick: () => setInput(sample),
+          })),
+          {
+            id: "clear",
+            label: "Clear",
+            onClick: () => setInput(""),
+            variant: "outline" as const,
+          },
+        ]}
+      />
+
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Input Section */}
+        <div>
+          <ResultCard
+            title="Input Text"
+            description="Enter the text you want to convert to different cases"
+            status="info"
+          >
+            <Textarea
+              placeholder="Enter your text here...
+Examples: 'Hello World', 'myVariableName', 'some-kebab-case'"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              className="min-h-[120px] font-mono text-sm"
+            />
+          </ResultCard>
+        </div>
+
+        {/* Results Section */}
+        <div className="lg:col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {results.map(({ name, result }) => (
+              <ResultCard
+                key={name}
+                title={name}
+                status="success"
+                onCopy={() => copyToClipboard(result, name)}
+                copyLabel="Copy"
+              >
+                <CopyableResult
+                  value={result}
+                  fontFamily="mono"
+                  rows={2}
+                />
+              </ResultCard>
+            ))}
+          </div>
+        </div>
       </div>
-    </ToolContainer>
+    </div>
   );
 }
