@@ -37,6 +37,7 @@ export default function ColorConverter() {
     hsl: { h: 217, s: 91, l: 60 },
     cmyk: { c: 76, m: 47, y: 0, k: 4 },
   });
+  const [hexInput, setHexInput] = useState("#3b82f6");
 
   const hexToRgb = (
     hex: string
@@ -155,6 +156,7 @@ export default function ColorConverter() {
   };
 
   const updateFromHex = (hex: string) => {
+    setHexInput(hex); // Always update the input field
     const rgb = hexToRgb(hex);
     if (rgb) {
       const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
@@ -167,6 +169,7 @@ export default function ColorConverter() {
     const hex = rgbToHex(r, g, b);
     const hsl = rgbToHsl(r, g, b);
     const cmyk = rgbToCmyk(r, g, b);
+    setHexInput(hex); // Update hex input when RGB changes
     setColorValues({ hex, rgb: { r, g, b }, hsl, cmyk });
   };
 
@@ -174,6 +177,7 @@ export default function ColorConverter() {
     const rgb = hslToRgb(h, s, l);
     const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
     const cmyk = rgbToCmyk(rgb.r, rgb.g, rgb.b);
+    setHexInput(hex); // Update hex input when HSL changes
     setColorValues({ hex, rgb, hsl: { h, s, l }, cmyk });
   };
 
@@ -274,7 +278,7 @@ export default function ColorConverter() {
                 <Input
                   id="hex"
                   type="text"
-                  value={colorValues.hex}
+                  value={hexInput}
                   onChange={(e) => updateFromHex(e.target.value)}
                   placeholder="#3b82f6"
                 />
