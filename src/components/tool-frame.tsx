@@ -65,11 +65,11 @@ export function ToolFrame({ tool, children }: ToolFrameProps) {
   };
 
   return (
-    <div className="w-full px-2 sm:px-4 lg:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
-      <div className="px-2 sm:px-0">
+    <div className="w-full px-0 sm:container sm:mx-auto sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
+      <div className="px-4 sm:px-0">
         <Breadcrumbs items={breadcrumbItems} />
       </div>
-      <Card className="border-0 sm:border shadow-none sm:shadow-sm">
+      <Card className="border-0 sm:border shadow-none sm:shadow-sm mx-0 sm:mx-auto">
         <CardHeader>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
             <div className="space-y-2 flex-1">
@@ -128,7 +128,9 @@ export function ToolFrame({ tool, children }: ToolFrameProps) {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">{children}</CardContent>
+        <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+          {children}
+        </CardContent>
       </Card>
     </div>
   );

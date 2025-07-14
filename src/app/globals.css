@@ -404,11 +404,39 @@ html:not([data-theme-applied]) body .theme-loading-override {
   visibility: visible;
 }
 
+/* Navigation responsive improvements */
+@media (max-width: 1024px) {
+  /* Tablet navigation adjustments */
+  .navigation-tablet {
+    @apply flex-wrap gap-2;
+  }
+  
+  .navigation-tablet .logo {
+    @apply text-base;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Mobile navigation improvements */
+  .navigation-mobile {
+    @apply px-3;
+  }
+  
+  .navigation-mobile .logo {
+    @apply text-sm;
+  }
+  
+  /* Prevent navigation items from wrapping awkwardly */
+  .navigation-mobile .flex {
+    @apply items-center gap-2;
+  }
+}
+
 /* Ensure minimum viewport width for proper mobile experience */
 @media (max-width: 768px) {
   .container {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
+    padding-left: 0;
+    padding-right: 0;
     max-width: 100%;
   }
 
@@ -419,18 +447,18 @@ html:not([data-theme-applied]) body .theme-loading-override {
 
   /* Better mobile spacing for tool layouts */
   .tool-layout {
-    @apply space-y-3;
+    @apply space-y-4;
   }
 
   .tool-layout .grid {
-    @apply grid-cols-1 gap-3;
+    @apply grid-cols-1 gap-4;
   }
 
   /* Ensure cards don't become too narrow */
   .tool-card {
     min-width: 0;
     width: 100%;
-    @apply p-3;
+    @apply p-4;
   }
 
   /* Better mobile typography */
@@ -468,7 +496,7 @@ html:not([data-theme-applied]) body .theme-loading-override {
 
   /* Mobile-specific utilities */
   .mobile-full-width {
-    @apply w-full mx-0 px-2;
+    @apply w-full mx-0;
   }
 
   /* Remove margins and paddings that cause overflow */

@@ -36,18 +36,18 @@ export function Navigation() {
 
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
+      <div className="mx-auto px-4 sm:container">
+        <div className="flex h-16 items-center justify-between gap-4">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
+          <Link href="/" className="flex items-center space-x-2 min-w-0 flex-shrink-0">
             <div className="h-8 w-8 bg-primary text-primary-foreground rounded-md flex items-center justify-center font-bold">
               DT
             </div>
-            <span className="font-bold text-xl">DevTool Platform</span>
+            <span className="font-bold text-lg sm:text-xl truncate">DevTool Platform</span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden lg:flex items-center space-x-4">
             <Link href="/">
               <Button variant="ghost" size="sm">
                 <Home className="h-4 w-4 mr-2" />
@@ -163,13 +163,73 @@ export function Navigation() {
             <ThemeToggle />
           </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden flex items-center space-x-2">
+          {/* Mobile/Tablet menu button */}
+          <div className="lg:hidden flex items-center space-x-2">
+            {/* Tablet Navigation (md:block lg:hidden) - Show search and bookmarks */}
+            <div className="hidden md:flex lg:hidden items-center space-x-2">
+              <Dialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <Search className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Search Tools</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <Input
+                      placeholder="Type to search tools..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full"
+                    />
+                    <div className="max-h-96 overflow-y-auto space-y-2">
+                      {searchResults.length > 0 ? (
+                        searchResults.map((tool) => (
+                          <Card
+                            key={tool.id}
+                            className="cursor-pointer hover:bg-accent"
+                          >
+                            <Link
+                              href={tool.path}
+                              onClick={() => setIsSearchOpen(false)}
+                            >
+                              <CardHeader className="pb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xl">{tool.icon}</span>
+                                  <CardTitle className="text-sm">
+                                    {tool.name}
+                                  </CardTitle>
+                                </div>
+                                <CardDescription className="text-xs">
+                                  {tool.description}
+                                </CardDescription>
+                              </CardHeader>
+                            </Link>
+                          </Card>
+                        ))
+                      ) : searchQuery ? (
+                        <p className="text-muted-foreground text-center py-4">
+                          No tools found for &quot;{searchQuery}&quot;
+                        </p>
+                      ) : (
+                        <p className="text-muted-foreground text-center py-4">
+                          Start typing to search tools...
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+            
             <ThemeToggle />
             <Button
               variant="outline"
               size="icon"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="flex-shrink-0"
             >
               {isMobileMenuOpen ? (
                 <X className="h-4 w-4" />
@@ -180,9 +240,9 @@ export function Navigation() {
           </div>
         </div>
 
-        {/* Mobile menu */}
+        {/* Mobile/Tablet menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden py-4 space-y-2">
+          <div className="lg:hidden py-4 space-y-2 border-t">
             <Link href="/" onClick={() => setIsMobileMenuOpen(false)}>
               <Button
                 variant="ghost"
