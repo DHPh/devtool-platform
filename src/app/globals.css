@@ -92,6 +92,48 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
+  /* Ensure better mobile container spacing */
+  .mobile-container {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Better mobile grid layouts */
+  .mobile-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6;
+  }
+
+  /* Responsive text sizing */
+  .responsive-text-lg {
+    @apply text-base sm:text-lg;
+  }
+
+  .responsive-text-xl {
+    @apply text-lg sm:text-xl;
+  }
+
+  .responsive-text-2xl {
+    @apply text-xl sm:text-2xl;
+  }
+
+  .responsive-text-3xl {
+    @apply text-2xl sm:text-3xl;
+  }
+
+  /* Better mobile card spacing */
+  .mobile-card {
+    @apply p-4 sm:p-6;
+  }
+
+  /* Responsive flex layouts */
+  .mobile-flex {
+    @apply flex flex-col sm:flex-row gap-4 sm:gap-6;
+  }
+
+  /* Touch-friendly button sizing */
+  .mobile-button {
+    @apply min-h-[44px] px-4 py-2 sm:px-6 sm:py-3;
+  }
 }
 
 /* Code highlighting and dark mode improvements */
@@ -360,4 +402,82 @@ body {
 /* Override the visibility rule for loading states and critical content */
 html:not([data-theme-applied]) body .theme-loading-override {
   visibility: visible;
+}
+
+/* Ensure minimum viewport width for proper mobile experience */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    max-width: 100%;
+  }
+
+  /* Remove card padding on mobile for more space */
+  .card {
+    @apply mx-0 border-0 shadow-none;
+  }
+
+  /* Better mobile spacing for tool layouts */
+  .tool-layout {
+    @apply space-y-3;
+  }
+
+  .tool-layout .grid {
+    @apply grid-cols-1 gap-3;
+  }
+
+  /* Ensure cards don't become too narrow */
+  .tool-card {
+    min-width: 0;
+    width: 100%;
+    @apply p-3;
+  }
+
+  /* Better mobile typography */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    word-wrap: break-word;
+    hyphens: auto;
+  }
+
+  /* Prevent horizontal overflow */
+  * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Better input field sizing on mobile */
+  input,
+  textarea,
+  select {
+    @apply min-h-[44px] text-base;
+  }
+
+  /* Better button wrapping for mobile */
+  .button-group {
+    @apply flex-wrap gap-2;
+  }
+
+  .button-group > * {
+    @apply flex-1 min-w-[100px];
+  }
+
+  /* Mobile-specific utilities */
+  .mobile-full-width {
+    @apply w-full mx-0 px-2;
+  }
+
+  /* Remove margins and paddings that cause overflow */
+  .mobile-no-margin {
+    @apply m-0 p-0;
+  }
+
+  /* Ensure content doesn't overflow */
+  .mobile-container {
+    @apply overflow-x-hidden w-full;
+  }
 }

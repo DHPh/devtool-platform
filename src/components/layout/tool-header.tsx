@@ -47,8 +47,8 @@ export function ToolHeader({
   children,
 }: ToolHeaderProps) {
   return (
-    <Card className={className}>
-      <CardHeader>
+    <Card className={`border-0 sm:border shadow-none sm:shadow-sm ${className}`}>
+      <CardHeader className="px-3 sm:px-6 py-3 sm:py-6">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3 flex-1">
             {Icon && (

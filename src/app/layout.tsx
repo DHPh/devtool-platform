@@ -196,7 +196,7 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <Navigation />
-        <main className="min-h-screen">{children}</main>
+        <main className="min-h-screen w-full">{children}</main>
         <Toaster />
       </body>
     </html>

@@ -46,13 +46,14 @@ export function QuickActions({
   showLabels = true,
 }: QuickActionsProps) {
   const getLayoutClasses = () => {
+    const baseClasses = "gap-2";
     switch (layout) {
       case "vertical":
-        return "flex flex-col gap-2";
+        return `flex flex-col ${baseClasses}`;
       case "grid":
-        return "grid grid-cols-2 gap-2";
+        return `grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 ${baseClasses}`;
       default:
-        return "flex flex-wrap gap-2";
+        return `flex flex-wrap ${baseClasses}`;
     }
   };
 
@@ -68,7 +69,7 @@ export function QuickActions({
             size={size}
             disabled={action.disabled}
             title={action.tooltip}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 min-h-[44px] flex-1 sm:flex-initial justify-center"
           >
             {Icon && <Icon className="h-4 w-4" />}
             {showLabels && action.label}

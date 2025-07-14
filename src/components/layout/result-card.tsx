@@ -87,8 +87,8 @@ export function ResultCard({
   };
 
   return (
-    <Card className={className}>
-      <CardHeader>
+    <Card className={`border-0 sm:border shadow-none sm:shadow-sm ${className}`}>
+      <CardHeader className="px-3 sm:px-6 py-3 sm:py-6 pb-2 sm:pb-6">
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-lg">{title}</CardTitle>
@@ -97,7 +97,7 @@ export function ResultCard({
           {getStatusBadge()}
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 px-3 sm:px-6 pb-3 sm:pb-6 pt-0">
         {/* Error Display */}
         {error && (
           <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
