@@ -114,7 +114,7 @@ export default function ToolsPage() {
           __html: JSON.stringify(structuredData),
         }}
       />
-      <div className="container mx-auto px-4 py-6 space-y-8 max-w-7xl">
+      <div className="mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8 max-w-7xl">
         <Breadcrumbs items={breadcrumbItems} />
 
         {/* Hero Section */}

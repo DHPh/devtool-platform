@@ -156,17 +156,17 @@ export default function HomePage() {
       />
       <div className="space-y-16">
         {/* Hero Section - SSR for SEO */}
-        <section className="text-center space-y-6 py-8 sm:py-16 px-4">
+        <section className="text-center space-y-6 py-8 sm:py-16 px-4 sm:px-6 lg:px-8">
           <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent leading-tight">
             100+ Free Developer Tools
           </h1>
-          <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed px-4">
+          <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed px-4 sm:px-6">
             The ultimate collection of online developer tools. JSON formatter,
             Base64 encoder, regex tester, UUID generator, and many more. All
             tools work in your browser with{" "}
             <strong>no registration required</strong>.
           </p>
-          <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-4 pt-4 px-4">
+          <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-4 pt-4 px-4 sm:px-6">
             <Link
               href="/tools"
               className="inline-flex items-center px-4 sm:px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors min-h-[44px] w-full sm:w-auto justify-center"
@@ -184,8 +184,8 @@ export default function HomePage() {
         </section>
 
         {/* Features Section - SSR for SEO */}
-        <section className="py-16">
-          <div className="container mx-auto px-4 max-w-7xl">
+        <section className="py-16 px-4 sm:px-6 lg:px-8">
+          <div className="container mx-auto max-w-7xl">
             <h2 className="text-3xl font-bold text-center mb-12">
               Why Developers Choose DevTool Platform
             </h2>
@@ -229,8 +229,8 @@ export default function HomePage() {
         </section>
 
         {/* Featured Tools Section - SSR for SEO */}
-        <section className="py-16 bg-muted/30">
-          <div className="container mx-auto px-4 max-w-7xl">
+        <section className="py-16 bg-muted/30 px-4 sm:px-6 lg:px-8">
+          <div className="container mx-auto max-w-7xl">
             <h2 className="text-3xl font-bold text-center mb-12">
               Most Popular Developer Tools
             </h2>
@@ -286,8 +286,8 @@ export default function HomePage() {
         </section>
 
         {/* Enhanced Tools Section - Client-side for interactivity */}
-        <section className="py-16">
-          <div className="container mx-auto px-4 max-w-7xl">
+        <section className="py-16 px-4 sm:px-6 lg:px-8">
+          <div className="container mx-auto max-w-7xl">
             <h2 className="text-3xl font-bold text-center mb-12">
               Explore All Tools
             </h2>
@@ -296,8 +296,8 @@ export default function HomePage() {
         </section>
 
         {/* SEO Content Section */}
-        <section className="py-16 bg-muted/30">
-          <div className="container mx-auto px-4 max-w-7xl">
+        <section className="py-16 bg-muted/30 px-4 sm:px-6 lg:px-8">
+          <div className="container mx-auto max-w-7xl">
             <div className="max-w-4xl mx-auto space-y-12">
               <div className="text-center space-y-4">
                 <h2 className="text-3xl font-bold">
