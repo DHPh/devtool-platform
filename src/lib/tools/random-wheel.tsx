@@ -20,7 +20,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Play, RotateCcw, Trophy, Clock, Shuffle, PartyPopper, X } from "lucide-react";
+import {
+  Play,
+  RotateCcw,
+  Trophy,
+  Clock,
+  Shuffle,
+  PartyPopper,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   ResponsiveTextArea,
@@ -52,9 +60,54 @@ interface SpinResult {
 }
 
 const DEFAULT_COLORS = [
-  "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#DDA0DD",
-  "#98D8C8", "#F7DC6F", "#BB8FCE", "#85C1E9", "#F8C471", "#82E0AA",
-  "#F1948A", "#85C0E0", "#D7DBDD", "#F8BBD0", "#A5D6A7", "#FFCC80"
+  "#DC2626",
+  "#2563EB",
+  "#16A34A",
+  "#C026D3",
+  "#EA580C",
+  "#7C3AED",
+  "#059669",
+  "#DB2777",
+  "#D97706",
+  "#0284C7",
+  "#B91C1C",
+  "#6D28D9",
+  "#15803D",
+  "#BE185D",
+  "#CA8A04",
+  "#1D4ED8",
+  "#991B1B",
+  "#A21CAF",
+  "#047857",
+  "#9D174D",
+  "#B45309",
+  "#1E40AF",
+  "#7F1D1D",
+  "#86198F",
+  "#065F46",
+  "#831843",
+  "#92400E",
+  "#5B21B6",
+  "#C2410C",
+  "#0891B2",
+  "#166534",
+  "#701A75",
+  "#A16207",
+  "#0369A1",
+  "#9A3412",
+  "#0E7490",
+  "#14532D",
+  "#78350F",
+  "#854D0E",
+  "#4C1D95",
+  "#7C2D12",
+  "#155E75",
+  "#064E3B",
+  "#713F12",
+  "#075985",
+  "#164E63",
+  "#0C4A6E",
+  "#1E3A8A",
 ];
 
 export default function RandomWheel() {
@@ -65,7 +118,9 @@ export default function RandomWheel() {
     { id: "4", text: "Option 4", color: DEFAULT_COLORS[3], weight: 1 },
   ]);
 
-  const [inputText, setInputText] = useState("Option 1\nOption 2\nOption 3\nOption 4");
+  const [inputText, setInputText] = useState(
+    "Option 1\nOption 2\nOption 3\nOption 4"
+  );
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [selectedItem, setSelectedItem] = useState<WheelItem | null>(null);
@@ -80,7 +135,10 @@ export default function RandomWheel() {
 
   // Parse input text to items
   const parseInputToItems = () => {
-    const lines = inputText.trim().split("\n").filter((line) => line.trim());
+    const lines = inputText
+      .trim()
+      .split("\n")
+      .filter((line) => line.trim());
     if (lines.length === 0) {
       toast.error("Please enter at least one option");
       return;
@@ -101,9 +159,9 @@ export default function RandomWheel() {
   const removeItem = (id: string) => {
     const newItems = items.filter((item) => item.id !== id);
     setItems(newItems);
-    
+
     // Update input text
-    setInputText(newItems.map(item => item.text).join("\n"));
+    setInputText(newItems.map((item) => item.text).join("\n"));
   };
 
   // Calculate wheel segments starting from top
@@ -128,11 +186,16 @@ export default function RandomWheel() {
   const getWinner = (finalRotation: number) => {
     const segments = calculateSegments();
     // Normalize rotation and adjust for pointer at top
-    const normalizedRotation = ((360 - (finalRotation % 360)) + 360) % 360;
-    
-    return segments.find(segment => {
-      return normalizedRotation >= segment.startAngle && normalizedRotation < segment.endAngle;
-    }) || segments[0];
+    const normalizedRotation = (360 - (finalRotation % 360) + 360) % 360;
+
+    return (
+      segments.find((segment) => {
+        return (
+          normalizedRotation >= segment.startAngle &&
+          normalizedRotation < segment.endAngle
+        );
+      }) || segments[0]
+    );
   };
 
   // Spin the wheel
@@ -146,8 +209,8 @@ export default function RandomWheel() {
     setIsSpinning(true);
     setSelectedItem(null);
 
-    // Random spin (5-10 full rotations + random angle)
-    const spins = Math.random() * 5 + 5;
+    // Random spin with more rotations for better effect (10-20 full rotations + random angle)
+    const spins = Math.random() * 10 + 10;
     const randomAngle = Math.random() * 360;
     const finalRotation = rotation + spins * 360 + randomAngle;
 
@@ -159,9 +222,26 @@ export default function RandomWheel() {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / duration, 1);
 
-      // Smooth easing
-      const eased = 1 - Math.pow(1 - progress, 3);
-      const currentRotation = startRotation + (finalRotation - startRotation) * eased;
+      // Realistic wheel physics - quick acceleration then gradual deceleration
+      let eased;
+      if (progress < 0.1) {
+        // Very quick acceleration in first 10% (0-10%)
+        const accelProgress = progress / 0.1;
+        eased = accelProgress * accelProgress * 0.3; // Quadratic acceleration to 30%
+      } else if (progress < 0.4) {
+        // Fast constant speed in middle 30% (10-40%)
+        const constantProgress = (progress - 0.1) / 0.3;
+        eased = 0.3 + constantProgress * 0.5; // Linear from 30% to 80%
+      } else {
+        // Gradual deceleration in last 60% (40-100%) - creates suspense
+        const decelProgress = (progress - 0.4) / 0.6;
+        // Cubic deceleration for smooth slowdown
+        const decelEased = 1 - Math.pow(1 - decelProgress, 3);
+        eased = 0.8 + 0.2 * decelEased;
+      }
+
+      const currentRotation =
+        startRotation + (finalRotation - startRotation) * eased;
       setRotation(currentRotation);
 
       if (progress < 1) {
@@ -172,8 +252,8 @@ export default function RandomWheel() {
         if (winner) {
           setSelectedItem(winner.item);
           const result = { item: winner.item, timestamp: new Date() };
-          setResults(prev => [result, ...prev.slice(0, 9)]);
-          
+          setResults((prev) => [result, ...prev.slice(0, 9)]);
+
           // Show popup if enabled
           if (showResultPopup) {
             setShowResultDialog(true);
@@ -210,33 +290,37 @@ export default function RandomWheel() {
   const renderWheel = () => {
     if (items.length === 0) {
       return (
-        <div className="flex items-center justify-center w-96 h-96 bg-gray-100 dark:bg-gray-800 rounded-full border-4 border-gray-300 dark:border-gray-600">
-          <p className="text-gray-500 text-center">Add options to see the wheel</p>
+        <div className="flex items-center justify-center w-[480px] h-[480px] bg-gray-100 dark:bg-gray-800 rounded-full border-4 border-gray-300 dark:border-gray-600">
+          <p className="text-gray-500 text-center">
+            Add options to see the wheel
+          </p>
         </div>
       );
     }
 
     const segments = calculateSegments();
-    const size = 400; // Increased size
-    const radius = 180;
+    const size = 480; // Increased from 400 to 480 for larger wheel
+    const radius = 220; // Increased from 180 to 220
     const centerX = size / 2;
     const centerY = size / 2;
 
     return (
-      <div 
+      <div
         className="relative"
-        title={!isSpinning && items.length > 0 ? "Click to spin the wheel!" : ""}
+        title={
+          !isSpinning && items.length > 0 ? "Click to spin the wheel!" : ""
+        }
       >
         <svg
           ref={wheelRef}
           width={size}
           height={size}
           className={`drop-shadow-xl transition-all duration-200 ${
-            !isSpinning && items.length > 0 
-              ? "cursor-pointer hover:scale-105 hover:drop-shadow-2xl" 
-              : items.length === 0 
-                ? "cursor-not-allowed" 
-                : "cursor-default"
+            !isSpinning && items.length > 0
+              ? "cursor-pointer hover:scale-105 hover:drop-shadow-2xl"
+              : items.length === 0
+              ? "cursor-not-allowed"
+              : "cursor-default"
           }`}
           style={{
             transform: `rotate(${rotation}deg)`,
@@ -248,7 +332,7 @@ export default function RandomWheel() {
             // Convert to SVG coordinates (SVG starts from 3 o'clock, we want 12 o'clock)
             const startAngle = segment.startAngle - 90;
             const endAngle = segment.endAngle - 90;
-            
+
             const startRad = (startAngle * Math.PI) / 180;
             const endRad = (endAngle * Math.PI) / 180;
 
@@ -266,26 +350,80 @@ export default function RandomWheel() {
               "Z",
             ].join(" ");
 
-            // Text positioning - radial from center, moved inward to prevent overflow
+            // Text positioning - centered and properly scaled
             const textAngle = (segment.startAngle + segment.endAngle) / 2;
-            const textAngleRad = ((textAngle - 90) * Math.PI) / 180; // Adjust for SVG coordinate system
-            const textRadius = radius * 0.55; // Moved further inward to prevent overflow
+            const textAngleRad = ((textAngle - 90) * Math.PI) / 180;
+
+            // Dynamic text radius based on number of items for better spacing
+            const baseTextRadius = radius * 0.65;
+            const textRadius =
+              items.length > 12 ? baseTextRadius * 0.85 : baseTextRadius;
+
             const textX = centerX + textRadius * Math.cos(textAngleRad);
             const textY = centerY + textRadius * Math.sin(textAngleRad);
 
-            // Smart text truncation based on segment size
-            const getMaxTextLength = (segmentAngle: number) => {
-              if (segmentAngle > 60) return 12;
-              if (segmentAngle > 45) return 10;
-              if (segmentAngle > 30) return 8;
-              if (segmentAngle > 20) return 6;
-              return 4;
+            // Dynamic font size based on number of options and segment size
+            const getDynamicFontSize = (
+              itemCount: number,
+              segmentAngle: number
+            ) => {
+              let baseSize = 15;
+
+              // Scale down for more items
+              if (itemCount > 20) baseSize = 10;
+              else if (itemCount > 15) baseSize = 11;
+              else if (itemCount > 12) baseSize = 12;
+              else if (itemCount > 8) baseSize = 13;
+              else if (itemCount > 6) baseSize = 14;
+
+              // Further adjust for very small segments
+              if (segmentAngle < 15) baseSize = Math.max(baseSize - 2, 8);
+              else if (segmentAngle < 25) baseSize = Math.max(baseSize - 1, 9);
+
+              return baseSize;
             };
 
-            const maxLength = getMaxTextLength(segment.segmentAngle);
-            const displayText = segment.item.text.length > maxLength
-              ? segment.item.text.substring(0, maxLength) + "..."
-              : segment.item.text;
+            // Smart text truncation based on segment size and item count
+            const getMaxTextLength = (
+              segmentAngle: number,
+              itemCount: number
+            ) => {
+              let maxLength;
+
+              // Base length calculation
+              if (segmentAngle > 90) maxLength = 20;
+              else if (segmentAngle > 60) maxLength = 15;
+              else if (segmentAngle > 45) maxLength = 12;
+              else if (segmentAngle > 30) maxLength = 10;
+              else if (segmentAngle > 20) maxLength = 8;
+              else if (segmentAngle > 15) maxLength = 6;
+              else maxLength = 4;
+
+              // Adjust for item count
+              if (itemCount > 20)
+                maxLength = Math.max(Math.floor(maxLength * 0.6), 3);
+              else if (itemCount > 15)
+                maxLength = Math.max(Math.floor(maxLength * 0.7), 4);
+              else if (itemCount > 12)
+                maxLength = Math.max(Math.floor(maxLength * 0.8), 5);
+              else if (itemCount > 8)
+                maxLength = Math.max(Math.floor(maxLength * 0.9), 6);
+
+              return maxLength;
+            };
+
+            const fontSize = getDynamicFontSize(
+              items.length,
+              segment.segmentAngle
+            );
+            const maxLength = getMaxTextLength(
+              segment.segmentAngle,
+              items.length
+            );
+            const displayText =
+              segment.item.text.length > maxLength
+                ? segment.item.text.substring(0, maxLength) + "..."
+                : segment.item.text;
 
             return (
               <g key={segment.item.id}>
@@ -295,8 +433,8 @@ export default function RandomWheel() {
                   stroke="#ffffff"
                   strokeWidth="3"
                   className={
-                    selectedItem?.id === segment.item.id 
-                      ? "brightness-125 drop-shadow-lg" 
+                    selectedItem?.id === segment.item.id
+                      ? "brightness-125 drop-shadow-lg"
                       : "hover:brightness-110"
                   }
                 />
@@ -304,9 +442,9 @@ export default function RandomWheel() {
                   x={textX}
                   y={textY}
                   fill="white"
-                  fontSize="13"
+                  fontSize={fontSize}
                   fontWeight="bold"
-                  textAnchor="start"
+                  textAnchor="middle"
                   dominantBaseline="middle"
                   className="pointer-events-none select-none"
                   transform={`rotate(${textAngle - 90}, ${textX}, ${textY})`}
@@ -321,28 +459,23 @@ export default function RandomWheel() {
           <circle
             cx={centerX}
             cy={centerY}
-            r="25"
+            r="30"
             fill="#2d3748"
             stroke="#ffffff"
-            strokeWidth="3"
+            strokeWidth="4"
             className="drop-shadow-lg"
           />
-          <circle
-            cx={centerX}
-            cy={centerY}
-            r="15"
-            fill="#4a5568"
-          />
+          <circle cx={centerX} cy={centerY} r="18" fill="#4a5568" />
         </svg>
 
         {/* Pointer */}
         <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-10">
-          <div 
-            className="w-0 h-0 border-l-6 border-r-6 border-b-12 border-l-transparent border-r-transparent border-b-red-600 drop-shadow-lg"
+          <div
+            className="w-0 h-0 border-l-6 border-r-6 border-t-12 border-l-transparent border-r-transparent border-t-red-600 drop-shadow-lg"
             style={{
-              borderLeftWidth: '12px',
-              borderRightWidth: '12px', 
-              borderBottomWidth: '24px'
+              borderLeftWidth: "12px",
+              borderRightWidth: "12px",
+              borderTopWidth: "24px",
             }}
           />
         </div>
@@ -373,7 +506,8 @@ export default function RandomWheel() {
             )}
           </CardTitle>
           <CardDescription>
-            Click spin button or click the wheel to randomly select from {items.length} options
+            Click spin button or click the wheel to randomly select from{" "}
+            {items.length} options
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -440,7 +574,9 @@ export default function RandomWheel() {
                           borderLeftWidth: "4px",
                         }}
                       >
-                        <span className="font-medium text-sm truncate">{item.text}</span>
+                        <span className="font-medium text-sm truncate">
+                          {item.text}
+                        </span>
                         <Button
                           size="sm"
                           variant="ghost"
@@ -461,7 +597,9 @@ export default function RandomWheel() {
                 <div className="w-full max-w-2xl space-y-2 mt-6 pt-6 border-t">
                   <div className="flex items-center gap-2 mb-3">
                     <Clock className="h-4 w-4" />
-                    <Label className="text-base font-semibold">Spin History ({results.length})</Label>
+                    <Label className="text-base font-semibold">
+                      Spin History ({results.length})
+                    </Label>
                   </div>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {results.map((result, index) => (
@@ -474,7 +612,9 @@ export default function RandomWheel() {
                             className="w-4 h-4 rounded-full border-2 border-white"
                             style={{ backgroundColor: result.item.color }}
                           />
-                          <span className="font-medium">{result.item.text}</span>
+                          <span className="font-medium">
+                            {result.item.text}
+                          </span>
                         </div>
                         <span className="text-xs text-muted-foreground">
                           {result.timestamp.toLocaleTimeString()}
@@ -555,13 +695,15 @@ export default function RandomWheel() {
           <div className="flex flex-col items-center space-y-4 py-6">
             {selectedItem && (
               <>
-                <div 
+                <div
                   className="w-16 h-16 rounded-full flex items-center justify-center"
                   style={{ backgroundColor: selectedItem.color }}
                 >
                   <Trophy className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-center">{selectedItem.text}</h3>
+                <h3 className="text-2xl font-bold text-center">
+                  {selectedItem.text}
+                </h3>
               </>
             )}
             <Button onClick={() => setShowResultDialog(false)} className="mt-4">
