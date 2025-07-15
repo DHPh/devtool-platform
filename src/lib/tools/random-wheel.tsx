@@ -13,10 +13,16 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Play, RotateCcw, Trash2, Trophy, Clock, Shuffle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Play, RotateCcw, Trophy, Clock, Shuffle, PartyPopper, X } from "lucide-react";
 import { toast } from "sonner";
 import {
-  ToolContainer,
   ResponsiveTextArea,
   ActionButtons,
   SettingsPanel,
@@ -46,21 +52,9 @@ interface SpinResult {
 }
 
 const DEFAULT_COLORS = [
-  "#FF6B6B",
-  "#4ECDC4",
-  "#45B7D1",
-  "#96CEB4",
-  "#FFEAA7",
-  "#DDA0DD",
-  "#98D8C8",
-  "#F7DC6F",
-  "#BB8FCE",
-  "#85C1E9",
-  "#F8C471",
-  "#82E0AA",
-  "#F1948A",
-  "#85C0E0",
-  "#D7DBDD",
+  "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#DDA0DD",
+  "#98D8C8", "#F7DC6F", "#BB8FCE", "#85C1E9", "#F8C471", "#82E0AA",
+  "#F1948A", "#85C0E0", "#D7DBDD", "#F8BBD0", "#A5D6A7", "#FFCC80"
 ];
 
 export default function RandomWheel() {
@@ -71,25 +65,22 @@ export default function RandomWheel() {
     { id: "4", text: "Option 4", color: DEFAULT_COLORS[3], weight: 1 },
   ]);
 
-  const [inputText, setInputText] = useState(
-    "Option 1\nOption 2\nOption 3\nOption 4"
-  );
+  const [inputText, setInputText] = useState("Option 1\nOption 2\nOption 3\nOption 4");
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [selectedItem, setSelectedItem] = useState<WheelItem | null>(null);
   const [results, setResults] = useState<SpinResult[]>([]);
   const [spinDuration, setSpinDuration] = useState(3);
-  const [autoSpin, setAutoSpin] = useState(false);
+  const [showResultPopup, setShowResultPopup] = useState(false);
+  const [removeAfterSpin, setRemoveAfterSpin] = useState(false);
+  const [showResultDialog, setShowResultDialog] = useState(false);
 
   const wheelRef = useRef<SVGSVGElement>(null);
   const animationRef = useRef<number | undefined>(undefined);
 
   // Parse input text to items
   const parseInputToItems = () => {
-    const lines = inputText
-      .trim()
-      .split("\n")
-      .filter((line) => line.trim());
+    const lines = inputText.trim().split("\n").filter((line) => line.trim());
     if (lines.length === 0) {
       toast.error("Please enter at least one option");
       return;
@@ -108,25 +99,40 @@ export default function RandomWheel() {
 
   // Remove item
   const removeItem = (id: string) => {
-    setItems(items.filter((item) => item.id !== id));
+    const newItems = items.filter((item) => item.id !== id);
+    setItems(newItems);
+    
+    // Update input text
+    setInputText(newItems.map(item => item.text).join("\n"));
   };
 
-  // Calculate wheel segments
+  // Calculate wheel segments starting from top
   const calculateSegments = () => {
     const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
-    let currentAngle = 0;
+    let currentAngle = 0; // Start from top (12 o'clock)
 
     return items.map((item) => {
-      const angle = (item.weight / totalWeight) * 360;
+      const segmentAngle = (item.weight / totalWeight) * 360;
       const segment = {
         item,
         startAngle: currentAngle,
-        endAngle: currentAngle + angle,
-        angle,
+        endAngle: currentAngle + segmentAngle,
+        segmentAngle,
       };
-      currentAngle += angle;
+      currentAngle += segmentAngle;
       return segment;
     });
+  };
+
+  // Determine winner based on pointer position
+  const getWinner = (finalRotation: number) => {
+    const segments = calculateSegments();
+    // Normalize rotation and adjust for pointer at top
+    const normalizedRotation = ((360 - (finalRotation % 360)) + 360) % 360;
+    
+    return segments.find(segment => {
+      return normalizedRotation >= segment.startAngle && normalizedRotation < segment.endAngle;
+    }) || segments[0];
   };
 
   // Spin the wheel
@@ -135,18 +141,16 @@ export default function RandomWheel() {
       toast.error("Add some options first!");
       return;
     }
-
     if (isSpinning) return;
 
     setIsSpinning(true);
     setSelectedItem(null);
 
-    // Random spin amount (multiple full rotations + random angle)
-    const randomSpins = Math.random() * 5 + 5; // 5-10 full rotations
+    // Random spin (5-10 full rotations + random angle)
+    const spins = Math.random() * 5 + 5;
     const randomAngle = Math.random() * 360;
-    const finalRotation = rotation + randomSpins * 360 + randomAngle;
+    const finalRotation = rotation + spins * 360 + randomAngle;
 
-    // Animate rotation
     const startTime = Date.now();
     const duration = spinDuration * 1000;
     const startRotation = rotation;
@@ -155,37 +159,35 @@ export default function RandomWheel() {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / duration, 1);
 
-      // Easing function (ease-out)
+      // Smooth easing
       const eased = 1 - Math.pow(1 - progress, 3);
-      const currentRotation =
-        startRotation + (finalRotation - startRotation) * eased;
-
+      const currentRotation = startRotation + (finalRotation - startRotation) * eased;
       setRotation(currentRotation);
 
       if (progress < 1) {
         animationRef.current = requestAnimationFrame(animate);
       } else {
-        // Animation complete - determine winner
-        const normalizedAngle = (360 - (currentRotation % 360)) % 360;
-        const segments = calculateSegments();
-        const winner = segments.find(
-          (segment) =>
-            normalizedAngle >= segment.startAngle &&
-            normalizedAngle < segment.endAngle
-        );
-
+        // Determine winner
+        const winner = getWinner(currentRotation);
         if (winner) {
           setSelectedItem(winner.item);
-          setResults((prev) => [
-            {
-              item: winner.item,
-              timestamp: new Date(),
-            },
-            ...prev.slice(0, 9),
-          ]); // Keep last 10 results
-          toast.success(`🎉 Winner: ${winner.item.text}!`);
-        }
+          const result = { item: winner.item, timestamp: new Date() };
+          setResults(prev => [result, ...prev.slice(0, 9)]);
+          
+          // Show popup if enabled
+          if (showResultPopup) {
+            setShowResultDialog(true);
+          } else {
+            toast.success(`🎉 Winner: ${winner.item.text}!`);
+          }
 
+          // Remove winner from wheel if enabled
+          if (removeAfterSpin) {
+            setTimeout(() => {
+              removeItem(winner.item.id);
+            }, 1000);
+          }
+        }
         setIsSpinning(false);
       }
     };
@@ -193,7 +195,7 @@ export default function RandomWheel() {
     animationRef.current = requestAnimationFrame(animate);
   };
 
-  // Reset wheel
+  // Reset everything
   const resetWheel = () => {
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
@@ -204,43 +206,58 @@ export default function RandomWheel() {
     setResults([]);
   };
 
-  // Generate SVG wheel
+  // Render SVG wheel
   const renderWheel = () => {
     if (items.length === 0) {
       return (
-        <div className="flex items-center justify-center h-80 bg-gray-100 dark:bg-gray-800 rounded-full">
-          <p className="text-gray-500">Add options to see the wheel</p>
+        <div className="flex items-center justify-center w-96 h-96 bg-gray-100 dark:bg-gray-800 rounded-full border-4 border-gray-300 dark:border-gray-600">
+          <p className="text-gray-500 text-center">Add options to see the wheel</p>
         </div>
       );
     }
 
     const segments = calculateSegments();
-    const radius = 140;
-    const centerX = 150;
-    const centerY = 150;
+    const size = 400; // Increased size
+    const radius = 180;
+    const centerX = size / 2;
+    const centerY = size / 2;
 
     return (
-      <div className="relative">
+      <div 
+        className="relative"
+        title={!isSpinning && items.length > 0 ? "Click to spin the wheel!" : ""}
+      >
         <svg
           ref={wheelRef}
-          width="300"
-          height="300"
-          className="drop-shadow-lg"
+          width={size}
+          height={size}
+          className={`drop-shadow-xl transition-all duration-200 ${
+            !isSpinning && items.length > 0 
+              ? "cursor-pointer hover:scale-105 hover:drop-shadow-2xl" 
+              : items.length === 0 
+                ? "cursor-not-allowed" 
+                : "cursor-default"
+          }`}
           style={{
             transform: `rotate(${rotation}deg)`,
             transition: isSpinning ? "none" : "transform 0.5s ease-out",
           }}
+          onClick={!isSpinning && items.length > 0 ? spinWheel : undefined}
         >
           {segments.map((segment) => {
-            const startAngleRad = (segment.startAngle * Math.PI) / 180;
-            const endAngleRad = (segment.endAngle * Math.PI) / 180;
+            // Convert to SVG coordinates (SVG starts from 3 o'clock, we want 12 o'clock)
+            const startAngle = segment.startAngle - 90;
+            const endAngle = segment.endAngle - 90;
+            
+            const startRad = (startAngle * Math.PI) / 180;
+            const endRad = (endAngle * Math.PI) / 180;
 
-            const x1 = centerX + radius * Math.cos(startAngleRad);
-            const y1 = centerY + radius * Math.sin(startAngleRad);
-            const x2 = centerX + radius * Math.cos(endAngleRad);
-            const y2 = centerY + radius * Math.sin(endAngleRad);
+            const x1 = centerX + radius * Math.cos(startRad);
+            const y1 = centerY + radius * Math.sin(startRad);
+            const x2 = centerX + radius * Math.cos(endRad);
+            const y2 = centerY + radius * Math.sin(endRad);
 
-            const largeArcFlag = segment.angle > 180 ? 1 : 0;
+            const largeArcFlag = segment.segmentAngle > 180 ? 1 : 0;
 
             const pathData = [
               `M ${centerX} ${centerY}`,
@@ -249,38 +266,52 @@ export default function RandomWheel() {
               "Z",
             ].join(" ");
 
-            // Text position (middle of segment)
+            // Text positioning - radial from center, moved inward to prevent overflow
             const textAngle = (segment.startAngle + segment.endAngle) / 2;
-            const textAngleRad = (textAngle * Math.PI) / 180;
-            const textRadius = radius * 0.7;
+            const textAngleRad = ((textAngle - 90) * Math.PI) / 180; // Adjust for SVG coordinate system
+            const textRadius = radius * 0.55; // Moved further inward to prevent overflow
             const textX = centerX + textRadius * Math.cos(textAngleRad);
             const textY = centerY + textRadius * Math.sin(textAngleRad);
+
+            // Smart text truncation based on segment size
+            const getMaxTextLength = (segmentAngle: number) => {
+              if (segmentAngle > 60) return 12;
+              if (segmentAngle > 45) return 10;
+              if (segmentAngle > 30) return 8;
+              if (segmentAngle > 20) return 6;
+              return 4;
+            };
+
+            const maxLength = getMaxTextLength(segment.segmentAngle);
+            const displayText = segment.item.text.length > maxLength
+              ? segment.item.text.substring(0, maxLength) + "..."
+              : segment.item.text;
 
             return (
               <g key={segment.item.id}>
                 <path
                   d={pathData}
                   fill={segment.item.color}
-                  stroke="#fff"
-                  strokeWidth="2"
+                  stroke="#ffffff"
+                  strokeWidth="3"
                   className={
-                    selectedItem?.id === segment.item.id ? "brightness-110" : ""
+                    selectedItem?.id === segment.item.id 
+                      ? "brightness-125 drop-shadow-lg" 
+                      : "hover:brightness-110"
                   }
                 />
                 <text
                   x={textX}
                   y={textY}
                   fill="white"
-                  fontSize="12"
+                  fontSize="13"
                   fontWeight="bold"
-                  textAnchor="middle"
+                  textAnchor="start"
                   dominantBaseline="middle"
-                  transform={`rotate(${textAngle}, ${textX}, ${textY})`}
-                  className="pointer-events-none drop-shadow-sm"
+                  className="pointer-events-none select-none"
+                  transform={`rotate(${textAngle - 90}, ${textX}, ${textY})`}
                 >
-                  {segment.item.text.length > 10
-                    ? segment.item.text.substring(0, 10) + "..."
-                    : segment.item.text}
+                  {displayText}
                 </text>
               </g>
             );
@@ -290,16 +321,30 @@ export default function RandomWheel() {
           <circle
             cx={centerX}
             cy={centerY}
-            r="20"
-            fill="#333"
-            stroke="#fff"
-            strokeWidth="2"
+            r="25"
+            fill="#2d3748"
+            stroke="#ffffff"
+            strokeWidth="3"
+            className="drop-shadow-lg"
+          />
+          <circle
+            cx={centerX}
+            cy={centerY}
+            r="15"
+            fill="#4a5568"
           />
         </svg>
 
         {/* Pointer */}
-        <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
-          <div className="w-0 h-0 border-l-4 border-r-4 border-b-8 border-l-transparent border-r-transparent border-b-red-500"></div>
+        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-10">
+          <div 
+            className="w-0 h-0 border-l-6 border-r-6 border-b-12 border-l-transparent border-r-transparent border-b-red-600 drop-shadow-lg"
+            style={{
+              borderLeftWidth: '12px',
+              borderRightWidth: '12px', 
+              borderBottomWidth: '24px'
+            }}
+          />
         </div>
       </div>
     );
@@ -314,31 +359,33 @@ export default function RandomWheel() {
   }, []);
 
   return (
-    <ToolContainer
-      title="Random Wheel"
-      description="Create a spinning wheel to randomly select from your list of options. Perfect for making decisions, picking winners, or just having fun!"
-    >
-      {/* Wheel Display */}
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      {/* Main Wheel Display */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>Wheel</span>
-            <div className="flex items-center gap-2">
-              {selectedItem && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  <Trophy className="h-3 w-3" />
-                  {selectedItem.text}
-                </Badge>
-              )}
-            </div>
+            <span>Random Wheel</span>
+            {selectedItem && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                <Trophy className="h-3 w-3" />
+                Last: {selectedItem.text}
+              </Badge>
+            )}
           </CardTitle>
           <CardDescription>
-            Click spin to randomly select an option
+            Click spin button or click the wheel to randomly select from {items.length} options
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center space-y-6">
-            {renderWheel()}
+          <div className="flex flex-col items-center space-y-8">
+            <div className="flex flex-col items-center space-y-2">
+              {renderWheel()}
+              {!isSpinning && items.length > 0 && (
+                <p className="text-xs text-muted-foreground text-center">
+                  💡 Tip: Click the wheel or use the button below to spin
+                </p>
+              )}
+            </div>
 
             <ActionButtons
               buttons={[
@@ -347,7 +394,7 @@ export default function RandomWheel() {
                   label: isSpinning ? "Spinning..." : "Spin Wheel",
                   onClick: spinWheel,
                   disabled: isSpinning || items.length === 0,
-                  variant: "default",
+                  variant: "default" as const,
                 },
                 {
                   icon: RotateCcw,
@@ -358,65 +405,87 @@ export default function RandomWheel() {
                 },
                 {
                   icon: Shuffle,
-                  label: "Update Wheel",
+                  label: "Update Options",
                   onClick: parseInputToItems,
                   disabled: isSpinning,
                   variant: "outline",
                 },
               ]}
             />
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Input Options */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Wheel Options</CardTitle>
-          <CardDescription>
-            Enter your options (one per line) or manage them individually
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <ResponsiveTextArea
-            placeholder="Option 1
-Option 2  
-Option 3
-Option 4"
-            value={inputText}
-            onChange={setInputText}
-            minHeight={120}
-            showLineCount={true}
-          />
-
-          {/* Current items list */}
-          {items.length > 0 && (
-            <div className="space-y-2">
-              <Label>Current Options ({items.length})</Label>
-              <div className="grid gap-2 max-h-40 overflow-y-auto">
-                {items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-2 border rounded-md"
-                    style={{
-                      borderLeftColor: item.color,
-                      borderLeftWidth: "4px",
-                    }}
-                  >
-                    <span className="font-mono text-sm">{item.text}</span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => removeItem(item.id)}
-                      disabled={isSpinning}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
+            {/* Options Management */}
+            <div className="w-full max-w-2xl space-y-4">
+              <div className="space-y-2">
+                <Label>Wheel Options</Label>
+                <ResponsiveTextArea
+                  placeholder="Option 1&#10;Option 2&#10;Option 3&#10;Option 4"
+                  value={inputText}
+                  onChange={setInputText}
+                  minHeight={120}
+                  showLineCount={true}
+                />
               </div>
+
+              {/* Current options list with better layout */}
+              {items.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Current Options ({items.length})</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                    {items.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between p-3 border rounded-lg bg-white dark:bg-gray-800"
+                        style={{
+                          borderLeftColor: item.color,
+                          borderLeftWidth: "4px",
+                        }}
+                      >
+                        <span className="font-medium text-sm truncate">{item.text}</span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => removeItem(item.id)}
+                          disabled={isSpinning}
+                          className="ml-2 flex-shrink-0"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Results History inside main container */}
+              {results.length > 0 && (
+                <div className="w-full max-w-2xl space-y-2 mt-6 pt-6 border-t">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Clock className="h-4 w-4" />
+                    <Label className="text-base font-semibold">Spin History ({results.length})</Label>
+                  </div>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {results.map((result, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 border rounded-lg bg-gray-50 dark:bg-gray-800"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-4 h-4 rounded-full border-2 border-white"
+                            style={{ backgroundColor: result.item.color }}
+                          />
+                          <span className="font-medium">{result.item.text}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {result.timestamp.toLocaleTimeString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
 
@@ -436,82 +505,100 @@ Option 4"
           />
         </FormField>
 
-        <FormField
-          label="Auto-spin after adding options"
-          description="Automatically spin when options are updated"
-        >
-          <Switch
-            checked={autoSpin}
-            onCheckedChange={setAutoSpin}
-            disabled={isSpinning}
-          />
-        </FormField>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField
+            label="Show result popup"
+            description="Display a popup dialog when spin completes"
+          >
+            <div className="flex items-center space-x-3">
+              <Switch
+                checked={showResultPopup}
+                onCheckedChange={setShowResultPopup}
+                disabled={isSpinning}
+              />
+              <span className="text-sm font-medium">
+                {showResultPopup ? "Enabled" : "Disabled"}
+              </span>
+            </div>
+          </FormField>
+
+          <FormField
+            label="Remove winner from wheel"
+            description="Automatically remove the winning option after spinning"
+          >
+            <div className="flex items-center space-x-3">
+              <Switch
+                checked={removeAfterSpin}
+                onCheckedChange={setRemoveAfterSpin}
+                disabled={isSpinning}
+              />
+              <span className="text-sm font-medium">
+                {removeAfterSpin ? "Enabled" : "Disabled"}
+              </span>
+            </div>
+          </FormField>
+        </div>
       </SettingsPanel>
 
-      {/* Results History */}
-      {results.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Recent Results
-            </CardTitle>
-            <CardDescription>
-              Last {results.length} spin results
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 max-h-40 overflow-y-auto">
-              {results.map((result, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-2 border rounded-md"
+      {/* Result Popup Dialog */}
+      <Dialog open={showResultDialog} onOpenChange={setShowResultDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="text-center">
+            <DialogTitle className="flex items-center justify-center gap-2 text-2xl">
+              <PartyPopper className="h-6 w-6" />
+              Congratulations!
+            </DialogTitle>
+            <DialogDescription className="text-lg pt-4">
+              The wheel has selected:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center space-y-4 py-6">
+            {selectedItem && (
+              <>
+                <div 
+                  className="w-16 h-16 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: selectedItem.color }}
                 >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: result.item.color }}
-                    />
-                    <span className="font-medium">{result.item.text}</span>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {result.timestamp.toLocaleTimeString()}
-                  </span>
+                  <Trophy className="h-8 w-8 text-white" />
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                <h3 className="text-2xl font-bold text-center">{selectedItem.text}</h3>
+              </>
+            )}
+            <Button onClick={() => setShowResultDialog(false)} className="mt-4">
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-      {/* Usage Instructions */}
+      {/* Instructions */}
       <Card>
         <CardHeader>
           <CardTitle>How to Use</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div className="space-y-2">
-              <h4 className="font-medium text-blue-600">📝 Adding Options</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+            <div className="space-y-3">
+              <h4 className="font-semibold text-blue-600">🎯 Quick Start</h4>
               <ul className="space-y-1 text-muted-foreground">
-                <li>• Type each option on a new line</li>
-                <li>• Click &quot;Update Wheel&quot; to apply changes</li>
-                <li>• Remove individual options with trash icon</li>
-                <li>• Supports 2-20 options</li>
+                <li>• Enter options (one per line)</li>
+                <li>• Click &quot;Update Options&quot;</li>
+                <li>• Hit &quot;Spin Wheel&quot; to select</li>
+                <li>• Enjoy the results! 🎉</li>
               </ul>
             </div>
-            <div className="space-y-2">
-              <h4 className="font-medium text-green-600">🎯 Spinning</h4>
+            <div className="space-y-3">
+              <h4 className="font-semibold text-green-600">⚙️ Features</h4>
               <ul className="space-y-1 text-muted-foreground">
-                <li>• Click &quot;Spin Wheel&quot; to start</li>
-                <li>• Adjust spin duration in settings</li>
-                <li>• View results history</li>
-                <li>• Reset to clear all results</li>
+                <li>• Adjustable spin duration</li>
+                <li>• Optional result popup</li>
+                <li>• Auto-remove winners</li>
+                <li>• Spin history tracking</li>
               </ul>
             </div>
           </div>
         </CardContent>
       </Card>
-    </ToolContainer>
+    </div>
   );
 }
