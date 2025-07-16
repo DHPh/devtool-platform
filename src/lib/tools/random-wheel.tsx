@@ -129,9 +129,24 @@ export default function RandomWheel() {
   const [showResultPopup, setShowResultPopup] = useState(false);
   const [removeAfterSpin, setRemoveAfterSpin] = useState(false);
   const [showResultDialog, setShowResultDialog] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(1024); // Default to desktop size
+  const [isClient, setIsClient] = useState(false);
 
   const wheelRef = useRef<SVGSVGElement>(null);
   const animationRef = useRef<number | undefined>(undefined);
+
+  // Handle client-side hydration and window resize
+  useEffect(() => {
+    setIsClient(true);
+    setWindowWidth(window.innerWidth);
+
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // Parse input text to items
   const parseInputToItems = () => {
@@ -289,9 +304,23 @@ export default function RandomWheel() {
   // Render SVG wheel
   const renderWheel = () => {
     if (items.length === 0) {
+      // Use consistent size for SSR, apply responsive sizing only after hydration
+      const baseSize = 480;
+      const containerMargin = 64; // Increase margin to prevent overflow
+      const availableWidth = windowWidth - containerMargin;
+      const emptySize =
+        isClient && windowWidth < 640
+          ? Math.min(baseSize, availableWidth * 0.85)
+          : baseSize;
       return (
-        <div className="flex items-center justify-center w-[480px] h-[480px] bg-gray-100 dark:bg-gray-800 rounded-full border-4 border-gray-300 dark:border-gray-600">
-          <p className="text-gray-500 text-center">
+        <div
+          className="flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-full border-4 border-gray-300 dark:border-gray-600"
+          style={{
+            width: `${emptySize}px`,
+            height: `${emptySize}px`,
+          }}
+        >
+          <p className="text-gray-500 text-center text-sm px-4">
             Add options to see the wheel
           </p>
         </div>
@@ -299,8 +328,13 @@ export default function RandomWheel() {
     }
 
     const segments = calculateSegments();
-    const size = 480; // Increased from 400 to 480 for larger wheel
-    const radius = 220; // Increased from 180 to 220
+    // Use consistent size for SSR, apply responsive sizing only after hydration
+    const baseSize = 480;
+    const containerMargin = 64; // Increase margin to prevent overflow
+    const availableWidth = windowWidth - containerMargin;
+    const mobileSize = Math.min(baseSize, availableWidth * 0.85);
+    const size = isClient && windowWidth < 640 ? mobileSize : baseSize;
+    const radius = (size / baseSize) * 220; // Scale radius proportionally
     const centerX = size / 2;
     const centerY = size / 2;
 
@@ -308,16 +342,18 @@ export default function RandomWheel() {
       <div
         className="relative"
         title={
-          !isSpinning && items.length > 0 ? "Click to spin the wheel!" : ""
+          !isSpinning && items.length > 0 && isClient
+            ? "Click to spin the wheel!"
+            : ""
         }
       >
         <svg
           ref={wheelRef}
           width={size}
           height={size}
-          className={`drop-shadow-xl transition-all duration-200 ${
-            !isSpinning && items.length > 0
-              ? "cursor-pointer hover:scale-105 hover:drop-shadow-2xl"
+          className={`transition-all duration-200 ${
+            !isSpinning && items.length > 0 && isClient
+              ? "cursor-pointer hover:scale-105"
               : items.length === 0
               ? "cursor-not-allowed"
               : "cursor-default"
@@ -326,7 +362,9 @@ export default function RandomWheel() {
             transform: `rotate(${rotation}deg)`,
             transition: isSpinning ? "none" : "transform 0.5s ease-out",
           }}
-          onClick={!isSpinning && items.length > 0 ? spinWheel : undefined}
+          onClick={
+            !isSpinning && items.length > 0 && isClient ? spinWheel : undefined
+          }
         >
           {segments.map((segment) => {
             // Convert to SVG coordinates (SVG starts from 3 o'clock, we want 12 o'clock)
@@ -362,25 +400,31 @@ export default function RandomWheel() {
             const textX = centerX + textRadius * Math.cos(textAngleRad);
             const textY = centerY + textRadius * Math.sin(textAngleRad);
 
-            // Dynamic font size based on number of options and segment size
+            // Dynamic font size based on number of options, segment size, and screen size
             const getDynamicFontSize = (
               itemCount: number,
-              segmentAngle: number
+              segmentAngle: number,
+              wheelSize: number
             ) => {
-              let baseSize = 15;
+              // Base size scaled by wheel size
+              const sizeMultiplier = wheelSize / 480;
+              let baseSize = 15 * sizeMultiplier;
 
               // Scale down for more items
-              if (itemCount > 20) baseSize = 10;
-              else if (itemCount > 15) baseSize = 11;
-              else if (itemCount > 12) baseSize = 12;
-              else if (itemCount > 8) baseSize = 13;
-              else if (itemCount > 6) baseSize = 14;
+              if (itemCount > 20) baseSize = 10 * sizeMultiplier;
+              else if (itemCount > 15) baseSize = 11 * sizeMultiplier;
+              else if (itemCount > 12) baseSize = 12 * sizeMultiplier;
+              else if (itemCount > 8) baseSize = 13 * sizeMultiplier;
+              else if (itemCount > 6) baseSize = 14 * sizeMultiplier;
 
               // Further adjust for very small segments
-              if (segmentAngle < 15) baseSize = Math.max(baseSize - 2, 8);
-              else if (segmentAngle < 25) baseSize = Math.max(baseSize - 1, 9);
+              if (segmentAngle < 15)
+                baseSize = Math.max(baseSize - 2 * sizeMultiplier, 8);
+              else if (segmentAngle < 25)
+                baseSize = Math.max(baseSize - 1 * sizeMultiplier, 9);
 
-              return baseSize;
+              // Minimum font size for readability - consistent during SSR
+              return Math.max(baseSize, isClient && windowWidth < 640 ? 8 : 10);
             };
 
             // Smart text truncation based on segment size and item count
@@ -414,7 +458,8 @@ export default function RandomWheel() {
 
             const fontSize = getDynamicFontSize(
               items.length,
-              segment.segmentAngle
+              segment.segmentAngle,
+              size
             );
             const maxLength = getMaxTextLength(
               segment.segmentAngle,
@@ -434,7 +479,7 @@ export default function RandomWheel() {
                   strokeWidth="3"
                   className={
                     selectedItem?.id === segment.item.id
-                      ? "brightness-125 drop-shadow-lg"
+                      ? "brightness-125"
                       : "hover:brightness-110"
                   }
                 />
@@ -455,27 +500,36 @@ export default function RandomWheel() {
             );
           })}
 
-          {/* Center circle */}
+          {/* Center circle - responsive sizing */}
           <circle
             cx={centerX}
             cy={centerY}
-            r="30"
+            r={Math.max(30 * (size / 480), 15)}
             fill="#2d3748"
             stroke="#ffffff"
-            strokeWidth="4"
-            className="drop-shadow-lg"
+            strokeWidth={Math.max(4 * (size / 480), 2)}
           />
-          <circle cx={centerX} cy={centerY} r="18" fill="#4a5568" />
+          <circle
+            cx={centerX}
+            cy={centerY}
+            r={Math.max(18 * (size / 480), 10)}
+            fill="#4a5568"
+          />
         </svg>
 
-        {/* Pointer */}
-        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-10">
+        {/* Pointer - responsive sizing */}
+        <div
+          className="absolute top-1 left-1/2 transform -translate-x-1/2 z-10"
+          style={{ top: `${Math.max(8 * (size / 480), 4)}px` }}
+        >
           <div
-            className="w-0 h-0 border-l-6 border-r-6 border-t-12 border-l-transparent border-r-transparent border-t-red-600 drop-shadow-lg"
+            className="w-0 h-0 border-l-transparent border-r-transparent"
             style={{
-              borderLeftWidth: "12px",
-              borderRightWidth: "12px",
-              borderTopWidth: "24px",
+              borderLeftWidth: `${Math.max(12 * (size / 480), 8)}px`,
+              borderRightWidth: `${Math.max(12 * (size / 480), 8)}px`,
+              borderTopWidth: `${Math.max(24 * (size / 480), 16)}px`,
+              borderTopColor: "#000000",
+              filter: "drop-shadow(0 0 2px white)",
             }}
           />
         </div>
@@ -510,45 +564,47 @@ export default function RandomWheel() {
             {items.length} options
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center space-y-8">
-            <div className="flex flex-col items-center space-y-2">
-              {renderWheel()}
-              {!isSpinning && items.length > 0 && (
+        <CardContent className="p-0">
+          <div className="flex flex-col items-center space-y-6 px-4 py-6">
+            <div className="flex flex-col items-center space-y-2 w-full">
+              <div className="flex justify-center w-full">{renderWheel()}</div>
+              {!isSpinning && items.length > 0 && isClient && (
                 <p className="text-xs text-muted-foreground text-center">
                   💡 Tip: Click the wheel or use the button below to spin
                 </p>
               )}
             </div>
 
-            <ActionButtons
-              buttons={[
-                {
-                  icon: Play,
-                  label: isSpinning ? "Spinning..." : "Spin Wheel",
-                  onClick: spinWheel,
-                  disabled: isSpinning || items.length === 0,
-                  variant: "default" as const,
-                },
-                {
-                  icon: RotateCcw,
-                  label: "Reset",
-                  onClick: resetWheel,
-                  disabled: isSpinning,
-                  variant: "outline",
-                },
-                {
-                  icon: Shuffle,
-                  label: "Update Options",
-                  onClick: parseInputToItems,
-                  disabled: isSpinning,
-                  variant: "outline",
-                },
-              ]}
-            />
+            <div className="px-4 w-full">
+              <ActionButtons
+                buttons={[
+                  {
+                    icon: Play,
+                    label: isSpinning ? "Spinning..." : "Spin Wheel",
+                    onClick: spinWheel,
+                    disabled: isSpinning || items.length === 0,
+                    variant: "default" as const,
+                  },
+                  {
+                    icon: RotateCcw,
+                    label: "Reset",
+                    onClick: resetWheel,
+                    disabled: isSpinning,
+                    variant: "outline",
+                  },
+                  {
+                    icon: Shuffle,
+                    label: "Update Options",
+                    onClick: parseInputToItems,
+                    disabled: isSpinning,
+                    variant: "outline",
+                  },
+                ]}
+              />
+            </div>
 
             {/* Options Management */}
-            <div className="w-full max-w-2xl space-y-4">
+            <div className="w-full max-w-2xl space-y-4 px-4">
               <div className="space-y-2">
                 <Label>Wheel Options</Label>
                 <ResponsiveTextArea
