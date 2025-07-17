@@ -39,11 +39,14 @@ import {
   FileText,
 } from "lucide-react";
 import { toast } from "sonner";
+import { parseCSV, getDelimiterDisplayName } from "@/lib/utils/csv-parser";
+import { parseJSON } from "@/lib/utils/json-parser";
 
 export const metadata = {
   id: "data-explorer",
   name: "Data Explorer",
-  description: "Advanced data analysis with statistics, filtering, and visualization",
+  description:
+    "Advanced data analysis with statistics, filtering, and visualization",
   category: "Data Processing",
   tags: ["data", "analysis", "statistics", "explorer"],
   path: "/tools/data-explorer",
@@ -75,11 +78,17 @@ export default function DataExplorer() {
   const [globalFilter, setGlobalFilter] = useState("");
   const [fileName, setFileName] = useState("");
   const [stats, setStats] = useState<ColumnStats[]>([]);
-  const [selectedFormat, setSelectedFormat] = useState<"auto" | "csv" | "json" | "tsv">("auto");
+  const [selectedFormat, setSelectedFormat] = useState<
+    "auto" | "csv" | "json" | "tsv"
+  >("auto");
   const [textData, setTextData] = useState("");
+  const [hasNestedData, setHasNestedData] = useState(false);
+  const [detectedDelimiter, setDetectedDelimiter] = useState(",");
 
   const detectColumnType = (values: unknown[]): ColumnStats["type"] => {
-    const nonNullValues = values.filter(v => v !== null && v !== undefined && v !== "");
+    const nonNullValues = values.filter(
+      (v) => v !== null && v !== undefined && v !== ""
+    );
     if (nonNullValues.length === 0) return "string";
 
     let numberCount = 0;
@@ -88,10 +97,13 @@ export default function DataExplorer() {
 
     for (const value of nonNullValues) {
       const strValue = String(value).trim();
-      
+
       if (!isNaN(Number(strValue)) && strValue !== "") {
         numberCount++;
-      } else if (strValue.toLowerCase() === "true" || strValue.toLowerCase() === "false") {
+      } else if (
+        strValue.toLowerCase() === "true" ||
+        strValue.toLowerCase() === "false"
+      ) {
         booleanCount++;
       } else if (!isNaN(Date.parse(strValue))) {
         dateCount++;
@@ -110,20 +122,23 @@ export default function DataExplorer() {
     if (data.length === 0) return [];
 
     const columnNames = Object.keys(data[0]);
-    return columnNames.map(column => {
-      const values = data.map(row => row[column]);
-      const nonNullValues = values.filter(v => v !== null && v !== undefined && v !== "");
+    return columnNames.map((column) => {
+      const values = data.map((row) => row[column]);
+      const nonNullValues = values.filter(
+        (v) => v !== null && v !== undefined && v !== ""
+      );
       const type = detectColumnType(values);
-      
-      const uniqueValues = [...new Set(values.map(v => String(v)))];
+
+      const uniqueValues = [...new Set(values.map((v) => String(v)))];
       const valueCounts = values.reduce((acc: Record<string, number>, val) => {
         const str = String(val);
         acc[str] = (acc[str] || 0) + 1;
         return acc;
       }, {});
-      
-      const mostCommon = Object.entries(valueCounts)
-        .sort(([,a], [,b]) => b - a)[0]?.[0];
+
+      const mostCommon = Object.entries(valueCounts).sort(
+        ([, a], [, b]) => b - a
+      )[0]?.[0];
 
       const stats: ColumnStats = {
         column,
@@ -135,7 +150,9 @@ export default function DataExplorer() {
       };
 
       if (type === "number") {
-        const numbers = nonNullValues.map(v => Number(v)).filter(n => !isNaN(n));
+        const numbers = nonNullValues
+          .map((v) => Number(v))
+          .filter((n) => !isNaN(n));
         if (numbers.length > 0) {
           stats.min = Math.min(...numbers);
           stats.max = Math.max(...numbers);
@@ -148,62 +165,68 @@ export default function DataExplorer() {
     });
   };
 
-  const parseCSV = (text: string): DataRow[] => {
-    const lines = text.trim().split('\n');
-    if (lines.length < 2) return [];
-    
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-    return lines.slice(1).map(line => {
-      const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
-      const row: DataRow = {};
-      headers.forEach((header, index) => {
-        row[header] = values[index] || '';
-      });
-      return row;
-    });
-  };
-
-  const parseJSON = (text: string): DataRow[] => {
-    try {
-      const parsed = JSON.parse(text);
-      if (Array.isArray(parsed)) {
-        return parsed;
-      } else if (typeof parsed === 'object' && parsed !== null) {
-        return [parsed];
-      }
-      return [];
-    } catch {
-      return [];
-    }
-  };
-
-  const parseTSV = (text: string): DataRow[] => {
-    const lines = text.trim().split('\n');
-    if (lines.length < 2) return [];
-    
-    const headers = lines[0].split('\t').map(h => h.trim());
-    return lines.slice(1).map(line => {
-      const values = line.split('\t').map(v => v.trim());
-      const row: DataRow = {};
-      headers.forEach((header, index) => {
-        row[header] = values[index] || '';
-      });
-      return row;
-    });
-  };
-
   const processData = (text: string, format: string) => {
     let parsedData: DataRow[] = [];
-    
-    if (format === "csv" || (format === "auto" && text.includes(','))) {
-      parsedData = parseCSV(text);
-    } else if (format === "json" || (format === "auto" && text.trim().startsWith('['))) {
-      parsedData = parseJSON(text);
-    } else if (format === "tsv" || (format === "auto" && text.includes('\t'))) {
-      parsedData = parseTSV(text);
+    let delimiter = ",";
+    let hasNested = false;
+
+    // Better auto-detection logic
+    if (
+      format === "csv" ||
+      (format === "auto" &&
+        !text.trim().startsWith("[") &&
+        !text.trim().startsWith("{"))
+    ) {
+      try {
+        const result = parseCSV(text);
+        parsedData = result.data as DataRow[];
+        delimiter = result.delimiter;
+        setDetectedDelimiter(delimiter);
+      } catch {
+        toast.error("Error parsing CSV data");
+        return;
+      }
+    } else if (
+      format === "json" ||
+      (format === "auto" &&
+        (text.trim().startsWith("[") || text.trim().startsWith("{")))
+    ) {
+      try {
+        const result = parseJSON(text, { maxDepth: 20 });
+        parsedData = result.data as DataRow[];
+        hasNested = result.hasNestedData;
+        setHasNestedData(hasNested);
+
+        // Debug logging
+        console.log("Data Explorer - Parsed JSON result:", result);
+        console.log("Data Explorer - Sample row:", result.data[0]);
+        console.log("Data Explorer - Headers:", result.headers);
+      } catch (error) {
+        console.error("Data Explorer - JSON parsing error:", error);
+        toast.error("Error parsing JSON data");
+        return;
+      }
+    } else if (format === "tsv") {
+      try {
+        const result = parseCSV(text, { delimiter: "\t" });
+        parsedData = result.data as DataRow[];
+        delimiter = "\t";
+        setDetectedDelimiter(delimiter);
+      } catch {
+        toast.error("Error parsing TSV data");
+        return;
+      }
     } else {
       // Default to CSV
-      parsedData = parseCSV(text);
+      try {
+        const result = parseCSV(text);
+        parsedData = result.data as DataRow[];
+        delimiter = result.delimiter;
+        setDetectedDelimiter(delimiter);
+      } catch {
+        toast.error("Error parsing data");
+        return;
+      }
     }
 
     if (parsedData.length === 0) {
@@ -217,25 +240,66 @@ export default function DataExplorer() {
 
     // Create columns for table
     const columnHelper = createColumnHelper<DataRow>();
-    const newColumns = Object.keys(parsedData[0]).map(key =>
-      columnHelper.accessor(key, {
-        header: key,
-        cell: (info) => {
-          const value = info.getValue();
-          return value !== null && value !== undefined ? String(value) : '';
-        },
-      })
+    const newColumns = Object.keys(parsedData[0]).map((key) =>
+      columnHelper.accessor(
+        // Custom accessor function to handle flattened keys
+        (row) => row[key],
+        {
+          id: key,
+          header: key,
+          cell: (info) => {
+            const value = info.getValue();
+            if (value === null || value === undefined) {
+              return <span className="text-gray-400 italic">null</span>;
+            }
+            if (typeof value === "boolean") {
+              return (
+                <Badge variant={value ? "default" : "secondary"}>
+                  {String(value)}
+                </Badge>
+              );
+            }
+            if (typeof value === "number") {
+              return (
+                <span className="font-mono">{value.toLocaleString()}</span>
+              );
+            }
+            return <span>{String(value)}</span>;
+          },
+        }
+      )
     );
     setColumns(newColumns);
 
-    toast.success(`Loaded ${parsedData.length} rows with ${Object.keys(parsedData[0]).length} columns`);
+    const formatDisplay =
+      format === "auto"
+        ? delimiter === "\t"
+          ? "TSV"
+          : delimiter === ";"
+          ? "CSV (;)"
+          : "CSV (,)"
+        : format.toUpperCase();
+
+    toast.success(
+      `Loaded ${parsedData.length} rows with ${
+        Object.keys(parsedData[0]).length
+      } columns from ${formatDisplay}`
+    );
+
+    if (hasNested) {
+      toast.info("Nested data has been flattened into columns");
+    }
   };
 
   const handleFileUpload = (content: string, fileName: string) => {
     setFileName(fileName);
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    const detectedFormat = extension === 'json' ? 'json' : extension === 'tsv' ? 'tsv' : 'csv';
-    processData(content, selectedFormat === 'auto' ? detectedFormat : selectedFormat);
+    const extension = fileName.split(".").pop()?.toLowerCase();
+    const detectedFormat =
+      extension === "json" ? "json" : extension === "tsv" ? "tsv" : "csv";
+    processData(
+      content,
+      selectedFormat === "auto" ? detectedFormat : selectedFormat
+    );
   };
 
   const handleTextProcess = () => {
@@ -253,10 +317,10 @@ Jane Smith,25,Los Angeles,65000,false
 Bob Johnson,35,Chicago,80000,true
 Alice Brown,28,Houston,70000,true
 Charlie Wilson,32,Phoenix,72000,false`;
-    
+
     setTextData(sampleCSV);
-    processData(sampleCSV, 'csv');
-    setFileName('sample-data.csv');
+    processData(sampleCSV, "csv");
+    setFileName("sample-data.csv");
   };
 
   const clearData = () => {
@@ -268,6 +332,8 @@ Charlie Wilson,32,Phoenix,72000,false`;
     setGlobalFilter("");
     setSorting([]);
     setColumnFilters([]);
+    setHasNestedData(false);
+    setDetectedDelimiter(",");
     toast.success("Data cleared");
   };
 
@@ -279,17 +345,34 @@ Charlie Wilson,32,Phoenix,72000,false`;
 
     const headers = Object.keys(data[0]);
     const csvContent = [
-      headers.join(','),
-      ...data.map(row => headers.map(header => 
-        `"${String(row[header] || '')}"`
-      ).join(','))
-    ].join('\n');
+      headers.join(detectedDelimiter),
+      ...data.map((row) =>
+        headers
+          .map((header) => {
+            const value = row[header];
+            const stringValue = String(
+              value === null || value === undefined ? "" : value
+            );
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+            // Escape and quote if necessary
+            if (
+              stringValue.includes(detectedDelimiter) ||
+              stringValue.includes('"') ||
+              stringValue.includes("\n")
+            ) {
+              return `"${stringValue.replace(/"/g, '""')}"`;
+            }
+            return stringValue;
+          })
+          .join(detectedDelimiter)
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = fileName || 'data-export.csv';
+    a.download = fileName || "data-export.csv";
     a.click();
     URL.revokeObjectURL(url);
     toast.success("Data exported successfully");
@@ -360,7 +443,9 @@ Charlie Wilson,32,Phoenix,72000,false`;
               <Label htmlFor="format-select">Data Format</Label>
               <Select
                 value={selectedFormat}
-                onValueChange={(value: typeof selectedFormat) => setSelectedFormat(value)}
+                onValueChange={(value: typeof selectedFormat) =>
+                  setSelectedFormat(value)
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -387,7 +472,7 @@ Charlie Wilson,32,Phoenix,72000,false`;
 
           <FileUploadZone
             onFileSelect={handleFileUpload}
-            acceptedTypes={['.csv', '.json', '.tsv', '.txt']}
+            acceptedTypes={[".csv", ".json", ".tsv", ".txt"]}
             maxSizeInMB={10}
             placeholder="Upload CSV, JSON, TSV, or text files"
           />
@@ -412,7 +497,23 @@ Charlie Wilson,32,Phoenix,72000,false`;
           status="success"
         >
           <div className="space-y-4">
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {hasNestedData && (
+                  <Badge
+                    variant="outline"
+                    className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
+                  >
+                    📊 Nested data flattened
+                  </Badge>
+                )}
+                <Badge
+                  variant="outline"
+                  className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
+                >
+                  📝 {getDelimiterDisplayName(detectedDelimiter)}
+                </Badge>
+              </div>
               <Button onClick={downloadCSV} className="flex items-center gap-2">
                 <Download className="h-4 w-4" />
                 Download CSV
@@ -429,7 +530,7 @@ Charlie Wilson,32,Phoenix,72000,false`;
                     <div>Count: {stat.count}</div>
                     <div>Unique: {stat.uniqueCount}</div>
                     <div>Null: {stat.nullCount}</div>
-                    {stat.type === 'number' && (
+                    {stat.type === "number" && (
                       <>
                         <div>Min: {stat.min?.toFixed(2)}</div>
                         <div>Max: {stat.max?.toFixed(2)}</div>
@@ -450,7 +551,9 @@ Charlie Wilson,32,Phoenix,72000,false`;
       {data.length > 0 && (
         <ResultCard
           title="Data Table"
-          description={`Showing ${table.getFilteredRowModel().rows.length} of ${data.length} rows`}
+          description={`Showing ${table.getFilteredRowModel().rows.length} of ${
+            data.length
+          } rows`}
           status="success"
         >
           <div className="space-y-4">
@@ -477,7 +580,10 @@ Charlie Wilson,32,Phoenix,72000,false`;
                           onClick={header.column.getToggleSortingHandler()}
                         >
                           <div className="flex items-center gap-2">
-                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
                             <ArrowUpDown className="h-4 w-4" />
                           </div>
                         </th>
@@ -487,10 +593,16 @@ Charlie Wilson,32,Phoenix,72000,false`;
                 </thead>
                 <tbody>
                   {table.getRowModel().rows.map((row) => (
-                    <tr key={row.id} className="border-t hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                    <tr
+                      key={row.id}
+                      className="border-t hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                    >
                       {row.getVisibleCells().map((cell) => (
                         <td key={cell.id} className="p-3">
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
                         </td>
                       ))}
                     </tr>
@@ -501,7 +613,8 @@ Charlie Wilson,32,Phoenix,72000,false`;
 
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+                Page {table.getState().pagination.pageIndex + 1} of{" "}
+                {table.getPageCount()}
               </div>
               <div className="flex gap-2">
                 <Button

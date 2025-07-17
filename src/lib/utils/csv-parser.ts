@@ -26,49 +26,71 @@ export const detectDelimiter = (text: string): string => {
   const firstLine = lines[0];
   const delimiters = [",", ";", "\t", "|"];
 
-  let maxCount = 0;
+  // First, try to detect by frequency and consistency
   let bestDelimiter = ",";
+  let maxScore = 0;
 
   for (const delimiter of delimiters) {
+    // Count delimiter frequency in first line
     const count = (firstLine.match(new RegExp("\\" + delimiter, "g")) || [])
       .length;
-    if (count > maxCount) {
-      maxCount = count;
-      bestDelimiter = delimiter;
-    }
-  }
 
-  // Additional validation: check if delimiter creates consistent column counts
-  if (lines.length > 1) {
-    const headerCount = firstLine.split(bestDelimiter).length;
+    if (count === 0) continue;
+
+    // Check consistency across multiple lines
     let consistentRows = 0;
+    const expectedColumns = count + 1;
 
     for (let i = 1; i < Math.min(5, lines.length); i++) {
-      const rowCount = lines[i].split(bestDelimiter).length;
-      if (rowCount === headerCount) {
+      const rowColumns =
+        (lines[i].match(new RegExp("\\" + delimiter, "g")) || []).length + 1;
+      if (rowColumns === expectedColumns) {
         consistentRows++;
       }
     }
 
-    // If less than 70% of rows have consistent column count, try other delimiters
-    const checkCount = Math.min(4, lines.length - 1);
-    if (consistentRows < checkCount * 0.7) {
-      for (const delimiter of delimiters) {
-        if (delimiter === bestDelimiter) continue;
+    // Calculate score: frequency * consistency
+    const consistency =
+      lines.length > 1 ? consistentRows / Math.min(4, lines.length - 1) : 1;
+    const score = count * consistency;
 
-        const headerCount = firstLine.split(delimiter).length;
-        let consistent = 0;
+    if (score > maxScore) {
+      maxScore = score;
+      bestDelimiter = delimiter;
+    }
+  }
 
-        for (let i = 1; i < Math.min(5, lines.length); i++) {
-          const rowCount = lines[i].split(delimiter).length;
-          if (rowCount === headerCount) {
-            consistent++;
+  // Special case: if comma is detected but we have very few columns and lots of commas,
+  // it might be commas within data rather than delimiters
+  if (bestDelimiter === "," && lines.length > 1) {
+    const commaCount = (firstLine.match(/,/g) || []).length;
+    const expectedColumns = commaCount + 1;
+
+    // If we have too many columns (>10) and low consistency, try other delimiters
+    if (expectedColumns > 10) {
+      for (const delimiter of [";", "\t", "|"]) {
+        const count = (firstLine.match(new RegExp("\\" + delimiter, "g")) || [])
+          .length;
+        if (count > 0 && count < commaCount) {
+          let consistentRows = 0;
+          const expectedCols = count + 1;
+
+          for (let i = 1; i < Math.min(5, lines.length); i++) {
+            const rowCols =
+              (lines[i].match(new RegExp("\\" + delimiter, "g")) || []).length +
+              1;
+            if (rowCols === expectedCols) {
+              consistentRows++;
+            }
           }
-        }
 
-        if (consistent > consistentRows) {
-          bestDelimiter = delimiter;
-          consistentRows = consistent;
+          const consistency =
+            lines.length > 1
+              ? consistentRows / Math.min(4, lines.length - 1)
+              : 1;
+          if (consistency > 0.7) {
+            return delimiter;
+          }
         }
       }
     }
@@ -185,10 +207,34 @@ export const parseCSV = (
     const values = parseCSVLine(line, delimiter);
     const row: Record<string, unknown> = {};
 
-    headers.forEach((header, index) => {
-      const value = values[index] || "";
-      row[header] = convertValue(value);
-    });
+    // Handle case where we have more values than headers (unquoted commas in data)
+    if (values.length > headers.length) {
+      // If we have exactly 2 headers but more values, merge extra values into the last column
+      if (headers.length === 2) {
+        const firstValue = values[0];
+        const remainingValues = values.slice(1).join(delimiter);
+        row[headers[0]] = convertValue(firstValue);
+        row[headers[1]] = convertValue(remainingValues);
+      } else {
+        // For other cases, merge extra values into the last column
+        const normalValues = values.slice(0, headers.length - 1);
+        const lastValue = values.slice(headers.length - 1).join(delimiter);
+
+        headers.forEach((header, index) => {
+          if (index < normalValues.length) {
+            row[header] = convertValue(normalValues[index]);
+          } else if (index === headers.length - 1) {
+            row[header] = convertValue(lastValue);
+          }
+        });
+      }
+    } else {
+      // Normal case - each value maps to a header
+      headers.forEach((header, index) => {
+        const value = values[index] || "";
+        row[header] = convertValue(value);
+      });
+    }
 
     // Ensure all headers are present in the row (fill missing with null)
     headers.forEach((header) => {

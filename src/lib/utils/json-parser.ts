@@ -49,13 +49,16 @@ export const safeStringify = (value: unknown): string => {
 export const flattenObject = (
   obj: Record<string, unknown>,
   prefix = "",
-  maxDepth = 10,
+  maxDepth = 15,
   currentDepth = 0
 ): Record<string, unknown> => {
   const flattened: Record<string, unknown> = {};
 
   // Prevent infinite recursion
   if (currentDepth >= maxDepth) {
+    console.warn(
+      `Max depth ${maxDepth} reached at level ${currentDepth}, returning stringified object`
+    );
     return { [prefix || "data"]: safeStringify(obj) };
   }
 
@@ -70,32 +73,61 @@ export const flattenObject = (
     if (value === null || value === undefined) {
       flattened[newKey] = null;
     } else if (Array.isArray(value)) {
-      // Handle arrays - flatten if they contain objects, otherwise stringify
       if (value.length === 0) {
         flattened[newKey] = "[]";
-      } else if (
-        value.every(
+      } else {
+        // Check if all items are objects
+        const allObjects = value.every(
           (item) =>
             typeof item === "object" && item !== null && !Array.isArray(item)
-        )
-      ) {
-        // Array of objects - flatten each with index
-        value.forEach((item, index) => {
-          if (typeof item === "object" && item !== null) {
-            const arrayItemFlattened = flattenObject(
-              item as Record<string, unknown>,
-              `${newKey}[${index}]`,
-              maxDepth,
-              currentDepth + 1
-            );
-            Object.assign(flattened, arrayItemFlattened);
+        );
+
+        if (allObjects) {
+          // Array of objects - flatten each with index
+          value.forEach((item, index) => {
+            if (typeof item === "object" && item !== null) {
+              const arrayItemFlattened = flattenObject(
+                item as Record<string, unknown>,
+                `${newKey}[${index}]`,
+                maxDepth,
+                currentDepth + 1
+              );
+              Object.assign(flattened, arrayItemFlattened);
+            }
+          });
+        } else {
+          // Array of primitives or mixed - create a compact representation
+          if (
+            value.every(
+              (item) =>
+                typeof item === "string" ||
+                typeof item === "number" ||
+                typeof item === "boolean"
+            )
+          ) {
+            // For primitive arrays, create a more readable format
+            flattened[newKey] = JSON.stringify(value);
           } else {
-            flattened[`${newKey}[${index}]`] = item;
+            // For mixed arrays, flatten each item with index
+            value.forEach((item, index) => {
+              if (
+                typeof item === "object" &&
+                item !== null &&
+                !Array.isArray(item)
+              ) {
+                const arrayItemFlattened = flattenObject(
+                  item as Record<string, unknown>,
+                  `${newKey}[${index}]`,
+                  maxDepth,
+                  currentDepth + 1
+                );
+                Object.assign(flattened, arrayItemFlattened);
+              } else {
+                flattened[`${newKey}[${index}]`] = item;
+              }
+            });
           }
-        });
-      } else {
-        // Mixed array or array of primitives - stringify
-        flattened[newKey] = JSON.stringify(value);
+        }
       }
     } else if (typeof value === "object" && value !== null) {
       // Nested object - recursively flatten
@@ -198,7 +230,7 @@ export const parseJSON = (
   text: string,
   options: JSONParseOptions = {}
 ): JSONParseResult => {
-  const { maxDepth = 10 } = options;
+  const { maxDepth = 15 } = options;
 
   let parsed: unknown;
 
@@ -225,7 +257,9 @@ export const parseJSON = (
         hasNestedData: false,
       };
     }
-    dataArray = parsed;
+    dataArray = parsed.filter(
+      (item) => typeof item === "object" && item !== null
+    ) as Record<string, unknown>[];
   } else if (typeof parsed === "object" && parsed !== null) {
     dataArray = [parsed as Record<string, unknown>];
   } else {
@@ -253,7 +287,7 @@ export const parseJSON = (
       maxDepth
     );
 
-    // Convert values to appropriate types
+    // Convert values to appropriate types but preserve structure
     const converted: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(flattened)) {
       converted[key] = convertValue(value, key);
@@ -262,7 +296,7 @@ export const parseJSON = (
     return converted;
   });
 
-  // Get all unique headers
+  // Get all unique headers from all rows
   const headerSet = new Set<string>();
   flattenedData.forEach((row) => {
     Object.keys(row).forEach((key) => headerSet.add(key));
@@ -270,11 +304,11 @@ export const parseJSON = (
 
   const headers = Array.from(headerSet).sort();
 
-  // Ensure all rows have all headers
+  // Ensure all rows have all headers (fill missing with null)
   const normalizedData = flattenedData.map((row) => {
     const normalizedRow: Record<string, unknown> = {};
     headers.forEach((header) => {
-      normalizedRow[header] = row[header] ?? null;
+      normalizedRow[header] = row.hasOwnProperty(header) ? row[header] : null;
     });
     return normalizedRow;
   });

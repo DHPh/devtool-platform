@@ -13,11 +13,7 @@ import {
   ColumnFiltersState,
   ColumnDef,
 } from "@tanstack/react-table";
-import {
-  ToolHeader,
-  QuickActions,
-  ResultCard,
-} from "@/components/layout";
+import { ToolHeader, QuickActions, ResultCard } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,6 +50,7 @@ export default function CSVViewer() {
   const [globalFilter, setGlobalFilter] = useState("");
   const [fileName, setFileName] = useState("");
   const [detectedDelimiter, setDetectedDelimiter] = useState(",");
+  const [textInput, setTextInput] = useState("");
 
   const createColumns = (data: CSVRow[]): ColumnDef<CSVRow>[] => {
     if (data.length === 0) return [];
@@ -121,15 +118,63 @@ export default function CSVViewer() {
 
   const handleTextInput = (text: string) => {
     try {
-      const result = parseCSV(text, {
+      // First try with auto-detection
+      let result = parseCSV(text, {
         hasHeader: true,
         skipEmptyLines: true,
       });
+
+      // If we get too many columns (indicating possible unquoted commas), try other approaches
+      if (result.headers.length > 10) {
+        // Try with semicolon delimiter
+        try {
+          const semicolonResult = parseCSV(text, {
+            delimiter: ";",
+            hasHeader: true,
+            skipEmptyLines: true,
+          });
+          if (
+            semicolonResult.headers.length < result.headers.length &&
+            semicolonResult.headers.length > 1
+          ) {
+            result = semicolonResult;
+          }
+        } catch {
+          // Continue with original result
+        }
+
+        // Try with tab delimiter
+        try {
+          const tabResult = parseCSV(text, {
+            delimiter: "\t",
+            hasHeader: true,
+            skipEmptyLines: true,
+          });
+          if (
+            tabResult.headers.length < result.headers.length &&
+            tabResult.headers.length > 1
+          ) {
+            result = tabResult;
+          }
+        } catch {
+          // Continue with original result
+        }
+      }
+
       setData(result.data as CSVRow[]);
       setColumns(createColumns(result.data as CSVRow[]));
       setDetectedDelimiter(result.delimiter);
       setFileName("Manual Input");
-      toast.success(`Loaded ${result.rowCount} rows`);
+      toast.success(
+        `Loaded ${result.rowCount} rows with ${result.headers.length} columns`
+      );
+
+      // Warn if we detected too many columns
+      if (result.headers.length > 10) {
+        toast.warning(
+          "Detected many columns. Data may contain unquoted commas. Consider using proper CSV format with quoted values."
+        );
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
@@ -194,6 +239,32 @@ export default function CSVViewer() {
     toast.success("Data exported!");
   };
 
+  const loadSampleData = () => {
+    const sampleCSV = `SIC Code,Description
+1110,Growing of cereals (except rice), leguminous crops and oil seeds
+1120,Growing of rice
+1130,Growing of vegetables and melons, roots and tubers
+1140,Growing of sugar cane
+1150,Growing of tobacco
+1160,Growing of fibre crops
+1190,Growing of other non-perennial crops
+1210,Growing of grapes
+1220,Growing of tropical and subtropical fruits
+1230,Growing of citrus fruits`;
+
+    setTextInput(sampleCSV);
+    handleTextInput(sampleCSV);
+    setFileName("sample-sic-codes.csv");
+  };
+
+  const handleTextProcess = () => {
+    if (!textInput.trim()) {
+      toast.error("Please enter CSV data");
+      return;
+    }
+    handleTextInput(textInput);
+  };
+
   const clearData = () => {
     setData([]);
     setColumns([]);
@@ -202,6 +273,7 @@ export default function CSVViewer() {
     setGlobalFilter("");
     setColumnFilters([]);
     setSorting([]);
+    setTextInput("");
   };
 
   return (
@@ -214,6 +286,19 @@ export default function CSVViewer() {
 
       <QuickActions
         actions={[
+          {
+            id: "sample",
+            label: "Load Sample CSV",
+            onClick: loadSampleData,
+            variant: "outline" as const,
+          },
+          {
+            id: "process",
+            label: "Process CSV",
+            onClick: handleTextProcess,
+            disabled: !textInput.trim(),
+            variant: "default" as const,
+          },
           {
             id: "clear",
             label: "Clear Data",
@@ -252,23 +337,35 @@ export default function CSVViewer() {
             <Label htmlFor="csv-text">Or Paste CSV Data</Label>
             <textarea
               id="csv-text"
-              placeholder="CSV with commas: name,age,city&#10;John,30,NYC&#10;Jane,25,LA&#10;&#10;Or with semicolons: name;age;city&#10;John;30;NYC&#10;Jane;25;LA"
-              className="w-full h-24 tool-textarea"
-              onChange={(e) => {
-                if (e.target.value.trim()) {
-                  handleTextInput(e.target.value);
-                }
-              }}
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              placeholder="Paste CSV data here...&#10;&#10;Examples:&#10;SIC Code,Description&#10;1110,Growing of cereals&#10;1120,Growing of rice&#10;&#10;Or with semicolons:&#10;name;age;city&#10;John;30;NYC"
+              className="w-full h-32 tool-textarea"
             />
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              💡 Tip: Use the &quot;Process CSV&quot; button above to parse your
+              data manually
+            </div>
           </div>
 
           {data.length > 0 && (
             <div className="flex flex-wrap gap-2">
               <Badge variant="outline">{data.length} rows</Badge>
               <Badge variant="outline">{columns.length} columns</Badge>
-              <Badge variant="outline">
-                Delimiter: {getDelimiterDisplayName(detectedDelimiter)}
+              <Badge
+                variant="outline"
+                className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
+              >
+                📝 {getDelimiterDisplayName(detectedDelimiter)}
               </Badge>
+              {columns.length > 10 && (
+                <Badge
+                  variant="outline"
+                  className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300"
+                >
+                  ⚠️ Many columns detected
+                </Badge>
+              )}
               {fileName && <Badge variant="secondary">{fileName}</Badge>}
             </div>
           )}
@@ -281,7 +378,8 @@ export default function CSVViewer() {
           description={`Showing ${data.length} rows with ${columns.length} columns`}
           status="success"
         >
-          <div className="space-y-4">{/* Global Search */}
+          <div className="space-y-4">
+            {/* Global Search */}
             <div className="flex items-center space-x-2">
               <Search className="h-4 w-4" />
               <Input

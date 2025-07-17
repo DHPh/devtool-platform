@@ -33,11 +33,13 @@ import {
   Table,
 } from "lucide-react";
 import { toast } from "sonner";
+import { parseJSON } from "@/lib/utils/json-parser";
 
 export const metadata = {
   id: "json-table-viewer",
   name: "JSON Table Viewer",
-  description: "Convert JSON data to interactive table with filtering and sorting",
+  description:
+    "Convert JSON data to interactive table with filtering and sorting",
   category: "Data Processing",
   tags: ["json", "table", "data", "viewer"],
   path: "/tools/json-table-viewer",
@@ -56,87 +58,99 @@ export default function JSONTableViewer() {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [fileName, setFileName] = useState("");
-
-  const parseJSON = (text: string): JSONRow[] => {
-    try {
-      const parsed = JSON.parse(text);
-      if (Array.isArray(parsed)) {
-        return parsed.filter(item => typeof item === 'object' && item !== null);
-      } else if (typeof parsed === 'object' && parsed !== null) {
-        return [parsed];
-      }
-      return [];
-    } catch {
-      return [];
-    }
-  };
-
-  const flattenObject = (obj: Record<string, unknown>, prefix = '', maxDepth = 3, currentDepth = 0): Record<string, unknown> => {
-    if (currentDepth >= maxDepth) {
-      return { [prefix]: JSON.stringify(obj) };
-    }
-
-    const flattened: Record<string, unknown> = {};
-    
-    for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
-        const newKey = prefix ? `${prefix}.${key}` : key;
-        const value = obj[key];
-        
-        if (value === null || value === undefined) {
-          flattened[newKey] = value;
-        } else if (typeof value === 'object' && !Array.isArray(value)) {
-          Object.assign(flattened, flattenObject(value as Record<string, unknown>, newKey, maxDepth, currentDepth + 1));
-        } else if (Array.isArray(value)) {
-          flattened[newKey] = JSON.stringify(value);
-        } else {
-          flattened[newKey] = value;
-        }
-      }
-    }
-    
-    return flattened;
-  };
+  const [hasNestedData, setHasNestedData] = useState(false);
 
   const processJSONData = (text: string) => {
-    const parsedData = parseJSON(text);
-    
-    if (parsedData.length === 0) {
-      toast.error("Could not parse JSON data. Please check the format.");
-      return;
+    try {
+      const result = parseJSON(text, { maxDepth: 20 });
+
+      if (result.data.length === 0) {
+        toast.error("Could not parse JSON data. Please check the format.");
+        return;
+      }
+
+      // Debug logging
+      console.log("Parsed JSON result:", result);
+      console.log("Sample row:", result.data[0]);
+      console.log("Headers:", result.headers);
+
+      setData(result.data);
+      setHasNestedData(result.hasNestedData);
+
+      // Create columns
+      const columnHelper = createColumnHelper<JSONRow>();
+      const newColumns = result.headers.map((header) =>
+        columnHelper.accessor(
+          // Custom accessor function to handle flattened keys
+          (row) => row[header],
+          {
+            id: header,
+            header: header,
+            cell: (info) => {
+              const value = info.getValue();
+
+              if (value === null)
+                return <span className="text-gray-400 italic">null</span>;
+              if (value === undefined)
+                return <span className="text-gray-400 italic">undefined</span>;
+              if (typeof value === "boolean") {
+                return (
+                  <Badge variant={value ? "default" : "secondary"}>
+                    {String(value)}
+                  </Badge>
+                );
+              }
+              if (typeof value === "number") {
+                return (
+                  <span className="font-mono">{value.toLocaleString()}</span>
+                );
+              }
+              if (typeof value === "string") {
+                // Check if it's a JSON string (starts with [ or {)
+                if (
+                  (value.startsWith("[") && value.endsWith("]")) ||
+                  (value.startsWith("{") && value.endsWith("}"))
+                ) {
+                  return (
+                    <span className="font-mono text-purple-600 dark:text-purple-400 text-sm">
+                      {value}
+                    </span>
+                  );
+                }
+                // Check if it's a date string
+                if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
+                  return (
+                    <span className="text-blue-600 dark:text-blue-400">
+                      {value}
+                    </span>
+                  );
+                }
+                // Truncate long strings
+                if (value.length > 100) {
+                  return (
+                    <span title={value}>{value.substring(0, 100)}...</span>
+                  );
+                }
+              }
+              return <span className="break-all">{String(value)}</span>;
+            },
+          }
+        )
+      );
+
+      setColumns(newColumns);
+      toast.success(
+        `Loaded ${result.rowCount} rows with ${result.headers.length} columns`
+      );
+
+      if (result.hasNestedData) {
+        toast.info("Nested data has been flattened into columns");
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      toast.error(`Error parsing JSON: ${errorMessage}`);
     }
-
-    // Flatten nested objects
-    const flattenedData = parsedData.map(item => flattenObject(item));
-    setData(flattenedData);
-
-    // Create columns
-    const allKeys = new Set<string>();
-    flattenedData.forEach(item => {
-      Object.keys(item).forEach(key => allKeys.add(key));
-    });
-
-    const columnHelper = createColumnHelper<JSONRow>();
-    const newColumns = Array.from(allKeys).map(key =>
-      columnHelper.accessor(key, {
-        header: key,
-        cell: (info) => {
-          const value = info.getValue();
-          if (value === null) return <span className="text-gray-400">null</span>;
-          if (value === undefined) return <span className="text-gray-400">undefined</span>;
-          if (typeof value === 'boolean') {
-            return <Badge variant={value ? "default" : "secondary"}>{String(value)}</Badge>;
-          }
-          if (typeof value === 'number') {
-            return <span className="font-mono">{value}</span>;
-          }
-          return <span className="break-all">{String(value)}</span>;
-        },
-      })
-    );
-
-    setColumns(newColumns);
-    toast.success(`Loaded ${flattenedData.length} rows with ${allKeys.size} columns`);
   };
 
   const handleFileUpload = (content: string, fileName: string) => {
@@ -154,51 +168,55 @@ export default function JSONTableViewer() {
   };
 
   const loadSampleData = () => {
-    const sampleJSON = JSON.stringify([
-      {
-        "id": 1,
-        "name": "John Doe",
-        "email": "john@example.com",
-        "age": 30,
-        "active": true,
-        "address": {
-          "street": "123 Main St",
-          "city": "New York",
-          "zipCode": "10001"
+    const sampleJSON = JSON.stringify(
+      [
+        {
+          id: 1,
+          name: "John Doe",
+          email: "john@example.com",
+          age: 30,
+          active: true,
+          address: {
+            street: "123 Main St",
+            city: "New York",
+            zipCode: "10001",
+          },
+          skills: ["JavaScript", "React", "Node.js"],
         },
-        "skills": ["JavaScript", "React", "Node.js"]
-      },
-      {
-        "id": 2,
-        "name": "Jane Smith",
-        "email": "jane@example.com",
-        "age": 25,
-        "active": false,
-        "address": {
-          "street": "456 Oak Ave",
-          "city": "Los Angeles",
-          "zipCode": "90210"
+        {
+          id: 2,
+          name: "Jane Smith",
+          email: "jane@example.com",
+          age: 25,
+          active: false,
+          address: {
+            street: "456 Oak Ave",
+            city: "Los Angeles",
+            zipCode: "90210",
+          },
+          skills: ["Python", "Django", "PostgreSQL"],
         },
-        "skills": ["Python", "Django", "PostgreSQL"]
-      },
-      {
-        "id": 3,
-        "name": "Bob Johnson",
-        "email": "bob@example.com",
-        "age": 35,
-        "active": true,
-        "address": {
-          "street": "789 Pine Rd",
-          "city": "Chicago",
-          "zipCode": "60601"
+        {
+          id: 3,
+          name: "Bob Johnson",
+          email: "bob@example.com",
+          age: 35,
+          active: true,
+          address: {
+            street: "789 Pine Rd",
+            city: "Chicago",
+            zipCode: "60601",
+          },
+          skills: ["Java", "Spring", "MySQL"],
         },
-        "skills": ["Java", "Spring", "MySQL"]
-      }
-    ], null, 2);
-    
+      ],
+      null,
+      2
+    );
+
     setJsonInput(sampleJSON);
     processJSONData(sampleJSON);
-    setFileName('sample-data.json');
+    setFileName("sample-data.json");
   };
 
   const clearData = () => {
@@ -209,6 +227,7 @@ export default function JSONTableViewer() {
     setGlobalFilter("");
     setSorting([]);
     setColumnFilters([]);
+    setHasNestedData(false);
     toast.success("Data cleared");
   };
 
@@ -220,19 +239,24 @@ export default function JSONTableViewer() {
 
     const headers = Object.keys(data[0]);
     const csvContent = [
-      headers.join(','),
-      ...data.map(row => headers.map(header => {
-        const value = row[header];
-        const stringValue = value === null || value === undefined ? '' : String(value);
-        return `"${stringValue.replace(/"/g, '""')}"`;
-      }).join(','))
-    ].join('\n');
+      headers.join(","),
+      ...data.map((row) =>
+        headers
+          .map((header) => {
+            const value = row[header];
+            const stringValue =
+              value === null || value === undefined ? "" : String(value);
+            return `"${stringValue.replace(/"/g, '""')}"`;
+          })
+          .join(",")
+      ),
+    ].join("\n");
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = fileName.replace(/\.json$/i, '.csv') || 'json-data.csv';
+    a.download = fileName.replace(/\.json$/i, ".csv") || "json-data.csv";
     a.click();
     URL.revokeObjectURL(url);
     toast.success("CSV exported successfully");
@@ -245,11 +269,11 @@ export default function JSONTableViewer() {
     }
 
     const jsonContent = JSON.stringify(data, null, 2);
-    const blob = new Blob([jsonContent], { type: 'application/json' });
+    const blob = new Blob([jsonContent], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = fileName || 'processed-data.json';
+    a.download = fileName || "processed-data.json";
     a.click();
     URL.revokeObjectURL(url);
     toast.success("JSON exported successfully");
@@ -324,7 +348,7 @@ export default function JSONTableViewer() {
 
           <FileUploadZone
             onFileSelect={handleFileUpload}
-            acceptedTypes={['.json']}
+            acceptedTypes={[".json"]}
             maxSizeInMB={10}
             placeholder="Upload JSON file"
           />
@@ -345,10 +369,25 @@ export default function JSONTableViewer() {
       {data.length > 0 && (
         <ResultCard
           title="JSON Table"
-          description={`Showing ${table.getFilteredRowModel().rows.length} of ${data.length} rows`}
+          description={`Showing ${table.getFilteredRowModel().rows.length} of ${
+            data.length
+          } rows`}
           status="success"
         >
           <div className="space-y-4">
+            {hasNestedData && (
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant="outline"
+                  className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
+                >
+                  📊 Nested data flattened
+                </Badge>
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  Complex nested objects have been flattened into columns
+                </span>
+              </div>
+            )}
             <div className="flex gap-4 items-center">
               <div className="flex-1">
                 <Input
@@ -382,7 +421,10 @@ export default function JSONTableViewer() {
                           onClick={header.column.getToggleSortingHandler()}
                         >
                           <div className="flex items-center gap-2">
-                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
                             <ArrowUpDown className="h-4 w-4" />
                           </div>
                         </th>
@@ -392,10 +434,16 @@ export default function JSONTableViewer() {
                 </thead>
                 <tbody>
                   {table.getRowModel().rows.map((row) => (
-                    <tr key={row.id} className="border-t hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                    <tr
+                      key={row.id}
+                      className="border-t hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                    >
                       {row.getVisibleCells().map((cell) => (
                         <td key={cell.id} className="p-3">
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
                         </td>
                       ))}
                     </tr>
@@ -406,7 +454,8 @@ export default function JSONTableViewer() {
 
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+                Page {table.getState().pagination.pageIndex + 1} of{" "}
+                {table.getPageCount()}
               </div>
               <div className="flex gap-2">
                 <Button
