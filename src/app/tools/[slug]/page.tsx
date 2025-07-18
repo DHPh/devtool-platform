@@ -3,7 +3,7 @@ import { ToolFrame } from "@/components/tool-frame";
 import { getToolById } from "@/lib/tool-registry";
 import { JsonFormatter } from "@/lib/tools/json-formatter";
 import Base64Encoder from "@/lib/tools/base64-encoder";
-import { RegexTester } from "@/lib/tools/regex-tester";
+import RegexTester from "@/lib/tools/regex-tester";
 import UuidGenerator from "@/lib/tools/uuid-generator";
 import TimestampConverter from "@/lib/tools/timestamp-converter";
 import PasswordGenerator from "@/lib/tools/password-generator";
