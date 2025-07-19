@@ -12,6 +12,7 @@ export interface ToolMetadata {
   icon?: string;
   featured?: boolean; // Mark as featured tool
   complexity?: "simple" | "intermediate" | "advanced"; // Complexity level
+  parent?: string; // Optional parent tool id for sub-tools in suites
 }
 
 export interface Tool {
@@ -170,6 +171,46 @@ export const TOOL_REGISTRY: ToolMetadata[] = [
     icon: "🔐",
     featured: true,
     complexity: "simple",
+  },
+  // Sub-tools for Password Generator Suite
+  {
+    id: "password-analysis",
+    name: "Password Analysis",
+    description: "Analyze password strength, entropy, and security issues",
+    category: TOOL_CATEGORIES.GENERATORS.id,
+    type: TOOL_TYPES.ANALYZER,
+    tags: ["password", "analysis", "security", "entropy"],
+    path: "/tools/password-generator?tab=analysis",
+    icon: "🛡️",
+    featured: false,
+    complexity: "intermediate",
+    parent: "password-generator",
+  },
+  {
+    id: "password-breach-check",
+    name: "Breach Checker",
+    description: "Check if a password has been found in data breaches",
+    category: TOOL_CATEGORIES.GENERATORS.id,
+    type: TOOL_TYPES.VALIDATOR,
+    tags: ["password", "breach", "security", "check"],
+    path: "/tools/password-generator?tab=breach",
+    icon: "🔎",
+    featured: false,
+    complexity: "intermediate",
+    parent: "password-generator",
+  },
+  {
+    id: "passphrase-generator",
+    name: "Passphrase Generator",
+    description: "Generate secure passphrases using random words",
+    category: TOOL_CATEGORIES.GENERATORS.id,
+    type: TOOL_TYPES.GENERATOR,
+    tags: ["passphrase", "generator", "security", "words"],
+    path: "/tools/password-generator?tab=passphrase",
+    icon: "📝",
+    featured: false,
+    complexity: "simple",
+    parent: "password-generator",
   },
   {
     id: "lorem-ipsum",

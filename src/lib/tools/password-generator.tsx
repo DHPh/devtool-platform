@@ -74,7 +74,30 @@ interface BreachResult {
 }
 
 export default function AdvancedSecuritySuite() {
+  // Next.js App Router: useSearchParams
   const [activeTab, setActiveTab] = useState("generator");
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab");
+      if (
+        tab &&
+        ["generator", "analysis", "breach", "passphrase"].includes(tab)
+      ) {
+        setActiveTab(tab);
+      }
+    }
+  }, []);
+
+  // Khi chuyển tab, cập nhật URL
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", tab);
+      window.history.replaceState({}, "", url.toString());
+    }
+  };
 
   // Password Generator State
   const [password, setPassword] = useState("");
@@ -398,7 +421,7 @@ export default function AdvancedSecuritySuite() {
         icon={ShieldCheck}
       />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         {/* Mobile Navigation - Dropdown */}
         <div className="block md:hidden mb-6">
           <Select value={activeTab} onValueChange={setActiveTab}>
