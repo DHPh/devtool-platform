@@ -150,7 +150,21 @@ export default function RegexTester() {
   const [isValid, setIsValid] = useState(false);
   const [explanation, setExplanation] = useState<RegexExplanation | null>(null);
   const [replacementResult, setReplacementResult] = useState("");
+  // SSR-safe tab state initialization
   const [activeTab, setActiveTab] = useState("test");
+  // Update tab in URL when tab changes
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.set("tab", tab);
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}?${params.toString()}`
+      );
+    }
+  };
   const [selectedPattern, setSelectedPattern] = useState("");
   const [stats, setStats] = useState<RegexStats>({
     execTime: 0,
@@ -540,13 +554,15 @@ export default function RegexTester() {
     copyToClipboard(url, "Shareable link");
   };
 
-  // Load from URL params on mount
+  // Load from URL params on mount and listen for tab param changes (client only)
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const urlPattern = params.get("pattern");
     const urlFlags = params.get("flags");
     const urlTest = params.get("test");
     const urlReplacement = params.get("replacement");
+    const urlTab = params.get("tab");
 
     if (urlPattern) setPattern(urlPattern);
     if (urlTest) setTestString(urlTest);
@@ -561,6 +577,16 @@ export default function RegexTester() {
         y: urlFlags.includes("y"),
       });
     }
+    if (urlTab) setActiveTab(urlTab);
+
+    // Listen for popstate (browser back/forward)
+    const onPopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab") || "test";
+      setActiveTab(tab);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
   return (
@@ -705,7 +731,7 @@ export default function RegexTester() {
             </Card>
 
             {/* Tabs */}
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <Tabs value={activeTab} onValueChange={handleTabChange}>
               <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
                 <TabsTrigger value="test" className="text-xs md:text-sm">
                   Test Results
@@ -1563,7 +1589,8 @@ export default function RegexTester() {
                     <div className="space-y-1">
                       <div className="text-muted-foreground">IPv4:</div>
                       <code className="text-wrap break-all">
-                        \\d{"{1,3}"}\\.\\d{"{1,3}"}\\.\\d{"{1,3}"}\\.\\d{"{1,3}"}
+                        \\d{"{1,3}"}\\.\\d{"{1,3}"}\\.\\d{"{1,3}"}\\.\\d
+                        {"{1,3}"}
                       </code>
                     </div>
                     <div className="space-y-1">
