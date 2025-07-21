@@ -10,7 +10,6 @@ import { useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Sparkles,
   FileCode,
   Search,
   Shield,
@@ -132,22 +131,6 @@ function JsonStudioContent({
 
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* Header */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-primary" />
-            <span>JSON Studio</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            Complete JSON processing toolkit with formatting, validation, path
-            querying, schema validation, and diff comparison capabilities.
-          </p>
-        </CardContent>
-      </Card>
-
       {/* Input Section */}
       <Card>
         <CardHeader>
