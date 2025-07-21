@@ -3,7 +3,7 @@ import { ToolFrame } from "@/components/tool-frame";
 import { getToolById } from "@/lib/tool-registry";
 import { JsonFormatter } from "@/lib/tools/json-formatter";
 import Base64Encoder from "@/lib/tools/base64-encoder";
-import RegexTester from "@/lib/tools/regex-tester";
+import { RegexStudio } from "@/lib/tools/regex-studio";
 import UuidGenerator from "@/lib/tools/uuid-generator";
 import TimestampConverter from "@/lib/tools/timestamp-converter";
 import PasswordGenerator from "@/lib/tools/password-generator";
@@ -30,7 +30,7 @@ import { JsonStudio } from "@/lib/tools/json-studio/index";
 const TOOL_COMPONENTS: Record<string, React.ComponentType> = {
   "json-formatter": JsonFormatter,
   "base64-encoder": Base64Encoder,
-  "regex-tester": RegexTester,
+  "regex-studio": RegexStudio,
   "uuid-generator": UuidGenerator,
   "timestamp-converter": TimestampConverter,
   "password-generator": PasswordGenerator,
