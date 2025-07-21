@@ -6,7 +6,7 @@ import Base64Encoder from "@/lib/tools/base64-encoder";
 import { RegexStudio } from "@/lib/tools/regex-studio";
 import UuidGenerator from "@/lib/tools/uuid-generator";
 import TimestampConverter from "@/lib/tools/timestamp-converter";
-import PasswordGenerator from "@/lib/tools/password-generator";
+import { PasswordStudio } from "@/lib/tools/password-studio/PasswordStudio";
 import ColorConverter from "@/lib/tools/color-converter";
 import CaseConverter from "@/lib/tools/case-converter";
 import UrlEncoder from "@/lib/tools/url-encoder";
@@ -33,7 +33,7 @@ const TOOL_COMPONENTS: Record<string, React.ComponentType> = {
   "regex-studio": RegexStudio,
   "uuid-generator": UuidGenerator,
   "timestamp-converter": TimestampConverter,
-  "password-generator": PasswordGenerator,
+  "password-studio": PasswordStudio,
   "color-converter": ColorConverter,
   "case-converter": CaseConverter,
   "url-encoder": UrlEncoder,
