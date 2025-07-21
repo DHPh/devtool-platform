@@ -4,8 +4,8 @@
  */
 
 // Main component
-export { JsonStudio } from "./JsonStudio";
-export { default } from "./JsonStudio";
+export { JsonStudioWithSuspense as JsonStudio } from "./JsonStudioWrapper";
+export { JsonStudioWithSuspense as default } from "./JsonStudioWrapper";
 
 // Individual tab components
 export { JsonFormatterTab } from "./JsonFormatterTab";

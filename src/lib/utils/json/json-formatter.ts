@@ -274,11 +274,9 @@ export function compareJson(
 /**
  * Deep compare two objects and collect differences
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+/* eslint-disable @typescript-eslint/no-explicit-any */
 function deepCompare(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   obj1: any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   obj2: any,
   path: string,
   differences: string[]
