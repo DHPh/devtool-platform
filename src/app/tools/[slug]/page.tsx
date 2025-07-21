@@ -24,6 +24,7 @@ import CsvViewer from "@/lib/tools/csv-viewer";
 import JsonTableViewer from "@/lib/tools/json-table-viewer";
 import DataExplorer from "@/lib/tools/data-explorer";
 import RandomWheel from "@/lib/tools/random-wheel";
+import { JsonStudio } from "@/lib/tools/json-studio/index";
 
 // Tool component mapping
 const TOOL_COMPONENTS: Record<string, React.ComponentType> = {
@@ -50,6 +51,7 @@ const TOOL_COMPONENTS: Record<string, React.ComponentType> = {
   "json-table-viewer": JsonTableViewer,
   "data-explorer": DataExplorer,
   "random-wheel": RandomWheel,
+  "json-studio": JsonStudio,
 };
 
 interface ToolPageProps {
