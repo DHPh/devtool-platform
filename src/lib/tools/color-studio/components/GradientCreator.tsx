@@ -174,7 +174,7 @@ export function GradientCreator() {
       {/* Gradient Preview */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex sm:items-center items-start justify-between sm:flex-row flex-col gap-2">
             <CardTitle>Gradient Preview</CardTitle>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={randomizeGradient}>

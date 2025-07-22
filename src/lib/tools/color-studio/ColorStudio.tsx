@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
+// import { Badge } from "@/components/ui/badge";
 import { Palette, Pipette, Layers, Zap, Eye, Contrast } from "lucide-react";
 import {
   ColorConverterTab,
@@ -17,6 +17,7 @@ const STUDIO_TABS = [
   {
     id: "converter",
     label: "Color Converter",
+    shortLabel: "Converter",
     icon: Palette,
     component: ColorConverterTab,
     description: "Convert between color formats",
@@ -24,6 +25,7 @@ const STUDIO_TABS = [
   {
     id: "picker",
     label: "Color Picker",
+    shortLabel: "Picker",
     icon: Pipette,
     component: ColorPickerTab,
     description: "Interactive color selection",
@@ -31,6 +33,7 @@ const STUDIO_TABS = [
   {
     id: "palette",
     label: "Palette Generator",
+    shortLabel: "Palette",
     icon: Layers,
     component: PaletteGeneratorTab,
     description: "Generate color harmonies",
@@ -38,6 +41,7 @@ const STUDIO_TABS = [
   {
     id: "gradient",
     label: "Gradient Creator",
+    shortLabel: "Gradient",
     icon: Zap,
     component: GradientCreatorTab,
     description: "Create CSS gradients",
@@ -45,6 +49,7 @@ const STUDIO_TABS = [
   {
     id: "contrast",
     label: "Contrast Checker",
+    shortLabel: "Contrast",
     icon: Contrast,
     component: ContrastCheckerTab,
     description: "Check WCAG compliance",
@@ -52,6 +57,7 @@ const STUDIO_TABS = [
   {
     id: "colorblind",
     label: "Color Blindness",
+    shortLabel: "Colorblind",
     icon: Eye,
     component: ColorBlindnessTab,
     description: "Accessibility simulation",
@@ -83,7 +89,7 @@ export default function ColorStudio() {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-8">
+        {/* <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
             <div className="p-3 bg-primary/10 rounded-xl">
               <Palette className="h-8 w-8 text-primary" />
@@ -97,7 +103,7 @@ export default function ColorStudio() {
             Complete color toolkit with advanced features for designers and
             developers
           </p>
-        </div>
+        </div> */}
 
         {/* Main Content */}
         <Tabs
@@ -117,7 +123,8 @@ export default function ColorStudio() {
                 >
                   <Icon className="h-4 w-4" />
                   <span className="hidden sm:inline">{tab.label}</span>
-                  <span className="sm:hidden">{tab.label.split(" ")[0]}</span>
+                  {/* <span className="sm:hidden">{tab.label.split(" ")[0]}</span> */}
+                  <span className="sm:hidden">{tab.shortLabel}</span>
                 </TabsTrigger>
               );
             })}
