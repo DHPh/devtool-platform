@@ -25,6 +25,7 @@ import JsonTableViewer from "@/lib/tools/json-table-viewer";
 import DataExplorer from "@/lib/tools/data-explorer";
 import RandomWheel from "@/lib/tools/random-wheel";
 import { JsonStudio } from "@/lib/tools/json-studio/index";
+import ColorStudio from "@/lib/tools/color-studio/ColorStudio";
 
 // Tool component mapping
 const TOOL_COMPONENTS: Record<string, React.ComponentType> = {
@@ -34,6 +35,7 @@ const TOOL_COMPONENTS: Record<string, React.ComponentType> = {
   "uuid-generator": UuidGenerator,
   "timestamp-converter": TimestampConverter,
   "password-studio": PasswordStudio,
+  "color-studio": ColorStudio,
   "color-converter": ColorConverter,
   "case-converter": CaseConverter,
   "url-encoder": UrlEncoder,
