@@ -12,10 +12,24 @@ import {
   type ContrastResult,
 } from "@/lib/utils/color/contrast-checker";
 import { ColorPicker } from "./ColorPicker";
+import { getColorInfo } from "@/lib/utils/color";
+
+const initialForegroundColor = "#000000"; // Default black color
+const initialBackgroundColor = "#ffffff"; // Default white color
 
 export function ContrastChecker() {
-  const [foregroundColor, setForegroundColor] = useState("#000000");
-  const [backgroundColor, setBackgroundColor] = useState("#ffffff");
+  const [foregroundColor, setForegroundColor] = useState(
+    initialForegroundColor
+  );
+  const [backgroundColor, setBackgroundColor] = useState(
+    initialBackgroundColor
+  );
+  const [pickedForegroundColor, setPickedForegroundColor] = useState(
+    initialForegroundColor
+  );
+  const [pickedBackgroundColor, setPickedBackgroundColor] = useState(
+    initialBackgroundColor
+  );
   const [showForegroundPicker, setShowForegroundPicker] = useState(false);
   const [showBackgroundPicker, setShowBackgroundPicker] = useState(false);
 
@@ -28,6 +42,9 @@ export function ContrastChecker() {
     const temp = foregroundColor;
     setForegroundColor(backgroundColor);
     setBackgroundColor(temp);
+
+    setPickedForegroundColor(backgroundColor);
+    setPickedBackgroundColor(temp);
   };
 
   const generateRandomPair = () => {
@@ -59,6 +76,9 @@ export function ContrastChecker() {
 
     setForegroundColor(fg);
     setBackgroundColor(bg);
+
+    setPickedForegroundColor(fg);
+    setPickedBackgroundColor(bg);
     toast.success("Random color pair generated!");
   };
 
@@ -127,8 +147,13 @@ Background: ${backgroundColor}
               <div className="flex-1">
                 <Input
                   type="text"
-                  value={foregroundColor}
-                  onChange={(e) => setForegroundColor(e.target.value)}
+                  value={pickedForegroundColor}
+                  onChange={(e) => {
+                    if (getColorInfo(e.target.value)) {
+                      setForegroundColor(e.target.value);
+                    }
+                    setPickedForegroundColor(e.target.value);
+                  }}
                   placeholder="#000000"
                 />
               </div>
@@ -136,7 +161,10 @@ Background: ${backgroundColor}
             {showForegroundPicker && (
               <ColorPicker
                 value={foregroundColor}
-                onChange={setForegroundColor}
+                onChange={(value) => {
+                  setForegroundColor(value);
+                  setPickedForegroundColor(value);
+                }}
               />
             )}
           </CardContent>
@@ -156,8 +184,13 @@ Background: ${backgroundColor}
               <div className="flex-1">
                 <Input
                   type="text"
-                  value={backgroundColor}
-                  onChange={(e) => setBackgroundColor(e.target.value)}
+                  value={pickedBackgroundColor}
+                  onChange={(e) => {
+                    if (getColorInfo(e.target.value)) {
+                      setBackgroundColor(e.target.value);
+                    }
+                    setPickedBackgroundColor(e.target.value);
+                  }}
                   placeholder="#ffffff"
                 />
               </div>
@@ -165,7 +198,10 @@ Background: ${backgroundColor}
             {showBackgroundPicker && (
               <ColorPicker
                 value={backgroundColor}
-                onChange={setBackgroundColor}
+                onChange={(value) => {
+                  setBackgroundColor(value);
+                  setPickedBackgroundColor(value);
+                }}
               />
             )}
           </CardContent>

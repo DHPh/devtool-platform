@@ -25,8 +25,10 @@ import {
   type ConicGradient,
 } from "@/lib/utils/color/gradient-generator";
 import { ColorPicker } from "./ColorPicker";
+import { getColorInfo } from "@/lib/utils/color";
 
 export function GradientCreator() {
+  const defaultColor = "#000000";
   const [gradient, setGradient] = useState<Gradient>(() =>
     createEvenGradient(["#ff0000", "#0000ff"], "linear")
   );
@@ -342,11 +344,14 @@ export function GradientCreator() {
                   <button
                     className="w-8 h-8 rounded border-2 border-border hover:border-primary transition-colors"
                     style={{ backgroundColor: stop.color }}
-                    onClick={() =>
+                    onClick={() => {
+                      if (!getColorInfo(stop.color)) {
+                        updateGradientStop(index, { color: defaultColor });
+                      }
                       setShowColorPicker(
                         showColorPicker === index ? null : index
-                      )
-                    }
+                      );
+                    }}
                   />
                   <div className="flex-1">
                     <Input

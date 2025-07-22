@@ -17,9 +17,13 @@ import {
   PALETTE_TYPES,
   type PaletteType,
 } from "@/lib/utils/color/palette-generator";
+import { getColorInfo } from "@/lib/utils/color";
+
+const initialColor = "#3b82f6"; // Default blue color
 
 export function PaletteGeneratorTab() {
-  const [baseColor, setBaseColor] = useState("#3b82f6");
+  const [baseColor, setBaseColor] = useState(initialColor);
+  const [pickedColor, setPickedColor] = useState(initialColor);
   const [paletteType, setPaletteType] = useState<PaletteType>("analogous");
   const [showColorPicker, setShowColorPicker] = useState(false);
 
@@ -70,8 +74,13 @@ export function PaletteGeneratorTab() {
                 <div className="flex-1">
                   <input
                     type="text"
-                    value={baseColor}
-                    onChange={(e) => setBaseColor(e.target.value)}
+                    value={pickedColor}
+                    onChange={(e) => {
+                      if (getColorInfo(e.target.value)) {
+                        setBaseColor(e.target.value);
+                      }
+                      setPickedColor(e.target.value);
+                    }}
                     className="w-full px-3 py-2 border rounded-md"
                     placeholder="#3b82f6"
                   />
@@ -113,7 +122,13 @@ export function PaletteGeneratorTab() {
 
           {showColorPicker && (
             <div className="mt-4">
-              <ColorPicker value={baseColor} onChange={setBaseColor} />
+              <ColorPicker
+                value={baseColor}
+                onChange={(value) => {
+                  setBaseColor(value);
+                  setPickedColor(value);
+                }}
+              />
             </div>
           )}
         </CardContent>

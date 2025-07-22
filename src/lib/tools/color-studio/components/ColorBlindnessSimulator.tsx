@@ -19,6 +19,7 @@ import {
   type ColorBlindnessType,
 } from "@/lib/utils/color/color-blindness";
 import { ColorPicker } from "./ColorPicker";
+import { getColorInfo } from "@/lib/utils/color";
 
 const COLOR_BLINDNESS_TYPES: {
   value: ColorBlindnessType;
@@ -83,8 +84,11 @@ const SAMPLE_COLORS = [
   "#808000",
 ];
 
+const initialColor = "#ff0000";
+
 export function ColorBlindnessSimulator() {
-  const [inputColor, setInputColor] = useState("#ff0000");
+  const [inputColor, setInputColor] = useState(initialColor);
+  const [pickedColor, setPickedColor] = useState(initialColor);
   const [selectedType, setSelectedType] =
     useState<ColorBlindnessType>("deuteranomaly");
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -130,8 +134,13 @@ export function ColorBlindnessSimulator() {
             <div className="flex-1">
               <Input
                 type="text"
-                value={inputColor}
-                onChange={(e) => setInputColor(e.target.value)}
+                value={pickedColor}
+                onChange={(e) => {
+                  if (getColorInfo(e.target.value)) {
+                    setInputColor(e.target.value);
+                  }
+                  setPickedColor(e.target.value);
+                }}
                 placeholder="#ff0000"
               />
             </div>
@@ -142,7 +151,13 @@ export function ColorBlindnessSimulator() {
           </div>
 
           {showColorPicker && (
-            <ColorPicker value={inputColor} onChange={setInputColor} />
+            <ColorPicker
+              value={inputColor}
+              onChange={(value) => {
+                setInputColor(value);
+                setPickedColor(value);
+              }}
+            />
           )}
         </CardContent>
       </Card>
@@ -162,7 +177,10 @@ export function ColorBlindnessSimulator() {
                 key={index}
                 className="w-12 h-12 rounded border-2 border-border hover:border-primary transition-colors"
                 style={{ backgroundColor: color }}
-                onClick={() => setInputColor(color)}
+                onClick={() => {
+                  setInputColor(color);
+                  setPickedColor(color);
+                }}
                 title={color}
               />
             ))}
