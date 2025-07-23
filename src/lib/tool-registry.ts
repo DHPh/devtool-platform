@@ -574,6 +574,164 @@ export const TOOL_REGISTRY: ToolMetadata[] = [
     icon: "🎯",
     complexity: "simple",
   },
+
+  // Network Studio
+  {
+    id: "network-studio",
+    name: "Network Studio",
+    description:
+      "Comprehensive network testing and analysis toolkit with 10 professional tools",
+    category: TOOL_CATEGORIES.API_TESTING.id,
+    type: TOOL_TYPES.UTILITY,
+    types: [TOOL_TYPES.ANALYZER, TOOL_TYPES.VALIDATOR],
+    tags: ["network", "testing", "analysis", "suite", "professional"],
+    path: "/tools/network-studio",
+    icon: "🌐",
+    featured: true,
+    complexity: "advanced",
+  },
+
+  // Network Studio Sub-tools (accessible via URL parameters)
+  {
+    id: "api-tester",
+    name: "API Tester",
+    description:
+      "REST API testing tool with request builder and cURL import/export",
+    category: TOOL_CATEGORIES.API_TESTING.id,
+    type: TOOL_TYPES.UTILITY,
+    types: [TOOL_TYPES.VALIDATOR],
+    tags: ["api", "rest", "testing", "curl", "requests"],
+    path: "/tools/network-studio?tab=api-tester",
+    icon: "🌍",
+    complexity: "intermediate",
+    parent: "network-studio",
+  },
+
+  {
+    id: "http-client",
+    name: "HTTP Client",
+    description: "HTTP request builder with headers and response analysis",
+    category: TOOL_CATEGORIES.API_TESTING.id,
+    type: TOOL_TYPES.UTILITY,
+    tags: ["http", "client", "requests", "headers"],
+    path: "/tools/network-studio?tab=http-client",
+    icon: "📡",
+    complexity: "intermediate",
+    parent: "network-studio",
+  },
+
+  {
+    id: "websocket-tester",
+    name: "WebSocket Tester",
+    description: "Test WebSocket connections with real-time messaging",
+    category: TOOL_CATEGORIES.API_TESTING.id,
+    type: TOOL_TYPES.UTILITY,
+    types: [TOOL_TYPES.VALIDATOR],
+    tags: ["websocket", "realtime", "testing", "connections"],
+    path: "/tools/network-studio?tab=websocket",
+    icon: "📻",
+    complexity: "intermediate",
+    parent: "network-studio",
+  },
+
+  {
+    id: "dns-lookup",
+    name: "DNS Lookup",
+    description: "DNS record lookup with WHOIS information and validation",
+    category: TOOL_CATEGORIES.UTILITIES.id,
+    type: TOOL_TYPES.ANALYZER,
+    types: [TOOL_TYPES.VALIDATOR],
+    tags: ["dns", "lookup", "whois", "domain", "records"],
+    path: "/tools/network-studio?tab=dns-lookup",
+    icon: "🔍",
+    complexity: "intermediate",
+    parent: "network-studio",
+  },
+
+  {
+    id: "ip-info",
+    name: "IP Information",
+    description:
+      "Get detailed IP address information including geolocation and ISP",
+    category: TOOL_CATEGORIES.UTILITIES.id,
+    type: TOOL_TYPES.ANALYZER,
+    tags: ["ip", "geolocation", "isp", "information"],
+    path: "/tools/network-studio?tab=ip-info",
+    icon: "📍",
+    complexity: "simple",
+    parent: "network-studio",
+  },
+
+  {
+    id: "port-scanner",
+    name: "Port Scanner",
+    description:
+      "Network port scanner with predefined profiles and custom ranges",
+    category: TOOL_CATEGORIES.SECURITY_TOOLS.id,
+    type: TOOL_TYPES.ANALYZER,
+    types: [TOOL_TYPES.SECURITY],
+    tags: ["port", "scanner", "security", "network", "profiles"],
+    path: "/tools/network-studio?tab=port-scanner",
+    icon: "🛡️",
+    complexity: "advanced",
+    parent: "network-studio",
+  },
+
+  {
+    id: "network-monitor",
+    name: "Network Monitor",
+    description:
+      "Monitor network performance with ping tests and speed analysis",
+    category: TOOL_CATEGORIES.UTILITIES.id,
+    type: TOOL_TYPES.ANALYZER,
+    tags: ["network", "monitor", "ping", "speed", "performance"],
+    path: "/tools/network-studio?tab=network-monitor",
+    icon: "📊",
+    complexity: "intermediate",
+    parent: "network-studio",
+  },
+
+  {
+    id: "url-tester",
+    name: "URL Tester",
+    description: "Test URL accessibility and analyze response headers",
+    category: TOOL_CATEGORIES.UTILITIES.id,
+    type: TOOL_TYPES.VALIDATOR,
+    types: [TOOL_TYPES.ANALYZER],
+    tags: ["url", "testing", "headers", "accessibility", "response"],
+    path: "/tools/network-studio?tab=url-tester",
+    icon: "🔗",
+    complexity: "simple",
+    parent: "network-studio",
+  },
+
+  {
+    id: "on-air-checker",
+    name: "On Air Checker",
+    description: "Check if websites and services are online and accessible",
+    category: TOOL_CATEGORIES.UTILITIES.id,
+    type: TOOL_TYPES.VALIDATOR,
+    tags: ["online", "checker", "availability", "status", "services"],
+    path: "/tools/network-studio?tab=on-air-checker",
+    icon: "✅",
+    complexity: "simple",
+    parent: "network-studio",
+  },
+
+  {
+    id: "file-link-checker",
+    name: "File Link Checker",
+    description:
+      "Check file links and get file information without downloading",
+    category: TOOL_CATEGORIES.UTILITIES.id,
+    type: TOOL_TYPES.VALIDATOR,
+    types: [TOOL_TYPES.ANALYZER],
+    tags: ["file", "link", "checker", "download", "headers"],
+    path: "/tools/network-studio?tab=file-link-check",
+    icon: "📎",
+    complexity: "simple",
+    parent: "network-studio",
+  },
 ];
 
 // Helper functions

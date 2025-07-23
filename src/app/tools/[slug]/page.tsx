@@ -26,6 +26,7 @@ import DataExplorer from "@/lib/tools/data-explorer";
 import RandomWheel from "@/lib/tools/random-wheel";
 import { JsonStudio } from "@/lib/tools/json-studio/index";
 import ColorStudio from "@/lib/tools/color-studio/ColorStudio";
+import { NetworkStudio } from "@/lib/tools/network-studio";
 
 // Tool component mapping
 const TOOL_COMPONENTS: Record<string, React.ComponentType> = {
@@ -54,6 +55,7 @@ const TOOL_COMPONENTS: Record<string, React.ComponentType> = {
   "data-explorer": DataExplorer,
   "random-wheel": RandomWheel,
   "json-studio": JsonStudio,
+  "network-studio": NetworkStudio,
 };
 
 interface ToolPageProps {
