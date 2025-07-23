@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TestTube, Replace, BookOpen } from "lucide-react";
 import { RegexTesterTab, RegexReplaceTab, RegexLibraryTab } from "./tabs";
@@ -50,8 +50,8 @@ export function RegexStudio({
 
   return (
     // <div className="container mx-auto p-6 max-w-7xl">
-      <Card>
-        <CardContent className="p-6">
+      <Card className="sm:p-6 p-0 sm:border border-none">
+        {/* <CardContent className="p-6"> */}
           <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="tester" className="flex items-center gap-2">
@@ -88,7 +88,7 @@ export function RegexStudio({
               </TabsContent>
             </div>
           </Tabs>
-        </CardContent>
+        {/* </CardContent> */}
       </Card>
     // </div>
   );
