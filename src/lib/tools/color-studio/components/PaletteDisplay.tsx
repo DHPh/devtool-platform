@@ -79,7 +79,7 @@ export function PaletteDisplay({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary">{palette.colors.length} colors</Badge>
+            <Badge variant="secondary" className="flex-shrink-0">{palette.colors.length} colors</Badge>
             {showExport && (
               <div className="flex gap-1">
                 <Button

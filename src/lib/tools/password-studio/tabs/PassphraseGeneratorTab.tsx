@@ -136,7 +136,7 @@ export function PassphraseGeneratorTab({
           </div>
 
           {/* Generate Controls */}
-          <div className="flex items-center gap-4">
+          <div className="flex sm:items-center items-start sm:flex-row flex-col gap-4">
             <div className="flex items-center gap-2">
               <Label htmlFor="generateCount" className="text-sm">
                 Generate:
