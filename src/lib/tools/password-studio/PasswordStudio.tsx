@@ -93,14 +93,14 @@ export function PasswordStudio({
         {/* <CardContent className="p-0"> */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             {/* <div className="border-b"> */}
-              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-3 h-auto p-1 bg-gray-100">
+              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-3 h-auto p-1">
                 {PASSWORD_TABS.map((tab) => {
                   const Icon = tab.icon;
                   return (
                     <TabsTrigger
                       key={tab.id}
                       value={tab.id}
-                      className="flex flex-col items-center gap-2 p-4 text-sm h-auto data-[state=active]:bg-white bg-transparent data-[state=active]:shadow-sm"
+                      className="flex flex-col items-center gap-2 p-4 text-sm h-auto"
                     >
                       <Icon className="h-4 w-4" />
                       <div className="text-center">
