@@ -33,7 +33,7 @@ export const TOOL_REGISTRY: ToolMetadata[] = [
     tags: ["json", "formatter", "beautify", "validate"],
     path: "/tools/json-formatter",
     icon: "📄",
-    featured: true,
+    featured: false,
     complexity: "simple",
   },
   {
@@ -116,7 +116,7 @@ export const TOOL_REGISTRY: ToolMetadata[] = [
     tags: ["base64", "encode", "decode"],
     path: "/tools/base64-encoder",
     icon: "🔤",
-    featured: true,
+    featured: false,
     complexity: "simple",
   },
   {
@@ -129,7 +129,7 @@ export const TOOL_REGISTRY: ToolMetadata[] = [
     tags: ["url", "encode", "decode"],
     path: "/tools/url-encoder",
     icon: "🔗",
-    featured: true,
+    featured: false,
     complexity: "simple",
   },
   {
@@ -420,7 +420,7 @@ export const TOOL_REGISTRY: ToolMetadata[] = [
     tags: ["regex", "patterns", "library", "examples", "common"],
     path: "/tools/regex-studio?tab=library",
     icon: "📚",
-    featured: false,
+    featured: true,
     complexity: "simple",
     parent: "regex-studio",
   },

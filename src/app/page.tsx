@@ -175,10 +175,10 @@ export default function HomePage() {
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
             <Link
-              href="/tools/json-formatter"
+              href="/tools/regex-studio"
               className="inline-flex items-center px-4 sm:px-6 py-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-lg transition-colors min-h-[44px] w-full sm:w-auto justify-center"
             >
-              Try JSON Formatter
+              Try Regex Studio
             </Link>
           </div>
         </section>
