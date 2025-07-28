@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { exec } from "child_process";
-import { promisify } from "util";
+import { promises as dns } from "dns";
 
-const execAsync = promisify(exec);
+interface DnsError extends Error {
+  code?: string;
+  errno?: number;
+  syscall?: string;
+  hostname?: string;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,31 +56,111 @@ export async function POST(request: NextRequest) {
 
 async function performDnsLookup(domain: string, recordType: string) {
   try {
-    let command;
-    if (process.platform === "win32") {
-      // Use nslookup with specific formatting
-      command = `nslookup -type=${recordType} ${domain} 8.8.8.8`;
-    } else {
-      // Use dig with clean output
-      command = `dig @8.8.8.8 ${domain} ${recordType} +short +timeout=10`;
+    console.log(`DNS lookup: ${domain} ${recordType}`);
+
+    let records: string[] = [];
+
+    // Set DNS resolver timeout
+    dns.setServers(["8.8.8.8", "8.8.4.4", "1.1.1.1", "1.0.0.1"]);
+
+    switch (recordType.toUpperCase()) {
+      case "A":
+        try {
+          const result = await dns.resolve4(domain);
+          records = result;
+        } catch (error) {
+          console.log(`A record lookup failed: ${error}`);
+          const dnsError = error as DnsError;
+          if (dnsError.code === "ENOTFOUND") {
+            return {
+              domain,
+              recordType,
+              records: [],
+              success: false,
+              error: "Domain not found",
+              timestamp: Date.now(),
+            };
+          }
+        }
+        break;
+
+      case "AAAA":
+        try {
+          const result = await dns.resolve6(domain);
+          records = result;
+        } catch (error) {
+          console.log(`AAAA record lookup failed: ${error}`);
+        }
+        break;
+
+      case "MX":
+        try {
+          const result = await dns.resolveMx(domain);
+          records = result.map((mx) => `${mx.priority} ${mx.exchange}`);
+        } catch (error) {
+          console.log(`MX record lookup failed: ${error}`);
+        }
+        break;
+
+      case "TXT":
+        try {
+          const result = await dns.resolveTxt(domain);
+          records = result.map((txt) => txt.join(" "));
+        } catch (error) {
+          console.log(`TXT record lookup failed: ${error}`);
+        }
+        break;
+
+      case "NS":
+        try {
+          const result = await dns.resolveNs(domain);
+          records = result;
+        } catch (error) {
+          console.log(`NS record lookup failed: ${error}`);
+        }
+        break;
+
+      case "SOA":
+        try {
+          const result = await dns.resolveSoa(domain);
+          records = [
+            `${result.nsname} ${result.hostmaster} ${result.serial} ${result.refresh} ${result.retry} ${result.expire} ${result.minttl}`,
+          ];
+        } catch (error) {
+          console.log(`SOA record lookup failed: ${error}`);
+        }
+        break;
+
+      case "CNAME":
+        try {
+          const result = await dns.resolveCname(domain);
+          records = result;
+        } catch (error) {
+          console.log(`CNAME record lookup failed: ${error}`);
+        }
+        break;
+
+      case "PTR":
+        try {
+          const result = await dns.resolvePtr(domain);
+          records = result;
+        } catch (error) {
+          console.log(`PTR record lookup failed: ${error}`);
+        }
+        break;
+
+      default:
+        return {
+          domain,
+          recordType,
+          records: [],
+          success: false,
+          error: `Unsupported record type: ${recordType}`,
+          timestamp: Date.now(),
+        };
     }
 
-    console.log("DNS command:", command);
-    const { stdout, stderr } = await execAsync(command);
-
-    if (stderr && !stderr.includes("Warning")) {
-      return {
-        domain,
-        recordType,
-        records: [],
-        success: false,
-        error: stderr.trim(),
-        timestamp: Date.now(),
-      };
-    }
-
-    const records = parseDnsOutput(stdout, recordType);
-    console.log("Parsed records:", records);
+    console.log(`DNS results for ${domain} ${recordType}:`, records);
 
     return {
       domain,
@@ -96,81 +180,4 @@ async function performDnsLookup(domain: string, recordType: string) {
       timestamp: Date.now(),
     };
   }
-}
-
-function parseDnsOutput(output: string, recordType?: string) {
-  const lines = output.split("\n").filter((line) => line.trim());
-  const records: string[] = [];
-
-  console.log("Raw DNS output:", output);
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-
-    // Skip empty lines, comments, and common headers
-    if (
-      !trimmed ||
-      trimmed.startsWith(";") ||
-      trimmed.startsWith(";;") ||
-      trimmed.includes("Non-authoritative answer:") ||
-      trimmed.includes("unknown query type:") ||
-      trimmed.includes("canonical name") ||
-      trimmed.startsWith("Server:") ||
-      trimmed.startsWith("Address:") ||
-      trimmed.includes("*** Can't find") ||
-      trimmed.startsWith("Name:") ||
-      trimmed === "---"
-    ) {
-      continue;
-    }
-
-    // For Windows nslookup, extract the actual values
-    if (process.platform === "win32" && recordType) {
-      // For A records, look for IP addresses
-      if (recordType === "A" && /^\d+\.\d+\.\d+\.\d+$/.test(trimmed)) {
-        records.push(trimmed);
-      }
-      // For MX records, extract after priority
-      else if (recordType === "MX" && trimmed.includes("mail exchanger")) {
-        const parts = trimmed.split("=");
-        if (parts.length > 1) {
-          const mx = parts[1].trim();
-          if (mx) records.push(mx);
-        }
-      }
-      // For TXT records, extract quoted content
-      else if (recordType === "TXT" && trimmed.includes('"')) {
-        const match = trimmed.match(/"([^"]+)"/);
-        if (match) records.push(match[1]);
-      }
-      // For AAAA records (IPv6)
-      else if (recordType === "AAAA" && /^[0-9a-fA-F:]+$/.test(trimmed)) {
-        records.push(trimmed);
-      }
-      // For NS records
-      else if (recordType === "NS" && trimmed.includes("nameserver")) {
-        const parts = trimmed.split("=");
-        if (parts.length > 1) {
-          const ns = parts[1].trim();
-          if (ns) records.push(ns);
-        }
-      }
-      // Generic fallback - any line that looks like a value
-      else if (
-        trimmed.length > 3 &&
-        !trimmed.includes(":") &&
-        !trimmed.includes("=")
-      ) {
-        records.push(trimmed);
-      }
-    } else {
-      // For dig output (Unix/Linux), it's cleaner
-      if (trimmed.length > 3) {
-        records.push(trimmed);
-      }
-    }
-  }
-
-  console.log("Parsed records:", records);
-  return records;
 }
