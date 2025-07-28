@@ -8,15 +8,17 @@ import { Badge } from "@/components/ui/badge";
 import { File, CheckCircle, AlertCircle, Download, Clock } from "lucide-react";
 import { toast } from "sonner";
 import {
-  checkFileLink,
   formatFileSize,
   getContentTypeDescription,
-  type FileLinkInfo,
 } from "@/lib/utils/network/url-validator";
+import {
+  serverFileLinkCheck,
+  type ServerFileLinkResult,
+} from "@/lib/utils/network/server-api-client";
 
 export function FileLinkChecker() {
   const [url, setUrl] = useState("");
-  const [result, setResult] = useState<FileLinkInfo | null>(null);
+  const [result, setResult] = useState<ServerFileLinkResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleCheck = async () => {
@@ -27,7 +29,7 @@ export function FileLinkChecker() {
 
     setIsLoading(true);
     try {
-      const checkResult = await checkFileLink(url);
+      const checkResult = await serverFileLinkCheck(url);
       setResult(checkResult);
     } catch {
       toast.error("Check failed");
@@ -101,13 +103,13 @@ export function FileLinkChecker() {
                         </span>
                       </div>
 
-                      {result.errorDetails && (
+                      {result.error && (
                         <div>
                           <span className="font-medium text-red-700 dark:text-red-300">
                             Details:
                           </span>
                           <div className="ml-2 text-red-600 dark:text-red-400 mt-1 p-2 bg-red-100 dark:bg-red-900/30 rounded border">
-                            {result.errorDetails}
+                            {result.error}
                           </div>
                         </div>
                       )}
@@ -154,7 +156,7 @@ export function FileLinkChecker() {
                   </div>
 
                   <div className="grid grid-cols-1 gap-3 text-sm">
-                    {result.fileSize && (
+                    {result.contentLength && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">
                           File Size:
@@ -162,7 +164,7 @@ export function FileLinkChecker() {
                         <div className="flex items-center gap-1">
                           <Download className="h-3 w-3" />
                           <span className="font-medium">
-                            {formatFileSize(result.fileSize)}
+                            {formatFileSize(result.contentLength)}
                           </span>
                         </div>
                       </div>
@@ -216,7 +218,7 @@ export function FileLinkChecker() {
                                 {key}:
                               </span>
                               <span className="font-mono text-right ml-2">
-                                {value}
+                                {String(value)}
                               </span>
                             </div>
                           ))}

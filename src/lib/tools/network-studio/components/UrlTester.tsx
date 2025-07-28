@@ -15,15 +15,15 @@ import {
   Info,
 } from "lucide-react";
 import { toast } from "sonner";
+import { parseUrl } from "@/lib/utils/network/url-validator";
 import {
-  testUrl,
-  parseUrl,
-  type UrlTestResult,
-} from "@/lib/utils/network/url-validator";
+  serverUrlTest,
+  type ServerUrlTestResult,
+} from "@/lib/utils/network/server-api-client";
 
 export function UrlTester() {
   const [url, setUrl] = useState("");
-  const [result, setResult] = useState<UrlTestResult | null>(null);
+  const [result, setResult] = useState<ServerUrlTestResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<{
     message: string;
@@ -33,12 +33,11 @@ export function UrlTester() {
 
   const categorizeError = (
     error: unknown,
-    result?: UrlTestResult
+    result?: ServerUrlTestResult
   ): { category: string; details: string; message: string } => {
     // Preserve original error message - prioritize result.errorDetails if available
     const originalMessage =
-      result?.errorDetails ||
-      (error instanceof Error ? error.message : String(error));
+      result?.error || (error instanceof Error ? error.message : String(error));
     const originalStack = error instanceof Error ? error.stack || "" : "";
 
     // Check for HTTP status codes first
@@ -147,23 +146,19 @@ export function UrlTester() {
     setError(null);
 
     try {
-      const testResult = await testUrl(url);
+      const testResult = await serverUrlTest(url);
       setResult(testResult);
 
       // Check if result has errors even when request succeeds
       if (
-        !testResult.isAccessible ||
+        !testResult.accessible ||
         (testResult.statusCode && testResult.statusCode >= 400)
       ) {
         // Create error object from test result
         const resultError = new Error(testResult.error || "Request failed");
-        if (testResult.errorDetails) {
-          resultError.message = testResult.errorDetails;
-        }
 
         console.log("Test result error:", {
           error: testResult.error,
-          errorDetails: testResult.errorDetails,
           statusCode: testResult.statusCode,
         });
 
@@ -241,9 +236,7 @@ export function UrlTester() {
               <Globe className="h-5 w-5" />
               Test Results
               {result && (
-                <Badge
-                  variant={result.isAccessible ? "default" : "destructive"}
-                >
+                <Badge variant={result.accessible ? "default" : "destructive"}>
                   {result.statusCode || "Error"}
                 </Badge>
               )}
@@ -260,13 +253,13 @@ export function UrlTester() {
                 <TabsContent value="overview" className="space-y-4">
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
-                      {result.isAccessible ? (
+                      {result.accessible ? (
                         <CheckCircle className="h-4 w-4 text-green-500" />
                       ) : (
                         <AlertCircle className="h-4 w-4 text-red-500" />
                       )}
                       <span>
-                        {result.isAccessible
+                        {result.accessible
                           ? "URL is accessible"
                           : "URL is not accessible"}
                       </span>
@@ -279,10 +272,10 @@ export function UrlTester() {
                       </div>
                     )}
 
-                    {result.method && (
+                    {result.server && (
                       <div>
-                        <span className="text-muted-foreground">Method: </span>
-                        <Badge variant="secondary">{result.method}</Badge>
+                        <span className="text-muted-foreground">Server: </span>
+                        <Badge variant="secondary">{result.server}</Badge>
                       </div>
                     )}
 
@@ -295,25 +288,9 @@ export function UrlTester() {
                       </div>
                     )}
 
-                    {result.contentLength && (
-                      <div>
-                        <span className="text-muted-foreground">
-                          Content Length:{" "}
-                        </span>
-                        <span>{result.contentLength} bytes</span>
-                      </div>
-                    )}
+                    {/* Content length not available in server response */}
 
-                    {result.redirectUrl && (
-                      <div>
-                        <span className="text-muted-foreground">
-                          Redirected to:{" "}
-                        </span>
-                        <span className="font-mono text-sm">
-                          {result.redirectUrl}
-                        </span>
-                      </div>
-                    )}
+                    {/* Redirect URL not available in server response */}
 
                     {result.error && (
                       <div className="text-red-500">{result.error}</div>

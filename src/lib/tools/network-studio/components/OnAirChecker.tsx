@@ -7,11 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, AlertCircle, Clock, Activity, Info } from "lucide-react";
 import { toast } from "sonner";
-import { pingHost, type PingResult } from "@/lib/utils/network/network-monitor";
+import {
+  serverPingHost,
+  type ServerPingResult,
+} from "@/lib/utils/network/server-api-client";
 
 export function OnAirChecker() {
   const [url, setUrl] = useState("");
-  const [results, setResults] = useState<PingResult[]>([]);
+  const [results, setResults] = useState<ServerPingResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<{
     message: string;
@@ -21,7 +24,7 @@ export function OnAirChecker() {
 
   const categorizeError = (
     error: unknown,
-    result?: PingResult
+    result?: ServerPingResult
   ): { category: string; details: string; message: string } => {
     // Check PingResult error first
     if (result?.error) {
@@ -52,7 +55,7 @@ export function OnAirChecker() {
       return {
         category: "Connection Error",
         message: result.error,
-        details: result.errorDetails || "Unable to connect to the service.",
+        details: "Unable to connect to the service.",
       };
     }
 
@@ -104,7 +107,7 @@ export function OnAirChecker() {
     setError(null);
 
     try {
-      const result = await pingHost(url);
+      const result = await serverPingHost(url);
       setResults((prev) => [result, ...prev.slice(0, 9)]); // Keep last 10 results
 
       if (!result.alive) {
@@ -136,7 +139,7 @@ export function OnAirChecker() {
   const checkService = async (service: string) => {
     setIsLoading(true);
     try {
-      const result = await pingHost(service);
+      const result = await serverPingHost(service);
       setResults((prev) => [result, ...prev.slice(0, 9)]);
     } catch {
       toast.error(`Failed to check ${service}`);

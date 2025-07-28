@@ -9,14 +9,16 @@ import { Badge } from "@/components/ui/badge";
 import { Copy, Search, Globe, Clock, AlertCircle, Info } from "lucide-react";
 import { toast } from "sonner";
 import {
-  getMultipleDnsRecords,
   performWhoisLookup,
   isValidDomain,
   DNS_RECORD_TYPES,
-  type DnsLookupResult,
   type WhoisResult,
   type DnsRecordType,
 } from "@/lib/utils/network/dns-utils";
+import {
+  serverDnsLookup,
+  type ServerDnsResult,
+} from "@/lib/utils/network/server-api-client";
 
 export function DnsLookup() {
   const [domain, setDomain] = useState("");
@@ -26,7 +28,7 @@ export function DnsLookup() {
     "MX",
     "TXT",
   ]);
-  const [dnsResults, setDnsResults] = useState<DnsLookupResult[]>([]);
+  const [dnsResults, setDnsResults] = useState<ServerDnsResult[]>([]);
   const [whoisResult, setWhoisResult] = useState<WhoisResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<{
@@ -105,8 +107,13 @@ export function DnsLookup() {
     setError(null);
 
     try {
+      // Run DNS lookups for all selected record types
+      const dnsPromises = selectedTypes.map((recordType) =>
+        serverDnsLookup(domain, recordType)
+      );
+
       const [dnsData, whoisData] = await Promise.all([
-        getMultipleDnsRecords(domain, selectedTypes),
+        Promise.all(dnsPromises),
         performWhoisLookup(domain),
       ]);
 
@@ -241,17 +248,15 @@ export function DnsLookup() {
               {dnsResults.map((result, index) => (
                 <div key={index} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-medium">
-                      {result.records[0]?.type || "Unknown"} Records
-                    </h4>
+                    <h4 className="font-medium">{result.recordType} Records</h4>
                     {result.records.length > 0 && (
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() =>
                           handleCopy(
-                            result.records.map((r) => r.value).join("\n"),
-                            `${result.records[0]?.type} records`
+                            result.records.join("\n"),
+                            `${result.recordType} records`
                           )
                         }
                       >
@@ -262,18 +267,11 @@ export function DnsLookup() {
 
                   {result.error ? (
                     <p className="text-red-500">{result.error}</p>
-                  ) : result.records.length > 0 ? (
+                  ) : result.records && result.records.length > 0 ? (
                     <div className="space-y-2">
                       {result.records.map((record, recordIndex) => (
                         <div key={recordIndex} className="bg-muted rounded p-2">
-                          <div className="font-mono text-sm">
-                            {record.value}
-                          </div>
-                          {record.ttl && (
-                            <div className="text-xs text-muted-foreground mt-1">
-                              TTL: {record.ttl}s
-                            </div>
-                          )}
+                          <div className="font-mono text-sm">{record}</div>
                         </div>
                       ))}
                     </div>

@@ -9,13 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { Wifi, WifiOff, Clock, AlertCircle, Info } from "lucide-react";
 import { toast } from "sonner";
 import {
-  testWebSocket,
-  type WebSocketTestResult,
-} from "@/lib/utils/network/api-client";
+  serverWebSocketTest,
+  type ServerWebSocketTestResult,
+} from "@/lib/utils/network/server-api-client";
 
 export function WebSocketTester() {
   const [url, setUrl] = useState("");
-  const [result, setResult] = useState<WebSocketTestResult | null>(null);
+  const [result, setResult] = useState<ServerWebSocketTestResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<{
     message: string;
@@ -25,7 +25,7 @@ export function WebSocketTester() {
 
   const categorizeError = (
     error: unknown,
-    result?: WebSocketTestResult
+    result?: ServerWebSocketTestResult
   ): { category: string; details: string; message: string } => {
     // Check WebSocket result error first
     if (result?.error) {
@@ -121,7 +121,7 @@ export function WebSocketTester() {
     setError(null);
 
     try {
-      const testResult = await testWebSocket(url);
+      const testResult = await serverWebSocketTest(url);
       setResult(testResult);
 
       if (!testResult.connected) {

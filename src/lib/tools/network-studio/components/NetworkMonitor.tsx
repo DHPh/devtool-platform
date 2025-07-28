@@ -8,16 +8,18 @@ import { Badge } from "@/components/ui/badge";
 import { Wifi, Clock, TrendingUp, Info } from "lucide-react";
 import { toast } from "sonner";
 import {
-  performSpeedTest,
-  pingHost,
-  type NetworkPerformance,
-  type PingResult,
-} from "@/lib/utils/network/network-monitor";
+  serverPingHost,
+  serverSpeedTest,
+  type ServerPingResult,
+  type ServerSpeedTestResult,
+} from "@/lib/utils/network/server-api-client";
 
 export function NetworkMonitor() {
   const [url, setUrl] = useState("https://google.com");
-  const [pingResult, setPingResult] = useState<PingResult | null>(null);
-  const [speedTest, setSpeedTest] = useState<NetworkPerformance | null>(null);
+  const [pingResult, setPingResult] = useState<ServerPingResult | null>(null);
+  const [speedTest, setSpeedTest] = useState<ServerSpeedTestResult | null>(
+    null
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [pingLogs, setPingLogs] = useState<string[]>([]);
 
@@ -37,7 +39,7 @@ export function NetworkMonitor() {
     try {
       addLog("Attempting HTTP HEAD request...");
       const startTime = performance.now();
-      const result = await pingHost(url);
+      const result = await serverPingHost(url);
       const endTime = performance.now();
 
       setPingResult(result);
@@ -47,9 +49,6 @@ export function NetworkMonitor() {
         addLog(`Response time: ${result.responseTime}ms`);
       } else {
         addLog(`❌ Host unreachable: ${result.error}`);
-        if (result.errorDetails) {
-          addLog(`Details: ${result.errorDetails}`);
-        }
       }
 
       addLog(`Total test duration: ${Math.round(endTime - startTime)}ms`);
@@ -75,15 +74,12 @@ export function NetworkMonitor() {
       addLog("Starting speed test...");
       addLog("Testing download speed...");
 
-      const result = await performSpeedTest();
+      const result = await serverSpeedTest("download", 10);
       setSpeedTest(result);
 
       addLog(`✅ Speed test completed`);
-      if (result.downloadSpeed) {
-        addLog(`Download speed: ${result.downloadSpeed} Mbps`);
-      }
-      if (result.latency) {
-        addLog(`Latency: ${result.latency}ms`);
+      if (result.speedMbps) {
+        addLog(`Download speed: ${result.speedMbps} Mbps`);
       }
 
       toast.success("Speed test completed successfully");
@@ -168,11 +164,6 @@ export function NetworkMonitor() {
                 {pingResult.error && (
                   <div className="text-sm text-red-600 dark:text-red-400">
                     <strong>Error:</strong> {pingResult.error}
-                    {pingResult.errorDetails && (
-                      <div className="mt-1 text-xs opacity-80">
-                        {pingResult.errorDetails}
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -216,26 +207,32 @@ export function NetworkMonitor() {
 
             {speedTest && (
               <div className="space-y-3">
-                {speedTest.downloadSpeed && (
+                {speedTest.speedMbps > 0 && (
                   <div>
                     <span className="text-sm text-muted-foreground">
                       Download:
                     </span>
                     <div className="text-xl font-bold">
-                      {speedTest.downloadSpeed} Mbps
+                      {speedTest.speedMbps} Mbps
                     </div>
                   </div>
                 )}
-                {speedTest.latency && (
-                  <div>
-                    <span className="text-sm text-muted-foreground">
-                      Latency:
-                    </span>
-                    <div className="text-lg font-semibold">
-                      {speedTest.latency}ms
-                    </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">
+                    Data Transferred:
+                  </span>
+                  <div className="text-lg font-semibold">
+                    {Math.round(speedTest.bytesTransferred / 1024)} KB
                   </div>
-                )}
+                </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">
+                    Duration:
+                  </span>
+                  <div className="text-lg font-semibold">
+                    {speedTest.duration.toFixed(1)}s
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>

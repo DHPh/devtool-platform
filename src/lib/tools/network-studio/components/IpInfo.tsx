@@ -7,16 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Globe, Clock, AlertCircle, Info } from "lucide-react";
 import { toast } from "sonner";
+import { validateIP, getCurrentPublicIP } from "@/lib/utils/network/ip-utils";
 import {
-  getIPLocation,
-  validateIP,
-  getCurrentPublicIP,
-  type IpLocation,
-} from "@/lib/utils/network/ip-utils";
+  serverIpInfo,
+  type ServerIpInfoResult,
+} from "@/lib/utils/network/server-api-client";
 
 export function IpInfo() {
   const [ip, setIp] = useState("");
-  const [result, setResult] = useState<IpLocation | null>(null);
+  const [result, setResult] = useState<ServerIpInfoResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<{
     message: string;
@@ -107,7 +106,7 @@ export function IpInfo() {
     setError(null);
 
     try {
-      const locationData = await getIPLocation(ip);
+      const locationData = await serverIpInfo(ip);
       setResult(locationData);
       toast.success(`IP location lookup completed for ${ip}`);
     } catch (error) {
@@ -128,7 +127,7 @@ export function IpInfo() {
         toast.error("Failed to get public IP: " + error);
       } else {
         setIp(publicIP);
-        const locationData = await getIPLocation(publicIP);
+        const locationData = await serverIpInfo(publicIP);
         setResult(locationData);
       }
     } catch (error) {

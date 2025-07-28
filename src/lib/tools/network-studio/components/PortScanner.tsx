@@ -15,16 +15,16 @@ import {
 } from "@/components/ui/select";
 import { Shield, Clock, AlertCircle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import { SCAN_PROFILES } from "@/lib/utils/network/network-monitor";
 import {
-  scanWithProfile,
-  SCAN_PROFILES,
-  type PortScanResult,
-} from "@/lib/utils/network/network-monitor";
+  serverPortScan,
+  type ServerPortScanResult,
+} from "@/lib/utils/network/server-api-client";
 
 export function PortScanner() {
   const [host, setHost] = useState("");
   const [selectedProfile, setSelectedProfile] = useState("Quick Scan");
-  const [results, setResults] = useState<PortScanResult[]>([]);
+  const [results, setResults] = useState<ServerPortScanResult[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -39,13 +39,27 @@ export function PortScanner() {
     setProgress(0);
 
     try {
-      const scanResults = await scanWithProfile(
-        host,
-        selectedProfile,
-        (progress: number) => {
-          setProgress(progress);
-        }
+      const profile = Object.values(SCAN_PROFILES).find(
+        (p) => p.name === selectedProfile
       );
+
+      if (!profile) {
+        throw new Error("Invalid scan profile");
+      }
+
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setProgress((prev) => Math.min(prev + Math.random() * 20, 90));
+      }, 200);
+
+      const scanResults = await serverPortScan(
+        host,
+        profile.ports,
+        profile.timeout
+      );
+
+      clearInterval(progressInterval);
+      setProgress(100);
       setResults(scanResults);
     } catch (error) {
       toast.error(
@@ -202,11 +216,6 @@ export function PortScanner() {
                             <Badge variant="outline">{result.service}</Badge>
                           )}
                         </div>
-                        {result.error && (
-                          <span className="text-sm text-muted-foreground">
-                            {result.error}
-                          </span>
-                        )}
                       </div>
                     ))}
                     {closedPorts.length > 10 && (
