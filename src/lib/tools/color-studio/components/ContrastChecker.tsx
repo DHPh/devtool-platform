@@ -5,13 +5,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Eye, AlertTriangle, CheckCircle, Copy, Shuffle } from "lucide-react";
+import {
+  Eye,
+  AlertTriangle,
+  CheckCircle,
+  Copy,
+  Shuffle,
+  Lightbulb,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   calculateWCAGCompliance,
   type ContrastResult,
 } from "@/lib/utils/color/contrast-checker";
 import { ColorPicker } from "./ColorPicker";
+import { ContrastSuggestions } from "./ContrastSuggestions";
 import { getColorInfo } from "@/lib/utils/color";
 
 const initialForegroundColor = "#000000"; // Default black color
@@ -32,6 +40,10 @@ export function ContrastChecker() {
   );
   const [showForegroundPicker, setShowForegroundPicker] = useState(false);
   const [showBackgroundPicker, setShowBackgroundPicker] = useState(false);
+  const [showForegroundSuggestions, setShowForegroundSuggestions] =
+    useState(false);
+  const [showBackgroundSuggestions, setShowBackgroundSuggestions] =
+    useState(false);
 
   const contrastResult = calculateWCAGCompliance(
     foregroundColor,
@@ -97,6 +109,26 @@ Background: ${backgroundColor}
     toast.success("Contrast information copied to clipboard");
   };
 
+  const handleShowForegroundSuggestions = () => {
+    setShowForegroundSuggestions(!showForegroundSuggestions);
+    setShowBackgroundSuggestions(false); // Hide the other one
+  };
+
+  const handleShowBackgroundSuggestions = () => {
+    setShowBackgroundSuggestions(!showBackgroundSuggestions);
+    setShowForegroundSuggestions(false); // Hide the other one
+  };
+
+  const handleForegroundSuggestionSelect = (color: string) => {
+    setForegroundColor(color);
+    setPickedForegroundColor(color);
+  };
+
+  const handleBackgroundSuggestionSelect = (color: string) => {
+    setBackgroundColor(color);
+    setPickedBackgroundColor(color);
+  };
+
   const getContrastGrade = (
     result: ContrastResult
   ): { grade: string; color: string; icon: React.ReactNode } => {
@@ -158,6 +190,15 @@ Background: ${backgroundColor}
                 />
               </div>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleShowForegroundSuggestions}
+              className="w-full"
+            >
+              <Lightbulb className="h-4 w-4 mr-2" />
+              {showForegroundSuggestions ? "Hide" : "Show"} Contrast Suggestions
+            </Button>
             {showForegroundPicker && (
               <ColorPicker
                 value={foregroundColor}
@@ -167,6 +208,12 @@ Background: ${backgroundColor}
                 }}
               />
             )}
+            <ContrastSuggestions
+              baseColor={backgroundColor}
+              isBackground={false}
+              isVisible={showForegroundSuggestions}
+              onColorSelect={handleForegroundSuggestionSelect}
+            />
           </CardContent>
         </Card>
 
@@ -195,6 +242,15 @@ Background: ${backgroundColor}
                 />
               </div>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleShowBackgroundSuggestions}
+              className="w-full"
+            >
+              <Lightbulb className="h-4 w-4 mr-2" />
+              {showBackgroundSuggestions ? "Hide" : "Show"} Contrast Suggestions
+            </Button>
             {showBackgroundPicker && (
               <ColorPicker
                 value={backgroundColor}
@@ -204,6 +260,12 @@ Background: ${backgroundColor}
                 }}
               />
             )}
+            <ContrastSuggestions
+              baseColor={foregroundColor}
+              isBackground={true}
+              isVisible={showBackgroundSuggestions}
+              onColorSelect={handleBackgroundSuggestionSelect}
+            />
           </CardContent>
         </Card>
       </div>
