@@ -367,6 +367,26 @@ export const TOOL_REGISTRY: ToolMetadata[] = [
     parent: "color-studio",
     complexity: "intermediate",
   },
+  {
+    id: "accessibility-palette",
+    name: "Accessibility Palette",
+    description:
+      "Generate color palettes that are accessible to users with color blindness",
+    category: TOOL_CATEGORIES.VALIDATORS.id,
+    type: TOOL_TYPES.ANALYZER,
+    tags: [
+      "colorblind",
+      "accessibility",
+      "simulation",
+      "protanopia",
+      "deuteranopia",
+      "tritanopia",
+    ],
+    path: "/tools/color-studio?tab=accessibility-palette",
+    icon: "♿",
+    parent: "color-studio",
+    complexity: "intermediate",
+  },
 
   // Validators
   {

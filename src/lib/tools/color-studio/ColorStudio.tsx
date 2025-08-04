@@ -3,7 +3,15 @@
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 // import { Badge } from "@/components/ui/badge";
-import { Palette, Pipette, Layers, Zap, Eye, Contrast } from "lucide-react";
+import {
+  Palette,
+  Pipette,
+  Layers,
+  Zap,
+  Eye,
+  Contrast,
+  Accessibility,
+} from "lucide-react";
 import {
   ColorConverterTab,
   ColorPickerTab,
@@ -11,6 +19,7 @@ import {
   GradientCreatorTab,
   ContrastCheckerTab,
   ColorBlindnessTab,
+  AccessibilityPaletteTab,
 } from "./tabs";
 
 const STUDIO_TABS = [
@@ -62,6 +71,14 @@ const STUDIO_TABS = [
     component: ColorBlindnessTab,
     description: "Accessibility simulation",
   },
+  {
+    id: "accessibility-palette",
+    label: "Accessibility Palette",
+    shortLabel: "A11y",
+    icon: Accessibility,
+    component: AccessibilityPaletteTab,
+    description: "Generate accessible color palettes",
+  },
 ] as const;
 
 type StudioTab = (typeof STUDIO_TABS)[number]["id"];
@@ -112,7 +129,7 @@ export default function ColorStudio() {
           className="w-full"
         >
           {/* Tab Navigation */}
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-7 h-auto p-1">
             {STUDIO_TABS.map((tab) => {
               const Icon = tab.icon;
               return (
