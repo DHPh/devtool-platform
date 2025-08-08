@@ -335,6 +335,19 @@ export const TOOL_REGISTRY: ToolMetadata[] = [
     complexity: "intermediate",
   },
   {
+    id: "icon-pack-generator",
+    name: "Icon Pack Generator",
+    description:
+      "Generate professional icon packs for Android and iOS from high-quality images",
+    category: TOOL_CATEGORIES.WEB_DEVELOPMENT.id,
+    type: TOOL_TYPES.GENERATOR,
+    tags: ["icon", "android", "ios", "mobile", "app", "pack", "generator"],
+    path: "/tools/icon-pack-generator",
+    icon: "📱",
+    featured: true,
+    complexity: "intermediate",
+  },
+  {
     id: "contrast-checker",
     name: "Contrast Checker",
     description:
