@@ -80,6 +80,12 @@ export const TOOL_CATEGORIES = {
     description: "Encode and decode various data formats",
     icon: "🔐",
   },
+  FILE_PROCESSING: {
+    id: "file-processing",
+    name: "File Processing",
+    description: "Tools for file manipulation, conversion, and management",
+    icon: "📁",
+  },
 } as const;
 
 export type ToolCategoryId = keyof typeof TOOL_CATEGORIES;
