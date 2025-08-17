@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
@@ -31,6 +32,8 @@ import {
   Download,
   Image as ImageIcon,
   Trash2,
+  Crop,
+  RotateCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -45,6 +48,14 @@ interface ResizedImage {
   format: string;
   fileSize: number;
   originalFileSize: number;
+  cropArea?: { x: number; y: number; width: number; height: number };
+}
+
+interface CropArea {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 const IMAGE_FORMATS = [
@@ -65,6 +76,17 @@ const PRESET_SIZES = [
   { label: "HD", width: 1280, height: 720 },
 ];
 
+const CROP_RATIOS = [
+  { label: "Free", ratio: null },
+  { label: "Square (1:1)", ratio: 1 },
+  { label: "Portrait (4:5)", ratio: 4/5 },
+  { label: "Landscape (16:9)", ratio: 16/9 },
+  { label: "Instagram Story (9:16)", ratio: 9/16 },
+  { label: "Golden Ratio (1.618:1)", ratio: 1.618 },
+  { label: "Standard Photo (3:2)", ratio: 3/2 },
+  { label: "Wide (21:9)", ratio: 21/9 },
+];
+
 export default function ImageResizerTab() {
   const [images, setImages] = useState<ResizedImage[]>([]);
   const [selectedImage, setSelectedImage] = useState<ResizedImage | null>(null);
@@ -74,6 +96,11 @@ export default function ImageResizerTab() {
   const [format, setFormat] = useState<string>("jpeg");
   const [maintainAspectRatio, setMaintainAspectRatio] = useState<boolean>(true);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [mode, setMode] = useState<"resize" | "crop">("resize");
+  const [cropArea, setCropArea] = useState<CropArea>({ x: 0, y: 0, width: 100, height: 100 });
+  const [selectedCropRatio, setSelectedCropRatio] = useState<number | null>(null);
+  // const [isDragging, setIsDragging] = useState<boolean>(false);
+  // const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -139,6 +166,60 @@ export default function ImageResizerTab() {
     []
   );
 
+  const cropImage = useCallback(
+    async (
+      img: HTMLImageElement,
+      cropArea: CropArea,
+      outputQuality: number,
+      outputFormat: string
+    ): Promise<{ blob: Blob; dataUrl: string }> => {
+      const canvas = canvasRef.current;
+      if (!canvas) throw new Error("Canvas not available");
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas context not available");
+
+      // Set canvas size to crop area size
+      canvas.width = cropArea.width;
+      canvas.height = cropArea.height;
+
+      // Clear canvas
+      ctx.clearRect(0, 0, cropArea.width, cropArea.height);
+
+      // Draw cropped portion of the image
+      ctx.drawImage(
+        img,
+        cropArea.x, // source x
+        cropArea.y, // source y
+        cropArea.width, // source width
+        cropArea.height, // source height
+        0, // destination x
+        0, // destination y
+        cropArea.width, // destination width
+        cropArea.height // destination height
+      );
+
+      // Convert to blob
+      const mimeType =
+        IMAGE_FORMATS.find((f) => f.value === outputFormat)?.mime ||
+        "image/jpeg";
+      const dataUrl = canvas.toDataURL(mimeType, outputQuality / 100);
+
+      return new Promise((resolve) => {
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve({ blob, dataUrl });
+            }
+          },
+          mimeType,
+          outputQuality / 100
+        );
+      });
+    },
+    []
+  );
+
   const handleFileSelect = async (files: FileList | null) => {
     if (!files) return;
 
@@ -164,14 +245,21 @@ export default function ImageResizerTab() {
           format: format,
           fileSize: file.size,
           originalFileSize: file.size,
+          cropArea: undefined,
         };
 
         newImages.push(newImage);
 
-        // Set dimensions for first image
+        // Set dimensions for first image and initialize crop area
         if (i === 0) {
           setWidth(img.naturalWidth);
           setHeight(img.naturalHeight);
+          // Initialize crop area to center of image (50% of image size)
+          const cropWidth = Math.floor(img.naturalWidth * 0.8);
+          const cropHeight = Math.floor(img.naturalHeight * 0.8);
+          const cropX = Math.floor((img.naturalWidth - cropWidth) / 2);
+          const cropY = Math.floor((img.naturalHeight - cropHeight) / 2);
+          setCropArea({ x: cropX, y: cropY, width: cropWidth, height: cropHeight });
         }
       } catch (error) {
         console.error("Error loading image:", error);
@@ -218,6 +306,39 @@ export default function ImageResizerTab() {
     setIsProcessing(false);
   };
 
+  const handleCrop = async () => {
+    if (!selectedImage) return;
+
+    setIsProcessing(true);
+    try {
+      const img = await loadImage(selectedImage.file);
+      const { blob, dataUrl } = await cropImage(
+        img,
+        cropArea,
+        quality[0],
+        format
+      );
+
+      const updatedImage: ResizedImage = {
+        ...selectedImage,
+        resizedUrl: dataUrl,
+        newSize: { width: cropArea.width, height: cropArea.height },
+        quality: quality[0],
+        format,
+        fileSize: blob.size,
+        cropArea: { ...cropArea },
+      };
+
+      setImages((prev) =>
+        prev.map((img) => (img.id === selectedImage.id ? updatedImage : img))
+      );
+      setSelectedImage(updatedImage);
+    } catch (error) {
+      console.error("Error cropping image:", error);
+    }
+    setIsProcessing(false);
+  };
+
   const handlePresetSize = (preset: (typeof PRESET_SIZES)[0]) => {
     if (preset.width === 0 && preset.height === 0 && selectedImage) {
       setWidth(selectedImage.originalSize.width);
@@ -245,12 +366,47 @@ export default function ImageResizerTab() {
     }
   };
 
+  const handleCropRatioChange = (ratio: number | null) => {
+    setSelectedCropRatio(ratio);
+    if (!selectedImage || !ratio) return;
+
+    // Calculate new crop area based on ratio
+    const maxWidth = selectedImage.originalSize.width;
+    const maxHeight = selectedImage.originalSize.height;
+    
+    let newWidth, newHeight;
+    
+    if (ratio > 1) {
+      // Landscape
+      newWidth = Math.min(maxWidth, maxHeight * ratio);
+      newHeight = newWidth / ratio;
+    } else {
+      // Portrait or square
+      newHeight = Math.min(maxHeight, maxWidth / ratio);
+      newWidth = newHeight * ratio;
+    }
+    
+    // Center the crop area
+    const x = Math.max(0, (maxWidth - newWidth) / 2);
+    const y = Math.max(0, (maxHeight - newHeight) / 2);
+    
+    setCropArea({
+      x: Math.floor(x),
+      y: Math.floor(y),
+      width: Math.floor(newWidth),
+      height: Math.floor(newHeight),
+    });
+  };
+
   const downloadImage = (image: ResizedImage) => {
     const link = document.createElement("a");
     link.href = image.resizedUrl;
     const extension =
       IMAGE_FORMATS.find((f) => f.value === image.format)?.value || "jpg";
-    link.download = `resized_${image.file.name.split(".")[0]}.${extension}`;
+    
+    // Determine prefix based on operation
+    const prefix = image.cropArea ? "cropped" : "resized";
+    link.download = `${prefix}_${image.file.name.split(".")[0]}.${extension}`;
     link.click();
   };
 
@@ -278,7 +434,7 @@ export default function ImageResizerTab() {
             <CardHeader>
               <CardTitle>Upload & Settings</CardTitle>
               <CardDescription>
-                Upload images and configure resize settings
+                Upload images and configure resize/crop settings
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -305,106 +461,210 @@ export default function ImageResizerTab() {
                 />
               </div>
 
-              {/* Preset Sizes */}
-              <div>
-                <Label className="text-sm font-medium">Preset Sizes</Label>
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  {PRESET_SIZES.map((preset) => (
-                    <Button
-                      key={preset.label}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePresetSize(preset)}
-                      className="text-xs"
-                    >
-                      {preset.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+              {/* Mode Tabs */}
+              <Tabs defaultValue="resize" onValueChange={(value) => setMode(value as "resize" | "crop")}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="resize" className="flex items-center gap-2">
+                    <RotateCw className="h-4 w-4" />
+                    Resize
+                  </TabsTrigger>
+                  <TabsTrigger value="crop" className="flex items-center gap-2">
+                    <Crop className="h-4 w-4" />
+                    Crop
+                  </TabsTrigger>
+                </TabsList>
 
-              {/* Dimensions */}
-              <div className="grid grid-cols-2 gap-4">
+                {/* Resize Tab */}
+                <TabsContent value="resize" className="space-y-6 mt-6">
+                  {/* Preset Sizes */}
+                  <div>
+                    <Label className="text-sm font-medium">Preset Sizes</Label>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {PRESET_SIZES.map((preset) => (
+                        <Button
+                          key={preset.label}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePresetSize(preset)}
+                          className="text-xs"
+                        >
+                          {preset.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Dimensions */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="width">Width (px)</Label>
+                      <Input
+                        id="width"
+                        type="number"
+                        value={width}
+                        onChange={(e) =>
+                          updateDimensions(Number(e.target.value), height)
+                        }
+                        min="1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="height">Height (px)</Label>
+                      <Input
+                        id="height"
+                        type="number"
+                        value={height}
+                        onChange={(e) =>
+                          updateDimensions(width, Number(e.target.value))
+                        }
+                        min="1"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Maintain Aspect Ratio */}
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="aspectRatio"
+                      checked={maintainAspectRatio}
+                      onChange={(e) => setMaintainAspectRatio(e.target.checked)}
+                      className="rounded"
+                    />
+                    <Label htmlFor="aspectRatio" className="text-sm">
+                      Maintain aspect ratio
+                    </Label>
+                  </div>
+
+                  {/* Resize Button */}
+                  <Button
+                    onClick={handleResize}
+                    disabled={!selectedImage || isProcessing}
+                    className="w-full"
+                  >
+                    {isProcessing ? "Processing..." : "Resize Image"}
+                  </Button>
+                </TabsContent>
+
+                {/* Crop Tab */}
+                <TabsContent value="crop" className="space-y-6 mt-6">
+                  {/* Crop Ratio Presets */}
+                  <div>
+                    <Label className="text-sm font-medium">Crop Ratios</Label>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {CROP_RATIOS.map((ratio) => (
+                        <Button
+                          key={ratio.label}
+                          variant={selectedCropRatio === ratio.ratio ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handleCropRatioChange(ratio.ratio)}
+                          className="text-xs"
+                        >
+                          {ratio.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Crop Area Controls */}
+                  {selectedImage && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="cropX">X Position</Label>
+                          <Input
+                            id="cropX"
+                            type="number"
+                            value={cropArea.x}
+                            onChange={(e) => setCropArea({...cropArea, x: Number(e.target.value)})}
+                            min="0"
+                            max={selectedImage.originalSize.width - cropArea.width}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="cropY">Y Position</Label>
+                          <Input
+                            id="cropY"
+                            type="number"
+                            value={cropArea.y}
+                            onChange={(e) => setCropArea({...cropArea, y: Number(e.target.value)})}
+                            min="0"
+                            max={selectedImage.originalSize.height - cropArea.height}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="cropWidth">Crop Width</Label>
+                          <Input
+                            id="cropWidth"
+                            type="number"
+                            value={cropArea.width}
+                            onChange={(e) => setCropArea({...cropArea, width: Number(e.target.value)})}
+                            min="1"
+                            max={selectedImage.originalSize.width - cropArea.x}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="cropHeight">Crop Height</Label>
+                          <Input
+                            id="cropHeight"
+                            type="number"
+                            value={cropArea.height}
+                            onChange={(e) => setCropArea({...cropArea, height: Number(e.target.value)})}
+                            min="1"
+                            max={selectedImage.originalSize.height - cropArea.y}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Crop Button */}
+                  <Button
+                    onClick={handleCrop}
+                    disabled={!selectedImage || isProcessing}
+                    className="w-full"
+                  >
+                    {isProcessing ? "Processing..." : "Crop Image"}
+                  </Button>
+                </TabsContent>
+              </Tabs>
+
+              {/* Shared Quality & Format Settings */}
+              <div className="border-t pt-6 space-y-4">
+                {/* Quality */}
                 <div>
-                  <Label htmlFor="width">Width (px)</Label>
-                  <Input
-                    id="width"
-                    type="number"
-                    value={width}
-                    onChange={(e) =>
-                      updateDimensions(Number(e.target.value), height)
-                    }
-                    min="1"
+                  <Label className="text-sm font-medium">
+                    Quality: {quality[0]}%
+                  </Label>
+                  <Slider
+                    value={quality}
+                    onValueChange={setQuality}
+                    max={100}
+                    min={1}
+                    step={1}
+                    className="mt-2"
                   />
                 </div>
+
+                {/* Format */}
                 <div>
-                  <Label htmlFor="height">Height (px)</Label>
-                  <Input
-                    id="height"
-                    type="number"
-                    value={height}
-                    onChange={(e) =>
-                      updateDimensions(width, Number(e.target.value))
-                    }
-                    min="1"
-                  />
+                  <Label className="text-sm font-medium">Output Format</Label>
+                  <Select value={format} onValueChange={setFormat}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {IMAGE_FORMATS.map((fmt) => (
+                        <SelectItem key={fmt.value} value={fmt.value}>
+                          {fmt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-
-              {/* Maintain Aspect Ratio */}
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="aspectRatio"
-                  checked={maintainAspectRatio}
-                  onChange={(e) => setMaintainAspectRatio(e.target.checked)}
-                  className="rounded"
-                />
-                <Label htmlFor="aspectRatio" className="text-sm">
-                  Maintain aspect ratio
-                </Label>
-              </div>
-
-              {/* Quality */}
-              <div>
-                <Label className="text-sm font-medium">
-                  Quality: {quality[0]}%
-                </Label>
-                <Slider
-                  value={quality}
-                  onValueChange={setQuality}
-                  max={100}
-                  min={1}
-                  step={1}
-                  className="mt-2"
-                />
-              </div>
-
-              {/* Format */}
-              <div>
-                <Label className="text-sm font-medium">Output Format</Label>
-                <Select value={format} onValueChange={setFormat}>
-                  <SelectTrigger className="mt-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {IMAGE_FORMATS.map((fmt) => (
-                      <SelectItem key={fmt.value} value={fmt.value}>
-                        {fmt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Resize Button */}
-              <Button
-                onClick={handleResize}
-                disabled={!selectedImage || isProcessing}
-                className="w-full"
-              >
-                {isProcessing ? "Processing..." : "Resize Image"}
-              </Button>
             </CardContent>
           </Card>
 
@@ -420,12 +680,29 @@ export default function ImageResizerTab() {
               {selectedImage ? (
                 <div className="space-y-4">
                   {/* Image Preview */}
-                  <div className="aspect-video bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                  <div className="aspect-video bg-muted rounded-lg overflow-hidden flex items-center justify-center relative">
                     <img
                       src={selectedImage.resizedUrl}
                       alt="Preview"
                       className="max-w-full max-h-full object-contain"
                     />
+                    {mode === "crop" && selectedImage.resizedUrl === selectedImage.originalUrl && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div 
+                          className="border-2 border-blue-500 bg-blue-500/20 absolute"
+                          style={{
+                            left: `${(cropArea.x / selectedImage.originalSize.width) * 100}%`,
+                            top: `${(cropArea.y / selectedImage.originalSize.height) * 100}%`,
+                            width: `${(cropArea.width / selectedImage.originalSize.width) * 100}%`,
+                            height: `${(cropArea.height / selectedImage.originalSize.height) * 100}%`,
+                          }}
+                        >
+                          <div className="absolute -top-6 left-0 text-xs text-blue-600 font-medium">
+                            Crop Area
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Image Info */}
@@ -439,12 +716,19 @@ export default function ImageResizerTab() {
                       <p>{formatFileSize(selectedImage.originalFileSize)}</p>
                     </div>
                     <div>
-                      <p className="font-medium">Resized</p>
+                      <p className="font-medium">
+                        {selectedImage.cropArea ? "Cropped" : "Resized"}
+                      </p>
                       <p>
                         {selectedImage.newSize.width} ×{" "}
                         {selectedImage.newSize.height}
                       </p>
                       <p>{formatFileSize(selectedImage.fileSize)}</p>
+                      {selectedImage.cropArea && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Crop: {selectedImage.cropArea.x},{selectedImage.cropArea.y}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -454,7 +738,7 @@ export default function ImageResizerTab() {
                     className="w-full"
                   >
                     <Download className="h-4 w-4 mr-2" />
-                    Download Resized Image
+                    Download {selectedImage.cropArea ? "Cropped" : "Resized"} Image
                   </Button>
                 </div>
               ) : (
