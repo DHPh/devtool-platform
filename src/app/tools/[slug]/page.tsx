@@ -27,6 +27,8 @@ import RandomWheel from "@/lib/tools/random-wheel";
 import { JsonStudio } from "@/lib/tools/json-studio/index";
 import ColorStudio from "@/lib/tools/color-studio/ColorStudio";
 import { NetworkStudio } from "@/lib/tools/network-studio";
+import FileProcessingStudio from "@/lib/tools/file-processing/FileProcessingStudio";
+import IconPackGenerator from "@/lib/tools/icon-pack-generator";
 
 // Tool component mapping
 const TOOL_COMPONENTS: Record<string, React.ComponentType> = {
@@ -56,6 +58,8 @@ const TOOL_COMPONENTS: Record<string, React.ComponentType> = {
   "random-wheel": RandomWheel,
   "json-studio": JsonStudio,
   "network-studio": NetworkStudio,
+  "file-processing-studio": FileProcessingStudio,
+  "icon-pack-generator": IconPackGenerator,
 };
 
 interface ToolPageProps {

@@ -112,54 +112,52 @@ export default function FileProcessingStudio() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        {/* Main Content */}
-        <Tabs
-          value={activeTab}
-          onValueChange={handleTabChange}
-          className="w-full"
-        >
-          {/* Tab Navigation */}
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-8 h-auto p-1">
-            {STUDIO_TABS.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <TabsTrigger
-                  key={tab.id}
-                  value={tab.id}
-                  className="flex flex-col items-center gap-2 py-3 px-2 text-xs"
-                >
-                  <Icon className="h-4 w-4" />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                  <span className="sm:hidden">{tab.shortLabel}</span>
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
-
-          {/* Tab Content */}
+    <div className="space-y-6">
+      {/* Main Content */}
+      <Tabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        className="w-full"
+      >
+        {/* Tab Navigation */}
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-8 h-auto p-1">
           {STUDIO_TABS.map((tab) => {
-            const TabComponent = tab.component;
+            const Icon = tab.icon;
             return (
-              <TabsContent
+              <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="mt-8 focus:outline-none"
+                className="flex flex-col items-center gap-2 py-3 px-2 text-xs"
               >
-                <TabComponent />
-              </TabsContent>
+                <Icon className="h-4 w-4" />
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="sm:hidden">{tab.shortLabel}</span>
+              </TabsTrigger>
             );
           })}
-        </Tabs>
+        </TabsList>
 
-        {/* Footer */}
-        <div className="mt-12 pt-8 border-t text-center text-sm text-muted-foreground">
-          <p>
-            Professional file processing tools for image editing, document
-            management, and file organization.
-          </p>
-        </div>
+        {/* Tab Content */}
+        {STUDIO_TABS.map((tab) => {
+          const TabComponent = tab.component;
+          return (
+            <TabsContent
+              key={tab.id}
+              value={tab.id}
+              className="mt-8 focus:outline-none"
+            >
+              <TabComponent />
+            </TabsContent>
+          );
+        })}
+      </Tabs>
+
+      {/* Footer */}
+      <div className="mt-12 pt-8 border-t text-center text-sm text-muted-foreground">
+        <p>
+          Professional file processing tools for image editing, document
+          management, and file organization.
+        </p>
       </div>
     </div>
   );

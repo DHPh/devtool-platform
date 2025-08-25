@@ -1,5 +1,4 @@
 // Layout Components
-export { ToolFrame, TwoColumnToolLayout } from "./tool-frame";
 export { ModeTabs } from "./mode-tabs";
 export { ActionButtons } from "./action-buttons";
 export { ToolContainer } from "./tool-container";

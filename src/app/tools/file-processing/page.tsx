@@ -1,4 +1,6 @@
 import { Metadata } from "next";
+import { ToolFrame } from "@/components/tool-frame";
+import { getToolById } from "@/lib/tool-registry";
 import FileProcessingStudio from "@/lib/tools/file-processing/FileProcessingStudio";
 
 export const metadata: Metadata = {
@@ -27,5 +29,15 @@ export const metadata: Metadata = {
 };
 
 export default function FileProcessingPage() {
-  return <FileProcessingStudio />;
+  const tool = getToolById("file-processing-studio");
+
+  if (!tool) {
+    return <div>Tool not found</div>;
+  }
+
+  return (
+    <ToolFrame tool={tool}>
+      <FileProcessingStudio />
+    </ToolFrame>
+  );
 }
