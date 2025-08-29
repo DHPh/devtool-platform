@@ -13,8 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Copy, Shuffle } from "lucide-react";
+import { Plus, Copy, Shuffle } from "lucide-react";
 import { toast } from "sonner";
+import { DragDropContext, Droppable, type DropResult } from "@hello-pangea/dnd";
 import {
   generateGradientCSS,
   createEvenGradient,
@@ -25,7 +26,7 @@ import {
   type ConicGradient,
 } from "@/lib/utils/color/gradient-generator";
 import { ColorPicker } from "./ColorPicker";
-import { getColorInfo } from "@/lib/utils/color";
+import { GradientColorStop } from "./GradientColorStop";
 
 export function GradientCreator() {
   const defaultColor = "#000000";
@@ -68,6 +69,22 @@ export function GradientCreator() {
       const newStops = gradient.stops.filter((_, i) => i !== index);
       setGradient((prev) => ({ ...prev, stops: newStops }));
     }
+  };
+
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+
+    const sourceIndex = result.source.index;
+    const destinationIndex = result.destination.index;
+
+    if (sourceIndex === destinationIndex) return;
+
+    const newStops = Array.from(gradient.stops);
+    const [reorderedItem] = newStops.splice(sourceIndex, 1);
+    newStops.splice(destinationIndex, 0, reorderedItem);
+
+    setGradient((prev) => ({ ...prev, stops: newStops }));
+    toast.success("Color stops reordered!");
   };
 
   const randomizeGradient = () => {
@@ -335,62 +352,37 @@ export function GradientCreator() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {gradient.stops.map((stop, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-3 p-3 bg-muted rounded-lg"
-                >
-                  <button
-                    className="w-8 h-8 rounded border-2 border-border hover:border-primary transition-colors"
-                    style={{ backgroundColor: stop.color }}
-                    onClick={() => {
-                      if (!getColorInfo(stop.color)) {
-                        updateGradientStop(index, { color: defaultColor });
-                      }
-                      setShowColorPicker(
-                        showColorPicker === index ? null : index
-                      );
-                    }}
-                  />
-                  <div className="flex-1">
-                    <Input
-                      type="text"
-                      value={stop.color}
-                      onChange={(e) =>
-                        updateGradientStop(index, { color: e.target.value })
-                      }
-                      placeholder="#000000"
-                      className="h-8"
-                    />
-                  </div>
-                  <div className="w-20">
-                    <Input
-                      type="number"
-                      value={stop.position}
-                      onChange={(e) =>
-                        updateGradientStop(index, {
-                          position: Number(e.target.value),
-                        })
-                      }
-                      min={0}
-                      max={100}
-                      className="h-8"
-                    />
-                  </div>
-                  <span className="text-xs text-muted-foreground">%</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeColorStop(index)}
-                    disabled={gradient.stops.length <= 2}
-                    className="h-8 w-8 p-0"
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Droppable droppableId="color-stops">
+                {(provided) => (
+                  <div
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    className="space-y-3"
                   >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
+                    {gradient.stops.map((stop, index) => (
+                      <GradientColorStop
+                        key={`stop-${index}`}
+                        stop={stop}
+                        index={index}
+                        onUpdate={(updates) =>
+                          updateGradientStop(index, updates)
+                        }
+                        onRemove={() => removeColorStop(index)}
+                        onColorPick={() =>
+                          setShowColorPicker(
+                            showColorPicker === index ? null : index
+                          )
+                        }
+                        canRemove={gradient.stops.length > 2}
+                        defaultColor={defaultColor}
+                      />
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
           </CardContent>
         </Card>
       </div>
