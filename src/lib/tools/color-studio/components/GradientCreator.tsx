@@ -79,12 +79,22 @@ export function GradientCreator() {
 
     if (sourceIndex === destinationIndex) return;
 
+    // Store original positions
+    const originalPositions = gradient.stops.map((stop) => stop.position);
+
+    // Create new stops array with reordered colors but original positions
     const newStops = Array.from(gradient.stops);
     const [reorderedItem] = newStops.splice(sourceIndex, 1);
     newStops.splice(destinationIndex, 0, reorderedItem);
 
-    setGradient((prev) => ({ ...prev, stops: newStops }));
-    toast.success("Color stops reordered!");
+    // Reassign original positions to maintain position indices
+    const finalStops = newStops.map((stop, index) => ({
+      ...stop,
+      position: originalPositions[index],
+    }));
+
+    setGradient((prev) => ({ ...prev, stops: finalStops }));
+    toast.success("Color stops reordered! Positions maintained.");
   };
 
   const randomizeGradient = () => {
