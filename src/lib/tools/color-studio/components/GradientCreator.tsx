@@ -34,6 +34,7 @@ export function GradientCreator() {
     createEvenGradient(["#ff0000", "#0000ff"], "linear")
   );
   const [showColorPicker, setShowColorPicker] = useState<number | null>(null);
+  const [keepPositionIndices, setKeepPositionIndices] = useState(true);
 
   const updateGradient = (updates: any) => {
     setGradient((prev) => ({ ...prev, ...updates }));
@@ -79,22 +80,27 @@ export function GradientCreator() {
 
     if (sourceIndex === destinationIndex) return;
 
-    // Store original positions
-    const originalPositions = gradient.stops.map((stop) => stop.position);
-
-    // Create new stops array with reordered colors but original positions
+    // Create new stops array with reordered items
     const newStops = Array.from(gradient.stops);
     const [reorderedItem] = newStops.splice(sourceIndex, 1);
     newStops.splice(destinationIndex, 0, reorderedItem);
 
-    // Reassign original positions to maintain position indices
-    const finalStops = newStops.map((stop, index) => ({
-      ...stop,
-      position: originalPositions[index],
-    }));
+    let finalStops;
+    if (keepPositionIndices) {
+      // Store original positions and reassign them to maintain position indices
+      const originalPositions = gradient.stops.map((stop) => stop.position);
+      finalStops = newStops.map((stop, index) => ({
+        ...stop,
+        position: originalPositions[index],
+      }));
+      toast.success("Color stops reordered! Positions maintained.");
+    } else {
+      // Keep positions with their colors (normal drag behavior)
+      finalStops = newStops;
+      toast.success("Color stops reordered!");
+    }
 
     setGradient((prev) => ({ ...prev, stops: finalStops }));
-    toast.success("Color stops reordered! Positions maintained.");
   };
 
   const randomizeGradient = () => {
@@ -359,6 +365,24 @@ export function GradientCreator() {
                 <Plus className="h-4 w-4 mr-2" />
                 Add Stop
               </Button>
+            </div>
+
+            {/* Drag behavior option */}
+            <div className="flex items-center space-x-2 pt-3 border-t mt-3">
+              <input
+                type="checkbox"
+                id="keep-position-indices"
+                checked={keepPositionIndices}
+                onChange={(e) => setKeepPositionIndices(e.target.checked)}
+                className="h-4 w-4 rounded border border-input ring-offset-background focus:ring-2 focus:ring-ring"
+              />
+              <Label
+                htmlFor="keep-position-indices"
+                className="text-sm text-muted-foreground cursor-pointer"
+              >
+                Keep position percentages at original indices when dragging
+                colors
+              </Label>
             </div>
           </CardHeader>
           <CardContent>
