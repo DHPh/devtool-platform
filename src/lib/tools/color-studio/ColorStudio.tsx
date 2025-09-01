@@ -17,6 +17,7 @@ import {
   ColorPickerTab,
   PaletteGeneratorTab,
   GradientCreatorTab,
+  GradientColorPickerTab,
   ContrastCheckerTab,
   ColorBlindnessTab,
   AccessibilityPaletteTab,
@@ -54,6 +55,14 @@ const STUDIO_TABS = [
     icon: Zap,
     component: GradientCreatorTab,
     description: "Create CSS gradients",
+  },
+  {
+    id: "gradient-picker",
+    label: "Gradient Color Picker",
+    shortLabel: "Picker",
+    icon: Pipette,
+    component: GradientColorPickerTab,
+    description: "Pick colors from gradients",
   },
   {
     id: "contrast",
@@ -129,7 +138,7 @@ export default function ColorStudio() {
           className="w-full"
         >
           {/* Tab Navigation */}
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-7 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-8 h-auto p-1">
             {STUDIO_TABS.map((tab) => {
               const Icon = tab.icon;
               return (

@@ -400,6 +400,27 @@ export const TOOL_REGISTRY: ToolMetadata[] = [
     parent: "color-studio",
     complexity: "intermediate",
   },
+  {
+    id: "gradient-color-picker",
+    name: "Gradient Color Picker",
+    description:
+      "Pick colors at any position within custom gradients with color interpolation",
+    category: TOOL_CATEGORIES.WEB_DEVELOPMENT.id,
+    type: TOOL_TYPES.GENERATOR,
+    types: [TOOL_TYPES.ANALYZER],
+    tags: [
+      "gradient",
+      "color",
+      "picker",
+      "interpolation",
+      "position",
+      "sampling",
+    ],
+    path: "/tools/color-studio?tab=gradient-picker",
+    icon: "🎨",
+    parent: "color-studio",
+    complexity: "intermediate",
+  },
 
   // Validators
   {
