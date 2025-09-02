@@ -5,16 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Copy, RefreshCw, Plus, Trash2 } from "lucide-react";
+import { Copy, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 import {
   generateGradientCSS,
   createEvenGradient,
   type Gradient,
   type GradientStop,
 } from "@/lib/utils/color/gradient-generator";
-import { GradientColorStop } from "../components/GradientColorStop";
+import { GradientColorStops } from "../components/GradientColorStops";
 import { hexToRgb, rgbToHex } from "@/lib/utils/color";
 
 interface ColorPickerResult {
@@ -33,46 +32,8 @@ export function GradientColorPickerTab() {
   const [isDragging, setIsDragging] = useState(false);
   const gradientRef = useRef<HTMLDivElement>(null);
 
-  const updateGradientStop = (
-    index: number,
-    updates: Partial<GradientStop>
-  ) => {
-    const newStops = gradient.stops
-      .map((stop, i) => (i === index ? { ...stop, ...updates } : stop))
-      .sort((a, b) => a.position - b.position);
-
+  const updateGradientStops = (newStops: GradientStop[]) => {
     setGradient((prev) => ({ ...prev, stops: newStops }));
-  };
-
-  const addColorStop = () => {
-    const newPosition =
-      gradient.stops.length > 0
-        ? Math.min(100, Math.max(...gradient.stops.map((s) => s.position)) + 20)
-        : 50;
-
-    const newStops = [
-      ...gradient.stops,
-      { color: "#000000", position: newPosition },
-    ].sort((a, b) => a.position - b.position);
-
-    setGradient((prev) => ({ ...prev, stops: newStops }));
-  };
-
-  const removeColorStop = (index: number) => {
-    if (gradient.stops.length > 2) {
-      const newStops = gradient.stops.filter((_, i) => i !== index);
-      setGradient((prev) => ({ ...prev, stops: newStops }));
-    }
-  };
-
-  const handleDragEnd = (result: DropResult) => {
-    if (!result.destination) return;
-
-    const items = Array.from(gradient.stops);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-
-    setGradient((prev) => ({ ...prev, stops: items }));
   };
 
   const generateRandomGradient = () => {
@@ -362,46 +323,11 @@ export function GradientColorPickerTab() {
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* Gradient Color Stops */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Gradient Stops</CardTitle>
-              <Button variant="outline" size="sm" onClick={addColorStop}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Stop
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <DragDropContext onDragEnd={handleDragEnd}>
-              <Droppable droppableId="color-stops">
-                {(provided) => (
-                  <div
-                    {...provided.droppableProps}
-                    ref={provided.innerRef}
-                    className="space-y-3"
-                  >
-                    {gradient.stops.map((stop, index) => (
-                      <GradientColorStop
-                        key={`stop-${index}-${stop.color}-${stop.position}`}
-                        stop={stop}
-                        index={index}
-                        onUpdate={(updates) =>
-                          updateGradientStop(index, updates)
-                        }
-                        onRemove={() => removeColorStop(index)}
-                        onColorPick={() => {}} // No additional color picker needed
-                        canRemove={gradient.stops.length > 2}
-                        defaultColor="#000000"
-                      />
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </DragDropContext>
-          </CardContent>
-        </Card>
+        <GradientColorStops
+          stops={gradient.stops}
+          onStopsChange={updateGradientStops}
+          defaultColor="#000000"
+        />
 
         {/* Picked Colors History */}
         <Card>
