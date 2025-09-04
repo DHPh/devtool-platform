@@ -40,7 +40,7 @@ export function GradientColorStops({
     updates: Partial<GradientStop>,
     shouldSort = false
   ) => {
-    const newStops = stops.map((stop, i) => 
+    const newStops = stops.map((stop, i) =>
       i === index ? { ...stop, ...updates } : stop
     );
 
@@ -165,9 +165,13 @@ export function GradientColorStops({
                           style={{ backgroundColor: stop.color }}
                           onClick={() => {
                             if (!getColorInfo(stop.color)) {
-                              updateGradientStop(index, {
-                                color: defaultColor,
-                              }, false);
+                              updateGradientStop(
+                                index,
+                                {
+                                  color: defaultColor,
+                                },
+                                false
+                              );
                             }
                             onColorPick?.(index);
                           }}
@@ -179,10 +183,15 @@ export function GradientColorStops({
                           <Input
                             type="text"
                             value={stop.color}
-                            onChange={(e) =>
-                              updateGradientStop(index, {
-                                color: e.target.value,
-                              }, false) // Don't sort for color changes
+                            onChange={
+                              (e) =>
+                                updateGradientStop(
+                                  index,
+                                  {
+                                    color: e.target.value,
+                                  },
+                                  false
+                                ) // Don't sort for color changes
                             }
                             placeholder="#000000"
                             className="h-8"
@@ -195,17 +204,24 @@ export function GradientColorStops({
                           <Input
                             type="number"
                             value={stop.position}
-                            onChange={(e) =>
-                              updateGradientStop(index, {
-                                position: Math.max(
-                                  0,
-                                  Math.min(100, Number(e.target.value))
-                                ),
-                              }, false) // Don't sort while typing
+                            onChange={
+                              (e) =>
+                                updateGradientStop(
+                                  index,
+                                  {
+                                    position: Math.max(
+                                      0,
+                                      Math.min(100, Number(e.target.value))
+                                    ),
+                                  },
+                                  false
+                                ) // Don't sort while typing
                             }
                             onBlur={() => {
                               // Sort stops when user finishes editing
-                              const sortedStops = [...stops].sort((a, b) => a.position - b.position);
+                              const sortedStops = [...stops].sort(
+                                (a, b) => a.position - b.position
+                              );
                               onStopsChange(sortedStops);
                             }}
                             min={0}
