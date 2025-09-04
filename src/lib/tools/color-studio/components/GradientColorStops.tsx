@@ -37,11 +37,16 @@ export function GradientColorStops({
 
   const updateGradientStop = (
     index: number,
-    updates: Partial<GradientStop>
+    updates: Partial<GradientStop>,
+    shouldSort = false
   ) => {
-    const newStops = stops
-      .map((stop, i) => (i === index ? { ...stop, ...updates } : stop))
-      .sort((a, b) => a.position - b.position);
+    const newStops = stops.map((stop, i) => 
+      i === index ? { ...stop, ...updates } : stop
+    );
+
+    if (shouldSort) {
+      newStops.sort((a, b) => a.position - b.position);
+    }
 
     onStopsChange(newStops);
   };
@@ -132,7 +137,7 @@ export function GradientColorStops({
               >
                 {stops.map((stop, index) => (
                   <Draggable
-                    key={`stop-${index}-${stop.color}-${stop.position}`}
+                    key={`stop-${index}`}
                     draggableId={`color-stop-${index}`}
                     index={index}
                   >
@@ -162,7 +167,7 @@ export function GradientColorStops({
                             if (!getColorInfo(stop.color)) {
                               updateGradientStop(index, {
                                 color: defaultColor,
-                              });
+                              }, false);
                             }
                             onColorPick?.(index);
                           }}
@@ -177,7 +182,7 @@ export function GradientColorStops({
                             onChange={(e) =>
                               updateGradientStop(index, {
                                 color: e.target.value,
-                              })
+                              }, false) // Don't sort for color changes
                             }
                             placeholder="#000000"
                             className="h-8"
@@ -196,8 +201,13 @@ export function GradientColorStops({
                                   0,
                                   Math.min(100, Number(e.target.value))
                                 ),
-                              })
+                              }, false) // Don't sort while typing
                             }
+                            onBlur={() => {
+                              // Sort stops when user finishes editing
+                              const sortedStops = [...stops].sort((a, b) => a.position - b.position);
+                              onStopsChange(sortedStops);
+                            }}
                             min={0}
                             max={100}
                             className="h-8"
