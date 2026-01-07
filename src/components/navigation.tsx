@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -31,7 +32,7 @@ export function Navigation() {
 
   const searchResults = searchQuery ? searchTools(searchQuery) : [];
   const bookmarkedTools = TOOL_REGISTRY.filter((tool) =>
-    bookmarks.includes(tool.id)
+    bookmarks.includes(tool.id),
   );
 
   // Handle ESC key to close search
@@ -61,14 +62,35 @@ export function Navigation() {
             {/* Logo */}
             <Link
               href="/"
-              className="flex items-center space-x-2 min-w-0 flex-shrink-0"
+              className="flex items-center gap-2 min-w-0 flex-shrink-0"
             >
-              <div className="h-8 w-8 bg-primary text-primary-foreground rounded-md flex items-center justify-center font-bold">
-                DT
-              </div>
-              <span className="font-bold text-lg sm:text-xl truncate">
-                DevTool Platform
-              </span>
+              <Image
+                src="/logo-icon.png"
+                alt="DevTool Platform"
+                width={32}
+                height={32}
+                className="h-8 w-8 flex-shrink-0"
+                priority
+                unoptimized
+              />
+              <Image
+                src="/logo-text.png"
+                alt="DevTool Platform"
+                width={2048}
+                height={272}
+                className="h-6 sm:h-7 w-auto max-w-[180px] sm:max-w-[240px] dark:hidden"
+                priority
+                unoptimized
+              />
+              <Image
+                src="/logo-text-darkmode.png"
+                alt="DevTool Platform"
+                width={2048}
+                height={272}
+                className="hidden h-6 sm:h-7 w-auto max-w-[180px] sm:max-w-[240px] dark:block"
+                priority
+                unoptimized
+              />
             </Link>
 
             {/* Desktop Navigation */}
