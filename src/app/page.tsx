@@ -236,7 +236,7 @@ export default function HomePage() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {featuredTools.map((tool) => (
-                <Link key={tool.id} href={`/tools/${tool.id}`}>
+                <Link key={tool.id} href={tool.path}>
                   <Card className="h-full hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col">
                     <CardHeader className="flex-shrink-0">
                       <div className="flex items-start gap-3">

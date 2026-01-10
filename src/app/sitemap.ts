@@ -24,7 +24,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   // Tool pages
   const toolPages: MetadataRoute.Sitemap = tools.map((tool: ToolMetadata) => ({
-    url: `${baseUrl}/tools/${tool.id}`,
+    url: `${baseUrl}${tool.path}`,
     lastModified: new Date(),
     changeFrequency: "weekly" as const,
     priority: 0.9,

@@ -117,6 +117,7 @@ export async function generateMetadata({ params }: ToolPageProps) {
     "browser tool",
     "instant tool",
   ];
+  const canonicalUrl = `https://devtool-platform.vercel.app${tool.path}`;
 
   // Enhanced structured data with more details
   const structuredData = {
@@ -124,7 +125,7 @@ export async function generateMetadata({ params }: ToolPageProps) {
     "@type": "WebApplication",
     name: tool.name,
     description: tool.description,
-    url: `https://devtool-platform.vercel.app/tools/${slug}`,
+    url: canonicalUrl,
     applicationCategory: "DeveloperApplication",
     operatingSystem: "Web Browser",
     browserRequirements: "Modern web browser with JavaScript enabled",
@@ -180,7 +181,7 @@ export async function generateMetadata({ params }: ToolPageProps) {
         name: tool.name,
       },
     ],
-    step: getToolSteps(slug, tool.name),
+    step: getToolSteps(slug, tool.name, canonicalUrl),
   };
 
   return {
@@ -195,7 +196,7 @@ export async function generateMetadata({ params }: ToolPageProps) {
     category: "Technology",
     classification: "Developer Tools",
     alternates: {
-      canonical: `https://devtool-platform.vercel.app/tools/${slug}`,
+      canonical: canonicalUrl,
     },
     robots: {
       index: true,
@@ -213,7 +214,7 @@ export async function generateMetadata({ params }: ToolPageProps) {
       description: `${
         tool.description
       } Free online ${tool.name.toLowerCase()} tool. No registration required.`,
-      url: `https://devtool-platform.vercel.app/tools/${slug}`,
+      url: canonicalUrl,
       siteName: "DevTool Platform",
       type: "website",
       locale: "en_US",
@@ -247,13 +248,13 @@ export async function generateMetadata({ params }: ToolPageProps) {
 }
 
 // Helper function to get step-by-step instructions for tools
-function getToolSteps(slug: string, toolName: string) {
+function getToolSteps(slug: string, toolName: string, canonicalUrl: string) {
   const commonSteps = [
     {
       "@type": "HowToStep",
       name: "Access the tool",
       text: `Navigate to the ${toolName} page on DevTool Platform`,
-      url: `https://devtool-platform.vercel.app/tools/${slug}`,
+      url: canonicalUrl,
     },
   ];
 

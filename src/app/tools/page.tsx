@@ -87,7 +87,7 @@ export default function ToolsPage() {
         position: index + 1,
         name: tool.name,
         description: tool.description,
-        url: `https://devtool-platform.vercel.app/tools/${tool.id}`,
+        url: `https://devtool-platform.vercel.app${tool.path}`,
         applicationCategory: "DeveloperApplication",
         operatingSystem: "Web Browser",
         offers: {
@@ -188,7 +188,7 @@ export default function ToolsPage() {
                   {categoryTools.map((tool) => (
                     <Link
                       key={tool.id}
-                      href={`/tools/${tool.id}`}
+                      href={tool.path}
                       className="block"
                     >
                       <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
@@ -239,7 +239,7 @@ export default function ToolsPage() {
           <h2 className="text-2xl font-bold text-center">All Tools</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {TOOL_REGISTRY.map((tool) => (
-              <Link key={tool.id} href={`/tools/${tool.id}`} className="block">
+              <Link key={tool.id} href={tool.path} className="block">
                 <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
                   <CardHeader className="pb-3">
                     <div className="flex items-center gap-3">
