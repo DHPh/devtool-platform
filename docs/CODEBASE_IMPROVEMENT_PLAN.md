@@ -57,10 +57,10 @@ Acceptance criteria:
 
 ### 1.2 Remove legacy category filtering
 
-- [ ] Replace `LEGACY_TOOL_CATEGORIES` with category definitions from `tool-classification.ts`.
-- [ ] Filter by category ID and display the corresponding category name and icon.
-- [ ] Remove the legacy category export after all consumers have migrated.
-- [ ] Test that every non-empty category appears and produces the expected tools.
+- [x] Replace `LEGACY_TOOL_CATEGORIES` with category definitions from `tool-classification.ts`.
+- [x] Filter by category ID and display the corresponding category name and icon.
+- [x] Remove the legacy category export after all consumers have migrated.
+- [x] Test that every non-empty category appears and produces the expected tools.
 
 Acceptance criteria:
 

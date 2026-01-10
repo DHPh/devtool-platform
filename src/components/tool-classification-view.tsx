@@ -46,7 +46,9 @@ export function ToolClassificationView({
     return <div>Loading...</div>;
   }
 
-  const categories = getAllCategories();
+  const categories = getAllCategories().filter(
+    (category) => getToolsByCategory(category.id).length > 0
+  );
   const toolTypes = getAllToolTypes();
   const featuredTools = getFeaturedTools();
 

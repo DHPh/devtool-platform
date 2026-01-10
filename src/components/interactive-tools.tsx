@@ -15,10 +15,10 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Star } from "lucide-react";
 import {
   TOOL_REGISTRY,
-  LEGACY_TOOL_CATEGORIES,
   getToolsByCategory,
   searchTools,
 } from "@/lib/tool-registry";
+import { getAllCategories } from "@/lib/tool-classification";
 import { useBookmarks } from "@/store/bookmarks";
 
 interface InteractiveToolsProps {
@@ -48,6 +48,9 @@ export function InteractiveTools({ featuredToolIds }: InteractiveToolsProps) {
   const featuredTools = TOOL_REGISTRY.filter((tool) =>
     featuredToolIds.includes(tool.id)
   );
+  const populatedCategories = getAllCategories().filter(
+    (category) => getToolsByCategory(category.id).length > 0
+  );
 
   return (
     <div className="space-y-8">
@@ -65,15 +68,16 @@ export function InteractiveTools({ featuredToolIds }: InteractiveToolsProps) {
 
       {/* Tool Tabs */}
       <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-6">
+        <TabsList className="flex h-auto w-full flex-wrap justify-start">
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="bookmarks">
             <Star className="h-4 w-4 mr-1" />
             Bookmarks
           </TabsTrigger>
-          {LEGACY_TOOL_CATEGORIES.slice(0, 4).map((category) => (
-            <TabsTrigger key={category} value={category}>
-              {category}
+          {populatedCategories.map((category) => (
+            <TabsTrigger key={category.id} value={category.id}>
+              <span className="mr-1">{category.icon}</span>
+              {category.name}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -96,9 +100,13 @@ export function InteractiveTools({ featuredToolIds }: InteractiveToolsProps) {
           )}
         </TabsContent>
 
-        {LEGACY_TOOL_CATEGORIES.map((category) => (
-          <TabsContent key={category} value={category} className="space-y-6">
-            <ToolGrid tools={getToolsByCategory(category)} />
+        {populatedCategories.map((category) => (
+          <TabsContent
+            key={category.id}
+            value={category.id}
+            className="space-y-6"
+          >
+            <ToolGrid tools={getToolsByCategory(category.id)} />
           </TabsContent>
         ))}
       </Tabs>

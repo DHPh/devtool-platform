@@ -11,9 +11,9 @@ import { Badge } from "@/components/ui/badge";
 import { Zap, Shield, Globe } from "lucide-react";
 import {
   TOOL_REGISTRY,
-  LEGACY_TOOL_CATEGORIES,
   getToolsByCategory,
 } from "@/lib/tool-registry";
+import { getAllCategories } from "@/lib/tool-classification";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 
 // Static metadata for SEO
@@ -72,6 +72,13 @@ export const metadata: Metadata = {
 };
 
 export default function ToolsPage() {
+  const populatedCategories = getAllCategories()
+    .map((category) => ({
+      ...category,
+      tools: getToolsByCategory(category.id),
+    }))
+    .filter((category) => category.tools.length > 0);
+
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -172,20 +179,17 @@ export default function ToolsPage() {
             Browse Tools by Category
           </h2>
 
-          {LEGACY_TOOL_CATEGORIES.map((category) => {
-            const categoryTools = getToolsByCategory(category);
-            if (categoryTools.length === 0) return null;
-
+          {populatedCategories.map((category) => {
             return (
-              <div key={category} className="space-y-4">
+              <div key={category.id} className="space-y-4">
                 <h3 className="text-xl font-semibold flex items-center gap-2">
-                  <span className="text-2xl">{getCategoryIcon(category)}</span>
-                  {category} Tools
-                  <Badge variant="secondary">{categoryTools.length}</Badge>
+                  <span className="text-2xl">{category.icon}</span>
+                  {category.name} Tools
+                  <Badge variant="secondary">{category.tools.length}</Badge>
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {categoryTools.map((tool) => (
+                  {category.tools.map((tool) => (
                     <Link
                       key={tool.id}
                       href={tool.path}
@@ -308,18 +312,4 @@ export default function ToolsPage() {
       </div>
     </>
   );
-}
-
-function getCategoryIcon(category: string): string {
-  const icons: Record<string, string> = {
-    Text: "📝",
-    Data: "📊",
-    Crypto: "🔐",
-    Web: "🌐",
-    Network: "🔗",
-    Image: "🖼️",
-    Development: "⚡",
-    Utility: "🛠️",
-  };
-  return icons[category] || "🔧";
 }

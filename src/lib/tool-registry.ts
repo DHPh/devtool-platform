@@ -1016,19 +1016,3 @@ export function getToolStatistics() {
     typeCounts,
   };
 }
-
-// Legacy support for old category names
-export const LEGACY_TOOL_CATEGORIES = [
-  "Text & Format",
-  "Encoding & Decoding",
-  "Generators",
-  "Converters",
-  "Validators",
-  "Utilities",
-  "Development",
-  "Security",
-  "Data Processing",
-  "Network & Web",
-] as const;
-
-export type LegacyToolCategory = (typeof LEGACY_TOOL_CATEGORIES)[number];
