@@ -3,13 +3,15 @@
  * Centralized configuration using environment variables
  */
 
+import { TOOL_COUNT } from "@/lib/tool-registry";
+
 // Default values (fallbacks)
 // TODO: Replace these with your actual production values
 const DEFAULT_CONFIG = {
   siteUrl: "https://devtool-platform.vercel.app", // TODO: Replace with your actual domain
   siteName: "DevTool Platform", // TODO: Replace with your actual site name
   siteDescription:
-    "The ultimate collection of 100+ free online developer tools",
+    `A collection of ${TOOL_COUNT} free online developer tools and studio utilities`,
   twitterHandle: "@devtoolplatform", // TODO: Replace with your actual Twitter handle
   contactEmail: "hello@devtoolplatform.com", // TODO: Replace with your actual contact email
 };

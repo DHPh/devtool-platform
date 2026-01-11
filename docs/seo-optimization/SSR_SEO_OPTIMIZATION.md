@@ -63,8 +63,8 @@ export default function HomePage() {
 ```tsx
 // ✅ Pure SSR với enhanced metadata
 export const metadata: Metadata = {
-  title: "All Developer Tools | DevTool Platform - 100+ Free Online Tools",
-  description: "Browse our complete collection of 100+ free developer tools...",
+  title: "All Developer Tools | DevTool Platform",
+  description: "Browse our collection of free developer tools and studio utilities...",
   keywords: [
     /* comprehensive keywords */
   ],

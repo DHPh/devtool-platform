@@ -1,7 +1,7 @@
 {
     "name": "DevTool Platform",
     "short_name": "DevTool",
-    "description": "A comprehensive collection of 100+ developer tools",
+    "description": "A collection of free developer tools and studio utilities",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#ffffff",

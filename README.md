@@ -1,10 +1,10 @@
 # DevTool Platform
 
-A comprehensive developer tools platform built with Next.js, featuring 100+ developer tools in a microfrontend architecture. This platform provides a centralized hub for all your development utilities with a modern, responsive interface.
+A comprehensive developer tools platform built with Next.js. It provides a centralized hub for standalone tools and studio sub-tools with a modern, responsive interface.
 
 ## 🚀 Features
 
-- **100+ Developer Tools** - JSON formatter, Base64 encoder, Regex tester, UUID generator, and many more
+- **Broad Developer Toolkit** - JSON formatter, Base64 encoder, Regex tester, UUID generator, network diagnostics, and more
 - **Microfrontend Architecture** - Modular design where each tool is a separate, maintainable module
 - **Smart Search** - Find tools quickly with intelligent search across names, descriptions, and tags
 - **Bookmarks System** - Save your favorite tools for quick access (stored in localStorage)
@@ -13,6 +13,8 @@ A comprehensive developer tools platform built with Next.js, featuring 100+ deve
 - **Tool Categories** - Organized by functionality for easy browsing
 - **Real-time Processing** - Most tools process data instantly as you type
 - **Clean UI** - Built with Tailwind CSS and Shadcn UI for a modern look
+
+Catalog totals are derived from the tool registry and include both standalone tools and the sub-tools available within studios.
 
 ## 🛠️ Tech Stack
 

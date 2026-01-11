@@ -70,10 +70,10 @@ Acceptance criteria:
 
 ### 1.3 Make product claims data-driven and accurate
 
-- [ ] Replace hard-coded "100+" counts with `TOOL_REGISTRY.length` or neutral wording.
-- [ ] Decide whether totals include studio sub-tools and apply the choice consistently.
-- [ ] Change "all processing happens locally" to wording that accounts for network APIs.
-- [ ] Review page metadata, structured data, manifest text, and documentation for the same claims.
+- [x] Replace hard-coded "100+" counts with `TOOL_REGISTRY.length` or neutral wording.
+- [x] Decide whether totals include studio sub-tools and apply the choice consistently.
+- [x] Change "all processing happens locally" to wording that accounts for network APIs.
+- [x] Review page metadata, structured data, manifest text, and documentation for the same claims.
 
 Acceptance criteria:
 

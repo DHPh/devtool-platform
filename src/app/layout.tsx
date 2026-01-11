@@ -4,6 +4,7 @@ import "./globals.css";
 import { Navigation } from "@/components/navigation";
 import { Toaster } from "sonner";
 import { siteConfig, validateConfig } from "@/config/site";
+import { TOOL_COUNT } from "@/lib/tool-registry";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -17,7 +18,7 @@ if (process.env.NODE_ENV === "development") {
 
 export const metadata: Metadata = {
   title: {
-    default: `${siteConfig.name} - 100+ Developer Tools`,
+    default: `${siteConfig.name} - ${TOOL_COUNT} Developer Tools`,
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
@@ -72,7 +73,7 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: siteConfig.url,
-    title: `${siteConfig.name} - 100+ Developer Tools`,
+    title: `${siteConfig.name} - ${TOOL_COUNT} Developer Tools`,
     description: siteConfig.description,
     siteName: siteConfig.name,
     images: [
@@ -80,7 +81,7 @@ export const metadata: Metadata = {
         url: "/og-image.png", // TODO: Create and upload this OG image (1200x630)
         width: 1200,
         height: 630,
-        alt: `${siteConfig.name} - 100+ Developer Tools`,
+        alt: `${siteConfig.name} - ${TOOL_COUNT} Developer Tools`,
       },
     ],
   },
@@ -88,7 +89,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: siteConfig.twitter.site, // TODO: Update with real Twitter handle
     creator: siteConfig.twitter.handle, // TODO: Update with real Twitter handle
-    title: `${siteConfig.name} - 100+ Developer Tools`,
+    title: `${siteConfig.name} - ${TOOL_COUNT} Developer Tools`,
     description: siteConfig.description,
     images: ["/og-image.png"], // TODO: Create and upload this OG image
   },
@@ -109,8 +110,7 @@ export default function RootLayout({
     "@context": "https://schema.org",
     "@type": "WebApplication",
     name: "DevTool Platform",
-    description:
-      "A comprehensive collection of 100+ developer tools including JSON formatter, Base64 encoder, regex tester, hash generators, and many more.",
+    description: siteConfig.description,
     url: "https://devtool-platform.vercel.app",
     applicationCategory: "DeveloperApplication",
     operatingSystem: "Web Browser",

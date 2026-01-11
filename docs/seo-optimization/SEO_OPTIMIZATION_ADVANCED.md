@@ -216,9 +216,9 @@
 
 ### Unique Value Propositions
 
-1. **All-in-one platform:** 100+ tools in one place
+1. **All-in-one platform:** A broad collection of tools in one place
 2. **No registration required:** Instant access
-3. **Privacy-focused:** Client-side processing
+3. **Privacy-transparent:** Most processing is local; network tools make remote requests
 4. **Mobile-optimized:** Works on all devices
 5. **Open source:** Transparent and trustworthy
 

@@ -179,9 +179,9 @@
 
 ### Competitive Advantages:
 
-- **100+ tools** trong một platform
+- **Bộ công cụ đa dạng** trong một platform
 - **No registration required** - instant access
-- **Privacy-focused** - client-side processing
+- **Privacy-transparent** - phần lớn xử lý local; network tools gửi remote requests khi cần
 - **Fast performance** - optimized loading
 - **Mobile-friendly** - responsive design
 

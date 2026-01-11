@@ -140,7 +140,7 @@ android-chrome-512x512.png
 
 ```
 [App Logo] DevTool Platform
-100+ Free Developer Tools
+Free Developer Tools and Studio Utilities
 [Tool Icon] Tool Name
 "Description text"
 ```

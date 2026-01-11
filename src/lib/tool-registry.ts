@@ -933,6 +933,9 @@ export const TOOL_REGISTRY: ToolMetadata[] = [
   },
 ];
 
+// Product totals include standalone tools and the sub-tools exposed by studios.
+export const TOOL_COUNT = TOOL_REGISTRY.length;
+
 // Helper functions
 export function getToolById(id: string): ToolMetadata | undefined {
   return TOOL_REGISTRY.find((tool) => tool.id === id);
@@ -998,7 +1001,7 @@ export function getAllCategories(): string[] {
 
 // Statistics functions
 export function getToolStatistics() {
-  const totalTools = TOOL_REGISTRY.length;
+  const totalTools = TOOL_COUNT;
   const featuredTools = getFeaturedTools().length;
   const categoryCounts = getAllCategories().map((category) => ({
     category,

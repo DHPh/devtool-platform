@@ -111,10 +111,10 @@ Comprehensive SEO optimization guide to improve search engine rankings and user 
 ```typescript
 export const metadata: Metadata = {
   title: {
-    default: "DevTool Platform - 100+ Developer Tools",
+    default: "DevTool Platform - Free Developer Tools",
     template: "%s | DevTool Platform",
   },
-  description: "Comprehensive collection of 100+ developer tools...",
+  description: "A collection of free developer tools and studio utilities...",
   keywords: [...], // 20+ relevant keywords
   // ... extensive metadata configuration
 }

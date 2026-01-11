@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Zap, Shield, Globe } from "lucide-react";
 import {
   TOOL_REGISTRY,
+  TOOL_COUNT,
   getToolsByCategory,
 } from "@/lib/tool-registry";
 import { getAllCategories } from "@/lib/tool-classification";
@@ -18,9 +19,9 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 
 // Static metadata for SEO
 export const metadata: Metadata = {
-  title: "All Developer Tools | DevTool Platform - 100+ Free Online Tools",
+  title: `All Developer Tools | DevTool Platform - ${TOOL_COUNT} Free Online Tools`,
   description:
-    "Browse our complete collection of 100+ free developer tools including JSON formatter, Base64 encoder, regex tester, UUID generator, and many more. All tools work in your browser with no registration required.",
+    `Browse ${TOOL_COUNT} free developer tools and studio utilities for formatting, encoding, validation, generation, and network diagnostics. No registration required.`,
   keywords: [
     "developer tools list",
     "online tools collection",
@@ -49,7 +50,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "All Developer Tools | DevTool Platform",
     description:
-      "Browse our complete collection of 100+ free developer tools. All tools work in your browser with no registration required.",
+      `Browse ${TOOL_COUNT} free developer tools and studio utilities. No registration required.`,
     url: "https://devtool-platform.vercel.app/tools",
     siteName: "DevTool Platform",
     type: "website",
@@ -66,7 +67,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "All Developer Tools | DevTool Platform",
     description:
-      "Browse our complete collection of 100+ free developer tools. All tools work in your browser with no registration required.",
+      `Browse ${TOOL_COUNT} free developer tools and studio utilities. No registration required.`,
     images: ["/og-tools-collection.png"],
   },
 };
@@ -84,11 +85,11 @@ export default function ToolsPage() {
     "@type": "CollectionPage",
     name: "Developer Tools Collection",
     description:
-      "A comprehensive collection of 100+ free online developer tools",
+      `A collection of ${TOOL_COUNT} free online developer tools and studio utilities`,
     url: "https://devtool-platform.vercel.app/tools",
     mainEntity: {
       "@type": "ItemList",
-      numberOfItems: TOOL_REGISTRY.length,
+      numberOfItems: TOOL_COUNT,
       itemListElement: TOOL_REGISTRY.map((tool, index) => ({
         "@type": "SoftwareApplication",
         position: index + 1,
@@ -132,9 +133,9 @@ export default function ToolsPage() {
             Complete Developer Tools Collection
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Discover {TOOL_REGISTRY.length}+ free online developer tools. All
-            tools work entirely in your browser with no registration required.
-            Fast, secure, and always available.
+            Discover {TOOL_COUNT} free online developer tools and studio
+            utilities. Most process data locally, while network tools contact
+            servers or external services when required. No registration needed.
           </p>
         </div>
 
@@ -146,8 +147,8 @@ export default function ToolsPage() {
             </div>
             <h3 className="text-lg font-semibold">Instant Processing</h3>
             <p className="text-sm text-muted-foreground">
-              All tools process data immediately in your browser with no server
-              delays
+              Most tools process data immediately in your browser; network
+              tools make remote requests when needed
             </p>
           </div>
 
@@ -155,9 +156,10 @@ export default function ToolsPage() {
             <div className="mx-auto w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
               <Shield className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
-            <h3 className="text-lg font-semibold">100% Private</h3>
+            <h3 className="text-lg font-semibold">Privacy Aware</h3>
             <p className="text-sm text-muted-foreground">
-              Your data never leaves your device - complete privacy and security
+              Local tools keep input on-device; network tools send required
+              request data to servers or external services
             </p>
           </div>
 
@@ -282,16 +284,16 @@ export default function ToolsPage() {
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">🚀 Fast & Efficient</h3>
               <p className="text-muted-foreground">
-                All tools run locally in your browser using modern web
-                technologies. No waiting for server responses or slow uploads -
-                get instant results every time.
+                Most tools run locally in your browser using modern web
+                technologies. Network utilities make remote requests because
+                their results depend on servers or external services.
               </p>
 
               <h3 className="text-lg font-semibold">🔒 Privacy First</h3>
               <p className="text-muted-foreground">
-                Your data never leaves your device. All processing happens
-                client-side, ensuring complete privacy and security for
-                sensitive information.
+                Local formatters and converters keep input on your device.
+                Network diagnostics and breach checks send only the request data
+                needed to provide their results.
               </p>
             </div>
             <div className="space-y-4">

@@ -9,14 +9,14 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Zap, Shield, Globe, ArrowRight } from "lucide-react";
-import { TOOL_REGISTRY } from "@/lib/tool-registry";
+import { TOOL_COUNT, TOOL_REGISTRY } from "@/lib/tool-registry";
 import { ToolClassificationView } from "@/components/tool-classification-view";
 
 // Enhanced SEO metadata
 export const metadata: Metadata = {
-  title: "DevTool Platform - 100+ Free Online Developer Tools",
+  title: `DevTool Platform - ${TOOL_COUNT} Free Online Developer Tools`,
   description:
-    "The ultimate collection of 100+ free online developer tools including JSON formatter, Base64 encoder, regex tester, UUID generator, hash generators, and many more. All tools work in your browser with no registration required.",
+    `Explore ${TOOL_COUNT} free online developer tools and studio utilities, including JSON formatting, Base64 encoding, regex testing, UUID generation, and network diagnostics. No registration required.`,
   keywords: [
     "developer tools",
     "online tools",
@@ -63,9 +63,9 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "DevTool Platform - 100+ Free Online Developer Tools",
+    title: `DevTool Platform - ${TOOL_COUNT} Free Online Developer Tools`,
     description:
-      "The ultimate collection of 100+ free online developer tools. All tools work in your browser with no registration required.",
+      `Explore ${TOOL_COUNT} free online developer tools and studio utilities. No registration required.`,
     url: "https://devtool-platform.vercel.app",
     siteName: "DevTool Platform",
     type: "website",
@@ -75,7 +75,7 @@ export const metadata: Metadata = {
         url: "/og-homepage.png", // TODO: Create and upload homepage OG image (1200x630)
         width: 1200,
         height: 630,
-        alt: "DevTool Platform - 100+ Free Online Developer Tools",
+        alt: `DevTool Platform - ${TOOL_COUNT} Free Online Developer Tools`,
       },
     ],
   },
@@ -83,9 +83,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@devtoolplatform", // TODO: Replace with real Twitter handle
     creator: "@devtoolplatform", // TODO: Replace with real Twitter handle
-    title: "DevTool Platform - 100+ Free Online Developer Tools",
+    title: `DevTool Platform - ${TOOL_COUNT} Free Online Developer Tools`,
     description:
-      "The ultimate collection of 100+ free online developer tools. All tools work in your browser with no registration required.",
+      `Explore ${TOOL_COUNT} free online developer tools and studio utilities. No registration required.`,
     images: ["/og-homepage.png"], // TODO: Create and upload homepage OG image
   },
 };
@@ -100,7 +100,7 @@ export default function HomePage() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: "DevTool Platform",
-    description: "The ultimate collection of 100+ free online developer tools",
+    description: `A collection of ${TOOL_COUNT} free online developer tools and studio utilities`,
     url: "https://devtool-platform.vercel.app",
     potentialAction: {
       "@type": "SearchAction",
@@ -158,7 +158,7 @@ export default function HomePage() {
         {/* Hero Section - SSR for SEO */}
         <section className="text-center space-y-6 py-8 sm:py-16 px-4 sm:px-6 lg:px-8">
           <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent leading-tight">
-            100+ Free Developer Tools
+            {TOOL_COUNT} Free Developer Tools
           </h1>
           <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed px-4 sm:px-6">
             The ultimate collection of online developer tools. JSON formatter,
@@ -196,9 +196,8 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-xl font-semibold">Lightning Fast</h3>
                 <p className="text-muted-foreground">
-                  All tools process data instantly in your browser. No waiting
-                  for server responses or slow uploads. Get results in
-                  milliseconds, not seconds.
+                  Most tools process data instantly in your browser. Network
+                  tools contact servers or external services when needed.
                 </p>
               </div>
 
@@ -206,11 +205,11 @@ export default function HomePage() {
                 <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
                   <Shield className="h-8 w-8 text-green-600 dark:text-green-400" />
                 </div>
-                <h3 className="text-xl font-semibold">100% Private</h3>
+                <h3 className="text-xl font-semibold">Privacy Aware</h3>
                 <p className="text-muted-foreground">
-                  Your data never leaves your device. All processing happens
-                  client-side, ensuring complete privacy and security for
-                  sensitive information.
+                  Local tools keep input on your device. Network and breach
+                  checks send the required request data to servers or external
+                  services so they can return results.
                 </p>
               </div>
 
@@ -278,7 +277,7 @@ export default function HomePage() {
                 href="/tools"
                 className="inline-flex items-center px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
               >
-                View All {TOOL_REGISTRY.length} Tools
+                View All {TOOL_COUNT} Tools
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </div>
@@ -304,9 +303,10 @@ export default function HomePage() {
                   The Ultimate Developer Tools Collection
                 </h2>
                 <p className="text-xl text-muted-foreground leading-relaxed">
-                  DevTool Platform brings together 100+ essential developer
-                  tools in one fast, secure, and easy-to-use platform. All tools
-                  work entirely in your browser with no registration required.
+                  DevTool Platform brings together {TOOL_COUNT} developer tools
+                  and studio utilities in one fast, easy-to-use platform. Most
+                  processing is local; network tools make remote requests when
+                  their function requires it. No registration is required.
                 </p>
               </div>
 
