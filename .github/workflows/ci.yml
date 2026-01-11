@@ -33,7 +33,10 @@ jobs:
         
       - name: Run type checking
         run: npx tsc --noEmit
-        
+
+      - name: Validate tool registry
+        run: npm run validate:registry
+
       - name: Build application
         run: npm run build
         

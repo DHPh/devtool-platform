@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "validate:registry": "vitest run tests/tool-registry-validation.test.ts"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",

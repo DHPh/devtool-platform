@@ -82,12 +82,12 @@ Acceptance criteria:
 
 ### 1.4 Add registry validation
 
-- [ ] Validate unique tool IDs and paths.
-- [ ] Validate known category and type values.
-- [ ] Validate that every sub-tool has an existing parent.
-- [ ] Validate that sub-tool paths point to their parent studio.
-- [ ] Validate that every standalone tool has a component mapping.
-- [ ] Fail CI or the production build when validation fails.
+- [x] Validate unique tool IDs and paths.
+- [x] Validate known category and type values.
+- [x] Validate that every sub-tool has an existing parent.
+- [x] Validate that sub-tool paths point to their parent studio.
+- [x] Validate that every standalone tool has a component mapping.
+- [x] Fail CI or the production build when validation fails.
 
 Acceptance criteria:
 

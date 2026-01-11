@@ -1,66 +1,10 @@
 import { notFound } from "next/navigation";
 import { ToolFrame } from "@/components/tool-frame";
-import { getToolById } from "@/lib/tool-registry";
-import { JsonFormatter } from "@/lib/tools/json-formatter";
-import Base64Encoder from "@/lib/tools/base64-encoder";
-import { RegexStudio } from "@/lib/tools/regex-studio";
-import UuidGenerator from "@/lib/tools/uuid-generator";
-import TimestampConverter from "@/lib/tools/timestamp-converter";
-import { PasswordStudio } from "@/lib/tools/password-studio/PasswordStudio";
-import ColorConverter from "@/lib/tools/color-converter";
-import CaseConverter from "@/lib/tools/case-converter";
-import UrlEncoder from "@/lib/tools/url-encoder";
-import WordCounter from "@/lib/tools/word-counter";
-import QrGenerator from "@/lib/tools/qr-generator";
-import JsonValidator from "@/lib/tools/json-validator";
-import HtmlEntities from "@/lib/tools/html-entities";
-import LoremIpsum from "@/lib/tools/lorem-ipsum";
-import EmailValidator from "@/lib/tools/email-validator";
-import HtmlFormatter from "@/lib/tools/html-formatter";
-import DiffChecker from "@/lib/tools/diff-checker";
-import CssFormatter from "@/lib/tools/css-formatter";
-import MarkdownPreview from "@/lib/tools/markdown-preview";
-import CsvViewer from "@/lib/tools/csv-viewer";
-import JsonTableViewer from "@/lib/tools/json-table-viewer";
-import DataExplorer from "@/lib/tools/data-explorer";
-import RandomWheel from "@/lib/tools/random-wheel";
-import { JsonStudio } from "@/lib/tools/json-studio/index";
-import ColorStudio from "@/lib/tools/color-studio/ColorStudio";
-import { NetworkStudio } from "@/lib/tools/network-studio";
-import FileProcessingStudio from "@/lib/tools/file-processing/FileProcessingStudio";
-import IconPackGenerator from "@/lib/tools/icon-pack-generator";
+import { TOOL_COMPONENTS } from "@/lib/tool-components";
+import { getToolById, TOOL_REGISTRY } from "@/lib/tool-registry";
+import { assertValidToolRegistry } from "@/lib/validate-tool-registry";
 
-// Tool component mapping
-const TOOL_COMPONENTS: Record<string, React.ComponentType> = {
-  "json-formatter": JsonFormatter,
-  "base64-encoder": Base64Encoder,
-  "regex-studio": RegexStudio,
-  "uuid-generator": UuidGenerator,
-  "timestamp-converter": TimestampConverter,
-  "password-studio": PasswordStudio,
-  "color-studio": ColorStudio,
-  "color-converter": ColorConverter,
-  "case-converter": CaseConverter,
-  "url-encoder": UrlEncoder,
-  "word-counter": WordCounter,
-  "qr-generator": QrGenerator,
-  "json-validator": JsonValidator,
-  "html-entities": HtmlEntities,
-  "lorem-ipsum": LoremIpsum,
-  "email-validator": EmailValidator,
-  "html-formatter": HtmlFormatter,
-  "diff-checker": DiffChecker,
-  "css-formatter": CssFormatter,
-  "markdown-preview": MarkdownPreview,
-  "csv-viewer": CsvViewer,
-  "json-table-viewer": JsonTableViewer,
-  "data-explorer": DataExplorer,
-  "random-wheel": RandomWheel,
-  "json-studio": JsonStudio,
-  "network-studio": NetworkStudio,
-  "file-processing-studio": FileProcessingStudio,
-  "icon-pack-generator": IconPackGenerator,
-};
+assertValidToolRegistry(TOOL_REGISTRY, Object.keys(TOOL_COMPONENTS));
 
 interface ToolPageProps {
   params: Promise<{
