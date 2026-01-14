@@ -101,10 +101,10 @@ Acceptance criteria:
 
 ### 2.1 Split the registry by domain
 
-- [ ] Create `src/lib/registry/` with domain-specific registry files.
-- [ ] Suggested modules: text, data, generators, security, web, network, and file processing.
-- [ ] Combine modules through `src/lib/registry/index.ts`.
-- [ ] Keep the public helper API stable during migration where practical.
+- [x] Create `src/lib/registry/` with domain-specific registry files.
+- [x] Suggested modules: text, data, generators, security, web, network, and file processing.
+- [x] Combine modules through `src/lib/registry/index.ts`.
+- [x] Keep the public helper API stable during migration where practical.
 
 Suggested structure:
 

@@ -1,0 +1,58 @@
+import { TOOL_CATEGORIES, TOOL_TYPES } from "@/lib/tool-classification";
+import type { ToolMetadata } from "./types";
+
+export const SECURITY_TOOLS = [
+  {
+    id: "password-studio",
+    name: "Password Studio",
+    description:
+      "Comprehensive password generation, analysis, and security toolkit",
+    category: TOOL_CATEGORIES.GENERATORS.id,
+    type: TOOL_TYPES.GENERATOR,
+    types: [TOOL_TYPES.RANDOM, TOOL_TYPES.SECURITY, TOOL_TYPES.ANALYZER],
+    tags: ["password", "generator", "security", "analysis", "passphrase"],
+    path: "/tools/password-studio",
+    icon: "🔐",
+    featured: true,
+    complexity: "intermediate",
+  },
+  {
+    id: "password-generator",
+    name: "Password Generator",
+    description: "Generate secure passwords with customizable options",
+    category: TOOL_CATEGORIES.GENERATORS.id,
+    type: TOOL_TYPES.GENERATOR,
+    tags: ["password", "generator", "security"],
+    path: "/tools/password-studio?tab=generator",
+    icon: "�",
+    featured: false,
+    complexity: "simple",
+    parent: "password-studio",
+  },
+  {
+    id: "passphrase-generator",
+    name: "Passphrase Generator",
+    description: "Generate secure passphrases using random words",
+    category: TOOL_CATEGORIES.GENERATORS.id,
+    type: TOOL_TYPES.GENERATOR,
+    tags: ["passphrase", "generator", "security", "words"],
+    path: "/tools/password-studio?tab=passphrase",
+    icon: "�",
+    featured: false,
+    complexity: "simple",
+    parent: "password-studio",
+  },
+  {
+    id: "password-analysis",
+    name: "Password Analysis",
+    description: "Analyze password strength, entropy, and check for breaches",
+    category: TOOL_CATEGORIES.GENERATORS.id,
+    type: TOOL_TYPES.ANALYZER,
+    tags: ["password", "analysis", "security", "entropy", "breach"],
+    path: "/tools/password-studio?tab=analysis",
+    icon: "�️",
+    featured: false,
+    complexity: "intermediate",
+    parent: "password-studio",
+  },
+] satisfies ToolMetadata[];

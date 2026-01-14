@@ -1,0 +1,53 @@
+import { TOOL_CATEGORIES, TOOL_TYPES } from "@/lib/tool-classification";
+import type { ToolMetadata } from "./types";
+
+export const GENERATOR_TOOLS = [
+  {
+    id: "uuid-generator",
+    name: "UUID Generator",
+    description: "Generate UUID v1, v4, and other versions",
+    category: TOOL_CATEGORIES.GENERATORS.id,
+    type: TOOL_TYPES.GENERATOR,
+    types: [TOOL_TYPES.RANDOM],
+    tags: ["uuid", "generator", "random"],
+    path: "/tools/uuid-generator",
+    icon: "🆔",
+    featured: true,
+    complexity: "simple",
+  },
+  {
+    id: "lorem-ipsum",
+    name: "Lorem Ipsum Generator",
+    description: "Generate placeholder text in various formats",
+    category: TOOL_CATEGORIES.GENERATORS.id,
+    type: TOOL_TYPES.GENERATOR,
+    types: [TOOL_TYPES.RANDOM],
+    tags: ["lorem", "ipsum", "placeholder", "text"],
+    path: "/tools/lorem-ipsum",
+    icon: "📃",
+    complexity: "simple",
+  },
+  {
+    id: "qr-generator",
+    name: "QR Code Generator",
+    description: "Generate QR codes for text, URLs, and more",
+    category: TOOL_CATEGORIES.GENERATORS.id,
+    type: TOOL_TYPES.GENERATOR,
+    tags: ["qr", "code", "generator"],
+    path: "/tools/qr-generator",
+    icon: "📱",
+    complexity: "intermediate",
+  },
+  {
+    id: "random-wheel",
+    name: "Random Wheel",
+    description: "Spin a wheel to randomly select from your list of options",
+    category: TOOL_CATEGORIES.UTILITIES.id,
+    type: TOOL_TYPES.RANDOM,
+    types: [TOOL_TYPES.UTILITY],
+    tags: ["random", "wheel", "picker", "decision", "spinner"],
+    path: "/tools/random-wheel",
+    icon: "🎯",
+    complexity: "simple",
+  },
+] satisfies ToolMetadata[];
