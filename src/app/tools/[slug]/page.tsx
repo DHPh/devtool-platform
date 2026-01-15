@@ -1,10 +1,14 @@
 import { notFound } from "next/navigation";
 import { ToolFrame } from "@/components/tool-frame";
-import { TOOL_COMPONENTS } from "@/lib/tool-components";
+import { ToolRenderer } from "@/components/tool-renderer";
+import {
+  isToolComponentId,
+  TOOL_COMPONENT_IDS,
+} from "@/lib/tool-component-ids";
 import { getToolById, TOOL_REGISTRY } from "@/lib/tool-registry";
 import { assertValidToolRegistry } from "@/lib/validate-tool-registry";
 
-assertValidToolRegistry(TOOL_REGISTRY, Object.keys(TOOL_COMPONENTS));
+assertValidToolRegistry(TOOL_REGISTRY, TOOL_COMPONENT_IDS);
 
 interface ToolPageProps {
   params: Promise<{
@@ -13,7 +17,7 @@ interface ToolPageProps {
 }
 
 export async function generateStaticParams() {
-  return Object.keys(TOOL_COMPONENTS).map((slug) => ({
+  return TOOL_COMPONENT_IDS.map((slug) => ({
     slug: slug,
   }));
 }
@@ -22,15 +26,13 @@ export default async function ToolPage({ params }: ToolPageProps) {
   const { slug } = await params;
   const tool = getToolById(slug);
 
-  if (!tool || !TOOL_COMPONENTS[slug]) {
+  if (!tool || !isToolComponentId(slug)) {
     notFound();
   }
 
-  const ToolComponent = TOOL_COMPONENTS[slug];
-
   return (
     <ToolFrame tool={tool}>
-      <ToolComponent />
+      <ToolRenderer slug={slug} />
     </ToolFrame>
   );
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { TOOL_COMPONENTS } from "@/lib/tool-components";
+import { TOOL_COMPONENT_IDS } from "@/lib/tool-component-ids";
+import { TOOL_COMPONENT_LOADERS } from "@/lib/tool-components";
 import { TOOL_REGISTRY as DOMAIN_TOOL_REGISTRY } from "@/lib/registry";
 import {
   TOOL_REGISTRY,
@@ -57,8 +58,17 @@ describe("tool registry validation", () => {
 
   it("accepts the production registry and component map", () => {
     expect(() =>
-      assertValidToolRegistry(TOOL_REGISTRY, Object.keys(TOOL_COMPONENTS)),
+      assertValidToolRegistry(TOOL_REGISTRY, TOOL_COMPONENT_IDS),
     ).not.toThrow();
+  });
+
+  it("provides one typed loader for every standalone component ID", () => {
+    expect(Object.keys(TOOL_COMPONENT_LOADERS)).toEqual(
+      expect.arrayContaining([...TOOL_COMPONENT_IDS]),
+    );
+    expect(Object.keys(TOOL_COMPONENT_LOADERS)).toHaveLength(
+      TOOL_COMPONENT_IDS.length,
+    );
   });
 
   it("uses the discriminated contract for every production tool", () => {

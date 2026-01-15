@@ -157,10 +157,12 @@ Acceptance criteria:
 
 ### 2.3 Lazy-load standalone tools and studios
 
-- [ ] Replace eager imports in `src/app/tools/[slug]/page.tsx` with typed dynamic loaders.
-- [ ] Preserve static parameter and metadata generation.
-- [ ] Add loading and failure states where necessary.
-- [ ] Compare production bundle output before and after the change.
+- [x] Replace eager imports in `src/app/tools/[slug]/page.tsx` with typed dynamic loaders.
+- [x] Preserve static parameter and metadata generation.
+- [x] Add loading and failure states where necessary.
+- [x] Compare production bundle output before and after the change.
+
+Bundle measurement (2026-01-24, `next build`): JavaScript output changed from 18 chunks / 3,262,068 bytes to 57 chunks / 3,064,428 bytes. The largest chunk decreased from 847,519 to 602,200 bytes. Generated tool pages reference 14 shared initial chunks; representative JSON Formatter and Password Studio implementation chunks are deferred and absent from initial HTML.
 
 Acceptance criteria:
 
