@@ -1,7 +1,9 @@
 import type { ComponentType } from "react";
 import type { ToolType } from "@/lib/tool-classification";
 
-export interface ToolMetadata {
+export type ProcessingMode = "client" | "server" | "hybrid";
+
+interface ToolMetadataBase {
   id: string;
   name: string;
   description: string;
@@ -13,10 +15,33 @@ export interface ToolMetadata {
   icon?: string;
   featured?: boolean;
   complexity?: "simple" | "intermediate" | "advanced";
-  parent?: string;
 }
 
-export interface Tool {
-  metadata: ToolMetadata;
-  component: ComponentType;
+export interface StandaloneToolMetadata extends ToolMetadataBase {
+  kind: "standalone";
+  processing: ProcessingMode;
+  parent?: never;
+  tab?: never;
 }
+
+export interface StudioSubToolMetadata extends ToolMetadataBase {
+  kind: "studio-subtool";
+  processing: ProcessingMode;
+  parent: string;
+  tab: string;
+}
+
+export type ToolMetadata = StandaloneToolMetadata | StudioSubToolMetadata;
+
+export type ToolComponentLoader = () => Promise<{
+  default: ComponentType;
+}>;
+
+export interface StandaloneToolDefinition extends StandaloneToolMetadata {
+  loadComponent: ToolComponentLoader;
+}
+
+export type ToolDefinition = StandaloneToolDefinition | StudioSubToolMetadata;
+
+// Backward-compatible public name for consumers of the original contract.
+export type Tool = ToolDefinition;

@@ -1,4 +1,9 @@
-import { ToolMetadata, TOOL_REGISTRY } from "./tool-registry";
+import {
+  ProcessingMode,
+  StandaloneToolMetadata,
+  ToolMetadata,
+  TOOL_REGISTRY,
+} from "./tool-registry";
 import { ToolType, TOOL_TYPES, TOOL_CATEGORIES } from "./tool-classification";
 
 /**
@@ -30,9 +35,10 @@ interface ToolBuilderConfig {
   icon?: string;
   featured?: boolean;
   complexity?: "simple" | "intermediate" | "advanced";
+  processing?: ProcessingMode;
 }
 
-export function createTool(config: ToolBuilderConfig): ToolMetadata {
+export function createTool(config: ToolBuilderConfig): StandaloneToolMetadata {
   // Auto-map category if using enum key
   let categoryId = config.category;
   if (config.category in TOOL_CATEGORIES) {
@@ -42,6 +48,8 @@ export function createTool(config: ToolBuilderConfig): ToolMetadata {
 
   return {
     id: config.id,
+    kind: "standalone",
+    processing: config.processing ?? "client",
     name: config.name,
     description: config.description,
     category: categoryId,
@@ -189,7 +197,7 @@ export const ToolTemplates = {
     id: string,
     name: string,
     description: string,
-    tags: string[]
+    tags: string[],
   ) =>
     ToolBuilders.formatter({
       id,
@@ -207,7 +215,7 @@ export const ToolTemplates = {
     id: string,
     name: string,
     description: string,
-    tags: string[]
+    tags: string[],
   ) =>
     ToolBuilders.generator({
       id,
@@ -226,7 +234,7 @@ export const ToolTemplates = {
     id: string,
     name: string,
     description: string,
-    tags: string[]
+    tags: string[],
   ) =>
     createTool({
       id,
@@ -259,28 +267,28 @@ export function addExampleTools() {
       "sql-formatter",
       "SQL Formatter",
       "Format and beautify SQL queries",
-      ["sql", "database"]
+      ["sql", "database"],
     ),
 
     ToolTemplates.dataGenerator(
       "fake-data-generator",
       "Fake Data Generator",
       "Generate realistic fake data for testing",
-      ["fake", "mock", "test-data"]
+      ["fake", "mock", "test-data"],
     ),
 
     ToolTemplates.securityTool(
       "jwt-decoder",
       "JWT Decoder",
       "Decode and verify JSON Web Tokens",
-      ["jwt", "token", "decode"]
+      ["jwt", "token", "decode"],
     ),
 
     ToolTemplates.validator(
       "credit-card-validator",
       "Credit Card Validator",
       "Validate credit card numbers using Luhn algorithm",
-      ["credit-card", "payment", "luhn"]
+      ["credit-card", "payment", "luhn"],
     ),
   ];
 

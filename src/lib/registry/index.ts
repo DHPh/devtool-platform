@@ -105,4 +105,13 @@ export const TOOL_REGISTRY: ToolMetadata[] = TOOL_ORDER.map((id) => {
 });
 
 export const TOOL_COUNT = TOOL_REGISTRY.length;
-export type { Tool, ToolMetadata } from "./types";
+export type {
+  ProcessingMode,
+  StandaloneToolDefinition,
+  StandaloneToolMetadata,
+  StudioSubToolMetadata,
+  Tool,
+  ToolComponentLoader,
+  ToolDefinition,
+  ToolMetadata,
+} from "./types";

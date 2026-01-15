@@ -1,13 +1,66 @@
 import type { ToolType } from "./tool-classification";
 import { TOOL_COUNT, TOOL_REGISTRY } from "./registry";
-import type { Tool, ToolMetadata } from "./registry";
+import type {
+  ProcessingMode,
+  StandaloneToolDefinition,
+  StandaloneToolMetadata,
+  StudioSubToolMetadata,
+  Tool,
+  ToolComponentLoader,
+  ToolDefinition,
+  ToolMetadata,
+} from "./registry";
 
 export { TOOL_COUNT, TOOL_REGISTRY };
-export type { Tool, ToolMetadata };
+export type {
+  ProcessingMode,
+  StandaloneToolDefinition,
+  StandaloneToolMetadata,
+  StudioSubToolMetadata,
+  Tool,
+  ToolComponentLoader,
+  ToolDefinition,
+  ToolMetadata,
+};
 
 // Helper functions
 export function getToolById(id: string): ToolMetadata | undefined {
   return TOOL_REGISTRY.find((tool) => tool.id === id);
+}
+
+export function getStudioSubTool(
+  parent: string,
+  tab: string,
+): StudioSubToolMetadata | undefined {
+  return TOOL_REGISTRY.find(
+    (tool): tool is StudioSubToolMetadata =>
+      tool.kind === "studio-subtool" &&
+      tool.parent === parent &&
+      tool.tab === tab,
+  );
+}
+
+export function requireStudioSubTool(
+  parent: string,
+  tab: string,
+): StudioSubToolMetadata {
+  const tool = getStudioSubTool(parent, tab);
+  if (!tool) {
+    throw new Error(`Unknown studio tab "${parent}:${tab}"`);
+  }
+  return tool;
+}
+
+export function getStudioTabMetadata<const Tab extends string>(
+  parent: string,
+  tab: Tab,
+) {
+  const tool = requireStudioSubTool(parent, tab);
+  return {
+    ...tool,
+    id: tab,
+    label: tool.name,
+  };
 }
 
 export function getToolsByCategory(category: string): ToolMetadata[] {

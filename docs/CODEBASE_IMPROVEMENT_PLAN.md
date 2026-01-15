@@ -129,10 +129,10 @@ Acceptance criteria:
 
 ### 2.2 Define an explicit tool contract
 
-- [ ] Add a processing mode: `client`, `server`, or `hybrid`.
-- [ ] Distinguish standalone tools from studio sub-tools with a discriminated union.
-- [ ] Make standalone component loaders and sub-tool parent/tab fields type-safe.
-- [ ] Remove duplicate component-local metadata after the central definition is authoritative.
+- [x] Add a processing mode: `client`, `server`, or `hybrid`.
+- [x] Distinguish standalone tools from studio sub-tools with a discriminated union.
+- [x] Make standalone component loaders and sub-tool parent/tab fields type-safe.
+- [x] Remove duplicate component-local metadata after the central definition is authoritative.
 
 Proposed direction:
 

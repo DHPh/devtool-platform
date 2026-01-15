@@ -2,10 +2,11 @@ import { getCategoryIds, TOOL_TYPES } from "@/lib/tool-classification";
 import type { ToolMetadata } from "@/lib/tool-registry";
 
 const TOOL_URL_BASE = "https://devtool-platform.invalid";
+const PROCESSING_MODES = new Set(["client", "server", "hybrid"]);
 
 export function validateToolRegistry(
   tools: readonly ToolMetadata[],
-  componentIds: readonly string[]
+  componentIds: readonly string[],
 ): string[] {
   const errors: string[] = [];
   const knownCategories = new Set(getCategoryIds());
@@ -37,6 +38,12 @@ export function validateToolRegistry(
       errors.push(`[${tool.id}] category: unknown value "${tool.category}"`);
     }
 
+    if (!PROCESSING_MODES.has(tool.processing)) {
+      errors.push(
+        `[${tool.id}] processing: unknown value "${tool.processing}"`,
+      );
+    }
+
     for (const type of [tool.type, ...(tool.types ?? [])]) {
       if (!knownTypes.has(type)) {
         errors.push(`[${tool.id}] type: unknown value "${type}"`);
@@ -45,7 +52,7 @@ export function validateToolRegistry(
   }
 
   for (const tool of tools) {
-    if (!tool.parent) {
+    if (tool.kind === "standalone") {
       if (!mappedComponents.has(tool.id)) {
         errors.push(`[${tool.id}] component: no standalone component mapping`);
       }
@@ -58,20 +65,27 @@ export function validateToolRegistry(
       continue;
     }
 
-    if (parent.parent) {
-      errors.push(`[${tool.id}] parent: "${tool.parent}" is not a standalone studio`);
+    if (parent.kind !== "standalone") {
+      errors.push(
+        `[${tool.id}] parent: "${tool.parent}" is not a standalone studio`,
+      );
     }
 
     const childUrl = new URL(tool.path, TOOL_URL_BASE);
     const parentUrl = new URL(parent.path, TOOL_URL_BASE);
     if (childUrl.pathname !== parentUrl.pathname) {
       errors.push(
-        `[${tool.id}] path: must point to parent studio path "${parentUrl.pathname}"`
+        `[${tool.id}] path: must point to parent studio path "${parentUrl.pathname}"`,
       );
     }
 
-    if (!childUrl.searchParams.get("tab")) {
+    const pathTab = childUrl.searchParams.get("tab");
+    if (!pathTab) {
       errors.push(`[${tool.id}] path: studio sub-tool requires a "tab" query`);
+    } else if (pathTab !== tool.tab) {
+      errors.push(
+        `[${tool.id}] tab: metadata "${tool.tab}" does not match path tab "${pathTab}"`,
+      );
     }
   }
 
@@ -79,8 +93,10 @@ export function validateToolRegistry(
     const tool = toolsById.get(componentId);
     if (!tool) {
       errors.push(`[${componentId}] component: mapping has no registry entry`);
-    } else if (tool.parent) {
-      errors.push(`[${componentId}] component: sub-tools cannot have standalone mappings`);
+    } else if (tool.kind === "studio-subtool") {
+      errors.push(
+        `[${componentId}] component: sub-tools cannot have standalone mappings`,
+      );
     }
   }
 
@@ -89,11 +105,13 @@ export function validateToolRegistry(
 
 export function assertValidToolRegistry(
   tools: readonly ToolMetadata[],
-  componentIds: readonly string[]
+  componentIds: readonly string[],
 ): void {
   const errors = validateToolRegistry(tools, componentIds);
 
   if (errors.length > 0) {
-    throw new Error(`Tool registry validation failed:\n- ${errors.join("\n- ")}`);
+    throw new Error(
+      `Tool registry validation failed:\n- ${errors.join("\n- ")}`,
+    );
   }
 }

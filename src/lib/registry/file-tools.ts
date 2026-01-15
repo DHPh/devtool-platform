@@ -4,6 +4,8 @@ import type { ToolMetadata } from "./types";
 export const FILE_TOOLS = [
   {
     id: "file-processing-studio",
+    kind: "standalone",
+    processing: "client",
     name: "File Processing Studio",
     description:
       "Complete file processing toolkit with 8 specialized tools for image editing, document management, and file organization",
@@ -30,6 +32,8 @@ export const FILE_TOOLS = [
   },
   {
     id: "image-resizer",
+    kind: "studio-subtool",
+    processing: "client",
     name: "Image Resizer",
     description: "Resize images with quality control and format conversion",
     category: TOOL_CATEGORIES.FILE_PROCESSING.id,
@@ -41,9 +45,12 @@ export const FILE_TOOLS = [
     featured: false,
     complexity: "simple",
     parent: "file-processing-studio",
+    tab: "image-resizer",
   },
   {
     id: "pdf-tools",
+    kind: "studio-subtool",
+    processing: "client",
     name: "PDF Tools",
     description: "PDF merge, split, rotate, and conversion tools",
     category: TOOL_CATEGORIES.FILE_PROCESSING.id,
@@ -55,9 +62,12 @@ export const FILE_TOOLS = [
     featured: false,
     complexity: "intermediate",
     parent: "file-processing-studio",
+    tab: "pdf-tools",
   },
   {
     id: "file-converter",
+    kind: "studio-subtool",
+    processing: "client",
     name: "File Converter",
     description:
       "Convert between different file formats (images, documents, audio, video)",
@@ -69,9 +79,12 @@ export const FILE_TOOLS = [
     featured: false,
     complexity: "intermediate",
     parent: "file-processing-studio",
+    tab: "file-converter",
   },
   {
     id: "archive-manager",
+    kind: "studio-subtool",
+    processing: "client",
     name: "Archive Manager",
     description:
       "Extract and create ZIP, RAR, 7Z, TAR, and other archive formats",
@@ -84,9 +97,12 @@ export const FILE_TOOLS = [
     featured: false,
     complexity: "intermediate",
     parent: "file-processing-studio",
+    tab: "archive-manager",
   },
   {
     id: "file-hasher",
+    kind: "studio-subtool",
+    processing: "client",
     name: "File Hasher",
     description:
       "Generate and verify file checksums using MD5, SHA-1, SHA-256, and SHA-512",
@@ -99,9 +115,12 @@ export const FILE_TOOLS = [
     featured: false,
     complexity: "simple",
     parent: "file-processing-studio",
+    tab: "file-hasher",
   },
   {
     id: "metadata-viewer",
+    kind: "studio-subtool",
+    processing: "client",
     name: "Metadata Viewer",
     description:
       "Extract and view file metadata including EXIF, document properties, and media information",
@@ -114,9 +133,12 @@ export const FILE_TOOLS = [
     featured: false,
     complexity: "simple",
     parent: "file-processing-studio",
+    tab: "metadata-viewer",
   },
   {
     id: "duplicate-finder",
+    kind: "studio-subtool",
+    processing: "client",
     name: "Duplicate Finder",
     description: "Find and remove duplicate files by comparing file hashes",
     category: TOOL_CATEGORIES.FILE_PROCESSING.id,
@@ -128,9 +150,12 @@ export const FILE_TOOLS = [
     featured: false,
     complexity: "intermediate",
     parent: "file-processing-studio",
+    tab: "duplicate-finder",
   },
   {
     id: "file-organizer",
+    kind: "studio-subtool",
+    processing: "client",
     name: "File Organizer",
     description:
       "Organize files by type, date, size, or custom rules with preview and batch operations",
@@ -143,5 +168,6 @@ export const FILE_TOOLS = [
     featured: false,
     complexity: "simple",
     parent: "file-processing-studio",
+    tab: "file-organizer",
   },
 ] satisfies ToolMetadata[];

@@ -24,86 +24,75 @@ import {
   OnAirCheckerTab,
   FileLinkCheckerTab,
 } from "./tabs";
+import { getStudioTabMetadata } from "@/lib/tool-registry";
 
 const STUDIO_TABS = [
   {
-    id: "http-tester",
-    label: "HTTP Tester",
+    ...getStudioTabMetadata("network-studio", "api-tester"),
+    shortLabel: "API",
+    icon: Globe,
+    component: UnifiedHttpTesterTab,
+  },
+  {
+    ...getStudioTabMetadata("network-studio", "http-client"),
     shortLabel: "HTTP",
     icon: Globe,
     component: UnifiedHttpTesterTab,
-    description: "Unified HTTP/API testing tool with header library",
   },
   {
-    id: "websocket",
-    label: "WebSocket",
+    ...getStudioTabMetadata("network-studio", "websocket"),
     shortLabel: "WS",
     icon: Wifi,
     component: WebSocketTesterTab,
-    description: "WebSocket connection tester",
   },
   {
-    id: "dns-lookup",
-    label: "DNS Lookup",
+    ...getStudioTabMetadata("network-studio", "dns-lookup"),
     shortLabel: "DNS",
     icon: Search,
     component: DnsLookupTab,
-    description: "DNS record lookup",
   },
   {
-    id: "ip-info",
-    label: "IP Info",
+    ...getStudioTabMetadata("network-studio", "ip-info"),
     shortLabel: "IP",
     icon: MapPin,
     component: IpInfoTab,
-    description: "IP address information",
   },
   {
-    id: "port-scanner",
-    label: "Port Scanner",
+    ...getStudioTabMetadata("network-studio", "port-scanner"),
     shortLabel: "Ports",
     icon: Shield,
     component: PortScannerTab,
-    description: "Network port scanner",
   },
   {
-    id: "network-monitor",
-    label: "Network Monitor",
+    ...getStudioTabMetadata("network-studio", "network-monitor"),
     shortLabel: "Monitor",
     icon: Activity,
     component: NetworkMonitorTab,
-    description: "Network performance monitor",
   },
   {
-    id: "url-tester",
-    label: "URL Tester",
+    ...getStudioTabMetadata("network-studio", "url-tester"),
     shortLabel: "URL",
     icon: Link,
     component: UrlTesterTab,
-    description: "Check URL response headers",
   },
   {
-    id: "on-air-checker",
-    label: "On Air Checker",
+    ...getStudioTabMetadata("network-studio", "on-air-checker"),
     shortLabel: "Status",
     icon: CheckCircle,
     component: OnAirCheckerTab,
-    description: "Ping web services",
   },
   {
-    id: "file-link-check",
-    label: "File Link Check",
+    ...getStudioTabMetadata("network-studio", "file-link-check"),
     shortLabel: "Files",
     icon: File,
     component: FileLinkCheckerTab,
-    description: "Check file links without download",
   },
 ] as const;
 
 type StudioTab = (typeof STUDIO_TABS)[number]["id"];
 
 export default function NetworkStudio() {
-  const [activeTab, setActiveTab] = useState<StudioTab>("http-tester");
+  const [activeTab, setActiveTab] = useState<StudioTab>("api-tester");
 
   // Handle URL parameters
   useEffect(() => {

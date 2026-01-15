@@ -4,6 +4,8 @@ import type { ToolMetadata } from "./types";
 export const TEXT_TOOLS = [
   {
     id: "json-formatter",
+    kind: "standalone",
+    processing: "client",
     name: "JSON Formatter",
     description: "Format and beautify JSON data with syntax highlighting",
     category: TOOL_CATEGORIES.TEXT_PROCESSING.id,
@@ -17,6 +19,8 @@ export const TEXT_TOOLS = [
   },
   {
     id: "html-formatter",
+    kind: "standalone",
+    processing: "client",
     name: "HTML Formatter",
     description: "Format and beautify HTML code",
     category: TOOL_CATEGORIES.TEXT_PROCESSING.id,
@@ -28,6 +32,8 @@ export const TEXT_TOOLS = [
   },
   {
     id: "css-formatter",
+    kind: "standalone",
+    processing: "client",
     name: "CSS Formatter",
     description: "Format and beautify CSS code",
     category: TOOL_CATEGORIES.TEXT_PROCESSING.id,
@@ -39,6 +45,8 @@ export const TEXT_TOOLS = [
   },
   {
     id: "markdown-preview",
+    kind: "standalone",
+    processing: "client",
     name: "Markdown Preview",
     description: "Preview markdown with live editing",
     category: TOOL_CATEGORIES.TEXT_PROCESSING.id,
@@ -51,6 +59,8 @@ export const TEXT_TOOLS = [
   },
   {
     id: "word-counter",
+    kind: "standalone",
+    processing: "client",
     name: "Word Counter",
     description: "Count words, characters, lines, and paragraphs",
     category: TOOL_CATEGORIES.TEXT_PROCESSING.id,
@@ -62,6 +72,8 @@ export const TEXT_TOOLS = [
   },
   {
     id: "case-converter",
+    kind: "standalone",
+    processing: "client",
     name: "Case Converter",
     description:
       "Convert text between different cases (camelCase, snake_case, etc.)",
@@ -74,6 +86,8 @@ export const TEXT_TOOLS = [
   },
   {
     id: "diff-checker",
+    kind: "standalone",
+    processing: "client",
     name: "Text Diff Checker",
     description: "Compare two texts and highlight differences",
     category: TOOL_CATEGORIES.TEXT_PROCESSING.id,
@@ -85,6 +99,8 @@ export const TEXT_TOOLS = [
   },
   {
     id: "base64-encoder",
+    kind: "standalone",
+    processing: "client",
     name: "Base64 Encoder/Decoder",
     description: "Encode and decode Base64 strings",
     category: TOOL_CATEGORIES.ENCODING_DECODING.id,
@@ -98,6 +114,8 @@ export const TEXT_TOOLS = [
   },
   {
     id: "url-encoder",
+    kind: "standalone",
+    processing: "client",
     name: "URL Encoder/Decoder",
     description: "Encode and decode URLs",
     category: TOOL_CATEGORIES.ENCODING_DECODING.id,
@@ -111,6 +129,8 @@ export const TEXT_TOOLS = [
   },
   {
     id: "html-entities",
+    kind: "standalone",
+    processing: "client",
     name: "HTML Entities",
     description: "Encode and decode HTML entities",
     category: TOOL_CATEGORIES.ENCODING_DECODING.id,

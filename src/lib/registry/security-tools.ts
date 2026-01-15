@@ -4,6 +4,8 @@ import type { ToolMetadata } from "./types";
 export const SECURITY_TOOLS = [
   {
     id: "password-studio",
+    kind: "standalone",
+    processing: "hybrid",
     name: "Password Studio",
     description:
       "Comprehensive password generation, analysis, and security toolkit",
@@ -18,6 +20,8 @@ export const SECURITY_TOOLS = [
   },
   {
     id: "password-generator",
+    kind: "studio-subtool",
+    processing: "client",
     name: "Password Generator",
     description: "Generate secure passwords with customizable options",
     category: TOOL_CATEGORIES.GENERATORS.id,
@@ -28,9 +32,12 @@ export const SECURITY_TOOLS = [
     featured: false,
     complexity: "simple",
     parent: "password-studio",
+    tab: "generator",
   },
   {
     id: "passphrase-generator",
+    kind: "studio-subtool",
+    processing: "client",
     name: "Passphrase Generator",
     description: "Generate secure passphrases using random words",
     category: TOOL_CATEGORIES.GENERATORS.id,
@@ -41,9 +48,12 @@ export const SECURITY_TOOLS = [
     featured: false,
     complexity: "simple",
     parent: "password-studio",
+    tab: "passphrase",
   },
   {
     id: "password-analysis",
+    kind: "studio-subtool",
+    processing: "hybrid",
     name: "Password Analysis",
     description: "Analyze password strength, entropy, and check for breaches",
     category: TOOL_CATEGORIES.GENERATORS.id,
@@ -54,5 +64,6 @@ export const SECURITY_TOOLS = [
     featured: false,
     complexity: "intermediate",
     parent: "password-studio",
+    tab: "analysis",
   },
 ] satisfies ToolMetadata[];

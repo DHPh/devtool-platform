@@ -4,6 +4,8 @@ import type { ToolMetadata } from "./types";
 export const NETWORK_TOOLS = [
   {
     id: "network-studio",
+    kind: "standalone",
+    processing: "hybrid",
     name: "Network Studio",
     description:
       "Comprehensive network testing and analysis toolkit with 10 professional tools",
@@ -18,6 +20,8 @@ export const NETWORK_TOOLS = [
   },
   {
     id: "api-tester",
+    kind: "studio-subtool",
+    processing: "client",
     name: "API Tester",
     description:
       "REST API testing tool with request builder and cURL import/export",
@@ -29,9 +33,12 @@ export const NETWORK_TOOLS = [
     icon: "🌍",
     complexity: "intermediate",
     parent: "network-studio",
+    tab: "api-tester",
   },
   {
     id: "http-client",
+    kind: "studio-subtool",
+    processing: "client",
     name: "HTTP Client",
     description: "HTTP request builder with headers and response analysis",
     category: TOOL_CATEGORIES.API_TESTING.id,
@@ -41,9 +48,12 @@ export const NETWORK_TOOLS = [
     icon: "📡",
     complexity: "intermediate",
     parent: "network-studio",
+    tab: "http-client",
   },
   {
     id: "websocket-tester",
+    kind: "studio-subtool",
+    processing: "server",
     name: "WebSocket Tester",
     description: "Test WebSocket connections with real-time messaging",
     category: TOOL_CATEGORIES.API_TESTING.id,
@@ -54,9 +64,12 @@ export const NETWORK_TOOLS = [
     icon: "📻",
     complexity: "intermediate",
     parent: "network-studio",
+    tab: "websocket",
   },
   {
     id: "dns-lookup",
+    kind: "studio-subtool",
+    processing: "server",
     name: "DNS Lookup",
     description: "DNS record lookup with WHOIS information and validation",
     category: TOOL_CATEGORIES.UTILITIES.id,
@@ -67,9 +80,12 @@ export const NETWORK_TOOLS = [
     icon: "🔍",
     complexity: "intermediate",
     parent: "network-studio",
+    tab: "dns-lookup",
   },
   {
     id: "ip-info",
+    kind: "studio-subtool",
+    processing: "server",
     name: "IP Information",
     description:
       "Get detailed IP address information including geolocation and ISP",
@@ -80,9 +96,12 @@ export const NETWORK_TOOLS = [
     icon: "📍",
     complexity: "simple",
     parent: "network-studio",
+    tab: "ip-info",
   },
   {
     id: "port-scanner",
+    kind: "studio-subtool",
+    processing: "server",
     name: "Port Scanner",
     description:
       "Network port scanner with predefined profiles and custom ranges",
@@ -94,9 +113,12 @@ export const NETWORK_TOOLS = [
     icon: "🛡️",
     complexity: "advanced",
     parent: "network-studio",
+    tab: "port-scanner",
   },
   {
     id: "network-monitor",
+    kind: "studio-subtool",
+    processing: "server",
     name: "Network Monitor",
     description:
       "Monitor network performance with ping tests and speed analysis",
@@ -107,9 +129,12 @@ export const NETWORK_TOOLS = [
     icon: "📊",
     complexity: "intermediate",
     parent: "network-studio",
+    tab: "network-monitor",
   },
   {
     id: "url-tester",
+    kind: "studio-subtool",
+    processing: "server",
     name: "URL Tester",
     description: "Test URL accessibility and analyze response headers",
     category: TOOL_CATEGORIES.UTILITIES.id,
@@ -120,9 +145,12 @@ export const NETWORK_TOOLS = [
     icon: "🔗",
     complexity: "simple",
     parent: "network-studio",
+    tab: "url-tester",
   },
   {
     id: "on-air-checker",
+    kind: "studio-subtool",
+    processing: "server",
     name: "On Air Checker",
     description: "Check if websites and services are online and accessible",
     category: TOOL_CATEGORIES.UTILITIES.id,
@@ -132,9 +160,12 @@ export const NETWORK_TOOLS = [
     icon: "✅",
     complexity: "simple",
     parent: "network-studio",
+    tab: "on-air-checker",
   },
   {
     id: "file-link-checker",
+    kind: "studio-subtool",
+    processing: "server",
     name: "File Link Checker",
     description:
       "Check file links and get file information without downloading",
@@ -146,5 +177,6 @@ export const NETWORK_TOOLS = [
     icon: "📎",
     complexity: "simple",
     parent: "network-studio",
+    tab: "file-link-check",
   },
 ] satisfies ToolMetadata[];

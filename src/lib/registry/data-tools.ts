@@ -4,6 +4,8 @@ import type { ToolMetadata } from "./types";
 export const DATA_TOOLS = [
   {
     id: "timestamp-converter",
+    kind: "standalone",
+    processing: "client",
     name: "Timestamp Converter",
     description: "Convert between Unix timestamp and human-readable dates",
     category: TOOL_CATEGORIES.DATA_CONVERSION.id,
@@ -16,6 +18,8 @@ export const DATA_TOOLS = [
   },
   {
     id: "json-studio",
+    kind: "standalone",
+    processing: "client",
     name: "JSON Studio",
     description:
       "Complete JSON processing toolkit with formatting, validation, path querying, schema validation, and diff comparison",
@@ -38,6 +42,8 @@ export const DATA_TOOLS = [
   },
   {
     id: "json-formatter-studio",
+    kind: "studio-subtool",
+    processing: "client",
     name: "JSON Formatter (Studio)",
     description: "Format, prettify, and minify JSON with advanced options",
     category: TOOL_CATEGORIES.TEXT_PROCESSING.id,
@@ -48,9 +54,12 @@ export const DATA_TOOLS = [
     featured: false,
     complexity: "simple",
     parent: "json-studio",
+    tab: "formatter",
   },
   {
     id: "json-validator",
+    kind: "standalone",
+    processing: "client",
     name: "JSON Validator",
     description: "Validate JSON syntax and structure",
     category: TOOL_CATEGORIES.VALIDATORS.id,
@@ -62,6 +71,8 @@ export const DATA_TOOLS = [
   },
   {
     id: "json-path-query",
+    kind: "studio-subtool",
+    processing: "client",
     name: "JSONPath Query",
     description: "Query and explore JSON data using JSONPath expressions",
     category: TOOL_CATEGORIES.DATA_ANALYSIS.id,
@@ -72,9 +83,12 @@ export const DATA_TOOLS = [
     featured: false,
     complexity: "intermediate",
     parent: "json-studio",
+    tab: "path",
   },
   {
     id: "json-schema-validator",
+    kind: "studio-subtool",
+    processing: "client",
     name: "JSON Schema Validator",
     description: "Validate JSON against schemas and generate schemas from data",
     category: TOOL_CATEGORIES.VALIDATORS.id,
@@ -85,9 +99,12 @@ export const DATA_TOOLS = [
     featured: false,
     complexity: "advanced",
     parent: "json-studio",
+    tab: "schema",
   },
   {
     id: "json-diff-compare",
+    kind: "studio-subtool",
+    processing: "client",
     name: "JSON Diff Compare",
     description:
       "Compare two JSON objects and visualize differences with patch generation",
@@ -99,9 +116,12 @@ export const DATA_TOOLS = [
     featured: false,
     complexity: "intermediate",
     parent: "json-studio",
+    tab: "diff",
   },
   {
     id: "email-validator",
+    kind: "standalone",
+    processing: "client",
     name: "Email Validator",
     description: "Validate email addresses",
     category: TOOL_CATEGORIES.VALIDATORS.id,
@@ -113,6 +133,8 @@ export const DATA_TOOLS = [
   },
   {
     id: "csv-viewer",
+    kind: "standalone",
+    processing: "client",
     name: "CSV Viewer",
     description: "Upload and view CSV files with interactive table features",
     category: TOOL_CATEGORIES.DATA_ANALYSIS.id,
@@ -125,6 +147,8 @@ export const DATA_TOOLS = [
   },
   {
     id: "json-table-viewer",
+    kind: "standalone",
+    processing: "client",
     name: "JSON Table Viewer",
     description:
       "Convert JSON data to interactive table with filtering and sorting",
@@ -138,6 +162,8 @@ export const DATA_TOOLS = [
   },
   {
     id: "data-explorer",
+    kind: "standalone",
+    processing: "client",
     name: "Data Explorer",
     description:
       "Advanced data analysis with statistics, filtering, and visualization",

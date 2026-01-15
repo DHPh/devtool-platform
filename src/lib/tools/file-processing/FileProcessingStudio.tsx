@@ -22,71 +22,69 @@ import {
   DuplicateFinderTab,
   FileOrganizerTab,
 } from "./tabs";
+import { getStudioTabMetadata } from "@/lib/tool-registry";
 
 const STUDIO_TABS = [
   {
-    id: "image-resizer",
-    label: "Image Resizer",
+    ...getStudioTabMetadata("file-processing-studio", "image-resizer"),
+    label: getStudioTabMetadata("file-processing-studio", "image-resizer").name,
     shortLabel: "Resizer",
     icon: Image,
     component: ImageResizerTab,
-    description: "Resize images with quality control",
   },
   {
-    id: "pdf-tools",
-    label: "PDF Tools",
+    ...getStudioTabMetadata("file-processing-studio", "pdf-tools"),
+    label: getStudioTabMetadata("file-processing-studio", "pdf-tools").name,
     shortLabel: "PDF",
     icon: FileText,
     component: PdfToolsTab,
-    description: "PDF merge/split/convert",
   },
   {
-    id: "file-converter",
-    label: "File Converter",
+    ...getStudioTabMetadata("file-processing-studio", "file-converter"),
+    label: getStudioTabMetadata("file-processing-studio", "file-converter")
+      .name,
     shortLabel: "Convert",
     icon: RefreshCw,
     component: FileConverterTab,
-    description: "Convert between file formats",
   },
   {
-    id: "archive-manager",
-    label: "Archive Manager",
+    ...getStudioTabMetadata("file-processing-studio", "archive-manager"),
+    label: getStudioTabMetadata("file-processing-studio", "archive-manager")
+      .name,
     shortLabel: "Archive",
     icon: Archive,
     component: ArchiveManagerTab,
-    description: "ZIP/RAR extract/create",
   },
   {
-    id: "file-hasher",
-    label: "File Hasher",
+    ...getStudioTabMetadata("file-processing-studio", "file-hasher"),
+    label: getStudioTabMetadata("file-processing-studio", "file-hasher").name,
     shortLabel: "Hash",
     icon: Hash,
     component: FileHasherTab,
-    description: "Generate file checksums",
   },
   {
-    id: "metadata-viewer",
-    label: "Metadata Viewer",
+    ...getStudioTabMetadata("file-processing-studio", "metadata-viewer"),
+    label: getStudioTabMetadata("file-processing-studio", "metadata-viewer")
+      .name,
     shortLabel: "Metadata",
     icon: Eye,
     component: MetadataViewerTab,
-    description: "View file metadata (EXIF, etc.)",
   },
   {
-    id: "duplicate-finder",
-    label: "Duplicate Finder",
+    ...getStudioTabMetadata("file-processing-studio", "duplicate-finder"),
+    label: getStudioTabMetadata("file-processing-studio", "duplicate-finder")
+      .name,
     shortLabel: "Duplicates",
     icon: Copy,
     component: DuplicateFinderTab,
-    description: "Find duplicate files by hash",
   },
   {
-    id: "file-organizer",
-    label: "File Organizer",
+    ...getStudioTabMetadata("file-processing-studio", "file-organizer"),
+    label: getStudioTabMetadata("file-processing-studio", "file-organizer")
+      .name,
     shortLabel: "Organize",
     icon: FolderOpen,
     component: FileOrganizerTab,
-    description: "Organize files by type/date",
   },
 ] as const;
 

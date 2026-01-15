@@ -4,6 +4,8 @@ import type { ToolMetadata } from "./types";
 export const GENERATOR_TOOLS = [
   {
     id: "uuid-generator",
+    kind: "standalone",
+    processing: "client",
     name: "UUID Generator",
     description: "Generate UUID v1, v4, and other versions",
     category: TOOL_CATEGORIES.GENERATORS.id,
@@ -17,6 +19,8 @@ export const GENERATOR_TOOLS = [
   },
   {
     id: "lorem-ipsum",
+    kind: "standalone",
+    processing: "client",
     name: "Lorem Ipsum Generator",
     description: "Generate placeholder text in various formats",
     category: TOOL_CATEGORIES.GENERATORS.id,
@@ -29,6 +33,8 @@ export const GENERATOR_TOOLS = [
   },
   {
     id: "qr-generator",
+    kind: "standalone",
+    processing: "client",
     name: "QR Code Generator",
     description: "Generate QR codes for text, URLs, and more",
     category: TOOL_CATEGORIES.GENERATORS.id,
@@ -40,6 +46,8 @@ export const GENERATOR_TOOLS = [
   },
   {
     id: "random-wheel",
+    kind: "standalone",
+    processing: "client",
     name: "Random Wheel",
     description: "Spin a wheel to randomly select from your list of options",
     category: TOOL_CATEGORIES.UTILITIES.id,

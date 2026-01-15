@@ -4,6 +4,8 @@ import type { ToolMetadata } from "./types";
 export const WEB_TOOLS = [
   {
     id: "color-studio",
+    kind: "standalone",
+    processing: "client",
     name: "Color Studio",
     description:
       "Complete color toolkit with advanced features for designers and developers",
@@ -32,6 +34,8 @@ export const WEB_TOOLS = [
   },
   {
     id: "color-converter",
+    kind: "studio-subtool",
+    processing: "client",
     name: "Color Converter",
     description:
       "Convert colors between different formats (HEX, RGB, HSL, HSV, CMYK)",
@@ -41,10 +45,13 @@ export const WEB_TOOLS = [
     path: "/tools/color-studio?tab=converter",
     icon: "🔄",
     parent: "color-studio",
+    tab: "converter",
     complexity: "simple",
   },
   {
     id: "color-picker",
+    kind: "studio-subtool",
+    processing: "client",
     name: "Color Picker",
     description: "Interactive color picker with sliders and presets",
     category: TOOL_CATEGORIES.WEB_DEVELOPMENT.id,
@@ -53,10 +60,13 @@ export const WEB_TOOLS = [
     path: "/tools/color-studio?tab=picker",
     icon: "🎯",
     parent: "color-studio",
+    tab: "picker",
     complexity: "simple",
   },
   {
     id: "palette-generator",
+    kind: "studio-subtool",
+    processing: "client",
     name: "Palette Generator",
     description: "Generate color palettes using color theory principles",
     category: TOOL_CATEGORIES.WEB_DEVELOPMENT.id,
@@ -72,10 +82,13 @@ export const WEB_TOOLS = [
     path: "/tools/color-studio?tab=palette",
     icon: "🎨",
     parent: "color-studio",
+    tab: "palette",
     complexity: "intermediate",
   },
   {
     id: "gradient-creator",
+    kind: "studio-subtool",
+    processing: "client",
     name: "Gradient Creator",
     description: "Create CSS gradients with visual controls and code export",
     category: TOOL_CATEGORIES.WEB_DEVELOPMENT.id,
@@ -84,10 +97,13 @@ export const WEB_TOOLS = [
     path: "/tools/color-studio?tab=gradient",
     icon: "🌈",
     parent: "color-studio",
+    tab: "gradient",
     complexity: "intermediate",
   },
   {
     id: "icon-pack-generator",
+    kind: "standalone",
+    processing: "client",
     name: "Icon Pack Generator",
     description:
       "Generate professional icon packs for Android and iOS from high-quality images",
@@ -101,6 +117,8 @@ export const WEB_TOOLS = [
   },
   {
     id: "contrast-checker",
+    kind: "studio-subtool",
+    processing: "client",
     name: "Contrast Checker",
     description:
       "Check color contrast ratios for WCAG accessibility compliance",
@@ -110,10 +128,13 @@ export const WEB_TOOLS = [
     path: "/tools/color-studio?tab=contrast",
     icon: "⚖️",
     parent: "color-studio",
+    tab: "contrast",
     complexity: "intermediate",
   },
   {
     id: "color-blindness-simulator",
+    kind: "studio-subtool",
+    processing: "client",
     name: "Color Blindness Simulator",
     description:
       "Simulate how colors appear to users with different types of color blindness",
@@ -130,10 +151,13 @@ export const WEB_TOOLS = [
     path: "/tools/color-studio?tab=colorblind",
     icon: "👁️",
     parent: "color-studio",
+    tab: "colorblind",
     complexity: "intermediate",
   },
   {
     id: "accessibility-palette",
+    kind: "studio-subtool",
+    processing: "client",
     name: "Accessibility Palette",
     description:
       "Generate color palettes that are accessible to users with color blindness",
@@ -150,10 +174,13 @@ export const WEB_TOOLS = [
     path: "/tools/color-studio?tab=accessibility-palette",
     icon: "♿",
     parent: "color-studio",
+    tab: "accessibility-palette",
     complexity: "intermediate",
   },
   {
     id: "gradient-color-picker",
+    kind: "studio-subtool",
+    processing: "client",
     name: "Gradient Color Picker",
     description:
       "Pick colors at any position within custom gradients with color interpolation",
@@ -171,10 +198,13 @@ export const WEB_TOOLS = [
     path: "/tools/color-studio?tab=gradient-picker",
     icon: "🎨",
     parent: "color-studio",
+    tab: "gradient-picker",
     complexity: "intermediate",
   },
   {
     id: "regex-studio",
+    kind: "standalone",
+    processing: "client",
     name: "Regex Studio",
     description:
       "Comprehensive regex toolkit for testing, replacing, and exploring patterns",
@@ -189,6 +219,8 @@ export const WEB_TOOLS = [
   },
   {
     id: "regex-tester",
+    kind: "studio-subtool",
+    processing: "client",
     name: "Regex Tester (Studio)",
     description:
       "Test regular expressions with real-time matching and highlighting",
@@ -200,9 +232,12 @@ export const WEB_TOOLS = [
     featured: false,
     complexity: "intermediate",
     parent: "regex-studio",
+    tab: "tester",
   },
   {
     id: "regex-replace",
+    kind: "studio-subtool",
+    processing: "client",
     name: "Regex Replace",
     description: "Find & replace text using regex patterns with preview",
     category: TOOL_CATEGORIES.VALIDATORS.id,
@@ -213,9 +248,12 @@ export const WEB_TOOLS = [
     featured: false,
     complexity: "intermediate",
     parent: "regex-studio",
+    tab: "replace",
   },
   {
     id: "regex-library",
+    kind: "studio-subtool",
+    processing: "client",
     name: "Regex Pattern Library",
     description: "Browse and use common regex patterns for various use cases",
     category: TOOL_CATEGORIES.VALIDATORS.id,
@@ -226,5 +264,6 @@ export const WEB_TOOLS = [
     featured: true,
     complexity: "simple",
     parent: "regex-studio",
+    tab: "library",
   },
 ] satisfies ToolMetadata[];

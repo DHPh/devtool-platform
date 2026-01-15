@@ -14,6 +14,7 @@ import { useBookmarks } from "@/store/bookmarks";
 import { ToolMetadata } from "@/lib/tool-registry";
 import { toast } from "sonner";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { getProcessingInfo } from "@/lib/tool-processing";
 
 interface ToolFrameProps {
   tool: ToolMetadata;
@@ -23,6 +24,7 @@ interface ToolFrameProps {
 export function ToolFrame({ tool, children }: ToolFrameProps) {
   const { isBookmarked, addBookmark, removeBookmark } = useBookmarks();
   const bookmarked = isBookmarked(tool.id);
+  const processing = getProcessingInfo(tool.processing);
 
   const breadcrumbItems = [
     { label: "Tools", href: "/tools" },
@@ -83,6 +85,12 @@ export function ToolFrame({ tool, children }: ToolFrameProps) {
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 mt-3">
+                <span
+                  className="px-2 py-1 text-xs border rounded-md"
+                  title={processing.description}
+                >
+                  {processing.label}
+                </span>
                 {tool.tags.map((tag) => (
                   <span
                     key={tag}
