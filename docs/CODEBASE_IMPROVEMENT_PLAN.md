@@ -203,9 +203,11 @@ Acceptance criteria:
 
 ### 3.2 Correct Unicode Base64 handling
 
-- [ ] Replace direct text use of `btoa` and `atob` with byte-safe encoding helpers.
-- [ ] Use `TextEncoder` and `TextDecoder` for UTF-8.
-- [ ] Test Vietnamese text, emoji, ASCII, empty input, and malformed Base64.
+- [x] Replace direct text use of `btoa` and `atob` with byte-safe encoding helpers.
+- [x] Use `TextEncoder` and `TextDecoder` for UTF-8.
+- [x] Test Vietnamese text, emoji, ASCII, empty input, and malformed Base64.
+
+Implementation note (2026-01-24): Base64 text now crosses the binary boundary through `TextEncoder` and a fatal UTF-8 `TextDecoder`. Tests cover exact ASCII, Vietnamese, and emoji encodings, empty input, malformed Base64, and Base64 containing invalid UTF-8 bytes.
 
 Acceptance criteria:
 

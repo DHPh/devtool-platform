@@ -12,16 +12,25 @@ import {
 } from "@/lib/processors/url";
 
 describe("Base64 processor", () => {
-  it("encodes and decodes ASCII text", () => {
-    const encoded = encodeBase64("Hello, World!");
+  it.each([
+    ["ASCII", "Hello, World!", "SGVsbG8sIFdvcmxkIQ=="],
+    ["Vietnamese", "Xin chào Việt Nam", "WGluIGNow6BvIFZp4buHdCBOYW0="],
+    ["emoji", "Hello 👋🌍", "SGVsbG8g8J+Ri/CfjI0="],
+    ["empty input", "", ""],
+  ])("encodes and decodes %s text", (_label, input, expected) => {
+    const encoded = encodeBase64(input);
 
-    expect(encoded).toBe("SGVsbG8sIFdvcmxkIQ==");
-    expect(decodeBase64(encoded)).toBe("Hello, World!");
+    expect(encoded).toBe(expected);
+    expect(decodeBase64(encoded)).toBe(input);
   });
 
   it("reports malformed Base64 with a typed error", () => {
     expect(() => decodeBase64("%%%invalid%%%"))
       .toThrowError(ProcessorError);
+  });
+
+  it("rejects Base64 that does not contain valid UTF-8 text", () => {
+    expect(() => decodeBase64("/w==")).toThrowError(ProcessorError);
   });
 });
 
