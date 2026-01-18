@@ -13,6 +13,11 @@ import {
   ResultCard,
   CopyableResult,
 } from "@/components/layout";
+import {
+  decodeUrlComponent,
+  encodeFullUrl,
+  encodeUrlComponent,
+} from "@/lib/processors/url";
 
 export const metadata = {
   id: "url-encoder",
@@ -30,9 +35,9 @@ export default function UrlEncoder() {
   );
   const [activeTab, setActiveTab] = useState("converter");
 
-  const encodeUrl = (text: string) => {
+  const encodeUrl = (text: string): string => {
     try {
-      return encodeURIComponent(text);
+      return encodeUrlComponent(text);
     } catch {
       return "Invalid input";
     }
@@ -40,15 +45,15 @@ export default function UrlEncoder() {
 
   const decodeUrl = (text: string) => {
     try {
-      return decodeURIComponent(text);
+      return decodeUrlComponent(text);
     } catch {
       return "Invalid encoded URL";
     }
   };
 
-  const encodeFullUrl = (text: string) => {
+  const safelyEncodeFullUrl = (text: string) => {
     try {
-      return encodeURI(text);
+      return encodeFullUrl(text);
     } catch {
       return "Invalid URL";
     }
@@ -69,7 +74,7 @@ export default function UrlEncoder() {
 
   const encoded = encodeUrl(input);
   const decoded = decodeUrl(input);
-  const fullUrlEncoded = encodeFullUrl(input);
+  const fullUrlEncoded = safelyEncodeFullUrl(input);
 
   const sampleData = {
     urlWithSpaces: "https://example.com/hello world",

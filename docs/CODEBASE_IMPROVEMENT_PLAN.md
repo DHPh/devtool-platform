@@ -177,10 +177,10 @@ Acceptance criteria:
 
 ### 3.1 Extract pure processors incrementally
 
-- [ ] Create `src/lib/processors/` for framework-independent logic.
-- [ ] Start with Base64, JSON, CSV, URL encoding, and text conversion.
-- [ ] Keep processors deterministic and free of browser/React state where possible.
-- [ ] Make React components responsible for input state, presentation, and user feedback only.
+- [x] Create `src/lib/processors/` for framework-independent logic.
+- [x] Start with Base64, JSON, CSV, URL encoding, and text conversion.
+- [x] Keep processors deterministic and free of browser/React state where possible.
+- [x] Make React components responsible for input state, presentation, and user feedback only.
 
 Suggested structure:
 
@@ -192,6 +192,8 @@ src/lib/processors/
 ├── url.ts
 └── text.ts
 ```
+
+Implementation note (2026-01-24): Base64, JSON, CSV, URL, and text transformations now live under `src/lib/processors/`, with compatibility exports retained for existing JSON and CSV imports. Eight processor tests exercise the core transformations without rendering React, and processor failures use the shared `ProcessorError` class.
 
 Acceptance criteria:
 

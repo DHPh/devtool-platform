@@ -15,6 +15,20 @@ import {
   CopyableResult,
   FileUploadZone,
 } from "@/components/layout";
+import {
+  formatJson as processFormatJson,
+  minifyJson as processMinifyJson,
+  validateJson as processValidateJson,
+} from "@/lib/processors/json";
+import { ProcessorError } from "@/lib/processors/errors";
+
+const getJsonErrorMessage = (error: unknown): string => {
+  if (error instanceof ProcessorError && error.cause instanceof Error) {
+    return error.cause.message;
+  }
+
+  return error instanceof Error ? error.message : "Invalid JSON";
+};
 
 export function JsonFormatter() {
   const [input, setInput] = useState("");
@@ -25,15 +39,14 @@ export function JsonFormatter() {
 
   const formatJson = () => {
     try {
-      const parsed = JSON.parse(input);
-      const formatted = JSON.stringify(parsed, null, indentSize);
-      setOutput(formatted);
+      const { result } = processFormatJson(input, { indentSize });
+      setOutput(result);
       setIsValid(true);
       setError("");
       toast.success("JSON formatted successfully!");
     } catch (err) {
       setIsValid(false);
-      setError(err instanceof Error ? err.message : "Invalid JSON");
+      setError(getJsonErrorMessage(err));
       setOutput("");
       toast.error("Invalid JSON format");
     }
@@ -41,31 +54,32 @@ export function JsonFormatter() {
 
   const minifyJson = () => {
     try {
-      const parsed = JSON.parse(input);
-      const minified = JSON.stringify(parsed);
-      setOutput(minified);
+      const { result } = processMinifyJson(input);
+      setOutput(result);
       setIsValid(true);
       setError("");
       toast.success("JSON minified successfully!");
     } catch (err) {
       setIsValid(false);
-      setError(err instanceof Error ? err.message : "Invalid JSON");
+      setError(getJsonErrorMessage(err));
       setOutput("");
       toast.error("Invalid JSON format");
     }
   };
 
   const validateJson = () => {
-    try {
-      JSON.parse(input);
+    const validation = processValidateJson(input);
+
+    if (validation.isValid) {
       setIsValid(true);
       setError("");
       toast.success("JSON is valid!");
-    } catch (err) {
-      setIsValid(false);
-      setError(err instanceof Error ? err.message : "Invalid JSON");
-      toast.error("Invalid JSON format");
+      return;
     }
+
+    setIsValid(false);
+    setError(validation.error ?? "Invalid JSON");
+    toast.error("Invalid JSON format");
   };
 
   const copyToClipboard = async (text: string, type: string) => {

@@ -26,7 +26,7 @@ import {
   Table,
 } from "lucide-react";
 import { toast } from "sonner";
-import { parseCSV, getDelimiterDisplayName } from "@/lib/utils/csv-parser";
+import { parseCSV, getDelimiterDisplayName } from "@/lib/processors/csv";
 
 export const metadata = {
   id: "csv-viewer",

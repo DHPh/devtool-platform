@@ -10,6 +10,7 @@ import {
   ResultCard,
   CopyableResult,
 } from "@/components/layout";
+import { convertTextToAllCases } from "@/lib/processors/text";
 
 export const metadata = {
   id: "case-converter",
@@ -25,90 +26,6 @@ export const metadata = {
 export default function CaseConverter() {
   const [input, setInput] = useState("Hello World Example Text");
 
-  const convertToCase = {
-    camelCase: (text: string) => {
-      return text
-        .replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) => {
-          return index === 0 ? word.toLowerCase() : word.toUpperCase();
-        })
-        .replace(/\s+/g, "");
-    },
-
-    PascalCase: (text: string) => {
-      return text
-        .replace(/(?:^\w|[A-Z]|\b\w)/g, (word) => {
-          return word.toUpperCase();
-        })
-        .replace(/\s+/g, "");
-    },
-
-    snake_case: (text: string) => {
-      return text
-        .replace(/\W+/g, " ")
-        .split(/ |\B(?=[A-Z])/)
-        .map((word) => word.toLowerCase())
-        .join("_");
-    },
-
-    SCREAMING_SNAKE_CASE: (text: string) => {
-      return text
-        .replace(/\W+/g, " ")
-        .split(/ |\B(?=[A-Z])/)
-        .map((word) => word.toUpperCase())
-        .join("_");
-    },
-
-    "kebab-case": (text: string) => {
-      return text
-        .replace(/\W+/g, " ")
-        .split(/ |\B(?=[A-Z])/)
-        .map((word) => word.toLowerCase())
-        .join("-");
-    },
-
-    "SCREAMING-KEBAB-CASE": (text: string) => {
-      return text
-        .replace(/\W+/g, " ")
-        .split(/ |\B(?=[A-Z])/)
-        .map((word) => word.toUpperCase())
-        .join("-");
-    },
-
-    "dot.case": (text: string) => {
-      return text
-        .replace(/\W+/g, " ")
-        .split(/ |\B(?=[A-Z])/)
-        .map((word) => word.toLowerCase())
-        .join(".");
-    },
-
-    "path/case": (text: string) => {
-      return text
-        .replace(/\W+/g, " ")
-        .split(/ |\B(?=[A-Z])/)
-        .map((word) => word.toLowerCase())
-        .join("/");
-    },
-
-    "Title Case": (text: string) => {
-      return text
-        .toLowerCase()
-        .replace(/(?:^|\s)\w/g, (match) => match.toUpperCase());
-    },
-
-    "Sentence case": (text: string) => {
-      return text.toLowerCase().replace(/^\w/, (match) => match.toUpperCase());
-    },
-
-    UPPERCASE: (text: string) => {
-      return text.toUpperCase();
-    },
-
-    lowercase: (text: string) => {
-      return text.toLowerCase();
-    },
-  };
-
   const copyToClipboard = async (text: string, caseName: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -118,12 +35,7 @@ export default function CaseConverter() {
     }
   };
 
-  const results = Object.entries(convertToCase).map(
-    ([caseName, converter]) => ({
-      name: caseName,
-      result: converter(input),
-    })
-  );
+  const results = convertTextToAllCases(input);
 
   const sampleTexts = [
     "Hello World Example",

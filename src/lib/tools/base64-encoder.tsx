@@ -11,6 +11,10 @@ import {
   ResponsiveTextArea,
   ModeTabs,
 } from "@/components/layout";
+import {
+  decodeBase64 as decodeBase64Text,
+  encodeBase64 as encodeBase64Text,
+} from "@/lib/processors/base64";
 
 export const metadata = {
   id: "base64-encoder",
@@ -29,7 +33,7 @@ export default function Base64Encoder() {
 
   const encodeBase64 = () => {
     try {
-      const encoded = btoa(input);
+      const encoded = encodeBase64Text(input);
       setOutput(encoded);
       toast.success("Text encoded to Base64!");
     } catch {
@@ -39,7 +43,7 @@ export default function Base64Encoder() {
 
   const decodeBase64 = () => {
     try {
-      const decoded = atob(input);
+      const decoded = decodeBase64Text(input);
       setOutput(decoded);
       toast.success("Base64 decoded to text!");
     } catch {
