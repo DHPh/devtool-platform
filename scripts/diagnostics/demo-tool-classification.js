@@ -9,8 +9,8 @@ import {
   ToolBuilders,
   ToolTemplates,
   ToolRegistryManager,
-} from "../src/lib/tool-builder";
-import { TOOL_TYPES, TOOL_CATEGORIES } from "../src/lib/tool-classification";
+} from "../../src/lib/tool-builder";
+import { TOOL_TYPES, TOOL_CATEGORIES } from "../../src/lib/tool-classification";
 
 console.log("🚀 DevTool Platform - Adding New Tools Demo\n");
 

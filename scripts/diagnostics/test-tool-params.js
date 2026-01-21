@@ -1,5 +1,5 @@
 // Test with the exact same parameters as the tools use
-const { parseJSON } = require("../src/lib/utils/json-parser.ts");
+const { parseJSON } = require("../../src/lib/utils/json-parser.ts");
 
 const testData = `[
   {

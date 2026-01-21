@@ -1,4 +1,4 @@
-import { detectDelimiter, parseCSV } from "../src/lib/utils/csv-parser";
+import { detectDelimiter, parseCSV } from "../../src/lib/utils/csv-parser";
 
 // Test with semicolon data
 const testData = `Username;Login email;Identifier;First name;Last name

@@ -1,4 +1,4 @@
-import { parseJSON } from "../src/lib/utils/json-parser.js";
+import { parseJSON } from "../../src/lib/utils/json-parser.js";
 
 // Test JSON with nested objects
 const testJSON = [

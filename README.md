@@ -64,9 +64,27 @@ devtool-platform/
 │   ├── seo-optimization/    # 🔍 SEO and performance guides
 │   ├── json-enhancements/   # 📊 JSON parsing improvements
 │   └── implementation-summaries/ # 📋 Project status and summaries
-├── tests/                   # 🧪 Test files and debugging scripts
-└── scripts/                 # 🛠️ Build and utility scripts
+├── tests/                   # 🧪 Maintained unit, component, and browser tests
+└── scripts/                 # 🛠️ Utilities and ad hoc diagnostics
 ```
+
+## Testing
+
+```bash
+npm test             # Vitest unit and React component tests
+npm run test:watch   # Vitest in watch mode
+npm run test:e2e     # Playwright browser tests
+npm run typecheck    # TypeScript validation
+```
+
+Install Playwright's Chromium binary once before running browser tests:
+
+```bash
+npx playwright install chromium
+```
+
+Set `PLAYWRIGHT_BASE_URL` when browser tests should use an app instance that is
+already running; otherwise Playwright starts one on port 3100.
 
 ## 🏗️ Architecture
 

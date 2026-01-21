@@ -221,10 +221,12 @@ Acceptance criteria:
 
 ### 4.1 Establish the test stack
 
-- [ ] Add Vitest for registry and processor unit tests.
-- [ ] Add React Testing Library for interactive component tests.
-- [ ] Add Playwright for critical browser journeys.
-- [ ] Keep ad hoc diagnostic scripts separate from the maintained automated suite.
+- [x] Add Vitest for registry and processor unit tests.
+- [x] Add React Testing Library for interactive component tests.
+- [x] Add Playwright for critical browser journeys.
+- [x] Keep ad hoc diagnostic scripts separate from the maintained automated suite.
+
+Implementation note (2026-01-24): Vitest discovery is restricted to maintained `*.test.ts(x)` files and includes shared Testing Library matchers. A jsdom component test verifies accessible loading feedback, while Playwright provides a Chromium catalog smoke journey with optional `PLAYWRIGHT_BASE_URL` support. Legacy debug programs and fixtures now live under `scripts/diagnostics/` outside automated discovery.
 
 ### 4.2 Required test coverage
 
