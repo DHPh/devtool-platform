@@ -2,7 +2,8 @@ import { isValidElement, type ReactNode } from "react";
 import { describe, expect, it } from "vitest";
 
 import ToolsPage from "@/app/tools/page";
-import { getToolById } from "@/lib/tool-registry";
+import { TOOL_COMPONENT_IDS } from "@/lib/tool-component-ids";
+import { TOOL_REGISTRY, getStudioSubTool, getToolById } from "@/lib/tool-registry";
 
 function collectHrefs(node: ReactNode): string[] {
   if (Array.isArray(node)) {
@@ -33,5 +34,24 @@ describe("tool catalog paths", () => {
     expect(tool?.path).toBe("/tools/network-studio?tab=dns-lookup");
     expect(hrefs).toContain(tool?.path);
     expect(hrefs).not.toContain("/tools/dns-lookup");
+  });
+
+  it("resolves every registered path to a standalone route or studio tab", () => {
+    const standaloneIds = new Set<string>(TOOL_COMPONENT_IDS);
+
+    for (const tool of TOOL_REGISTRY) {
+      const url = new URL(tool.path, "https://example.test");
+      const slug = url.pathname.replace("/tools/", "");
+
+      expect(standaloneIds.has(slug)).toBe(true);
+      if (tool.kind === "standalone") {
+        expect(tool.id).toBe(slug);
+        expect(url.search).toBe("");
+      } else {
+        expect(getStudioSubTool(tool.parent, tool.tab)).toBe(tool);
+        expect(slug).toBe(tool.parent);
+        expect(url.searchParams.get("tab")).toBe(tool.tab);
+      }
+    }
   });
 });

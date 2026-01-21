@@ -230,14 +230,16 @@ Implementation note (2026-01-24): Vitest discovery is restricted to maintained `
 
 ### 4.2 Required test coverage
 
-- [ ] Registry uniqueness, categories, parents, paths, and component availability.
-- [ ] All registered paths resolve to a supported page or studio tab.
-- [ ] Search and category filtering.
-- [ ] Bookmark persistence and theme persistence.
-- [ ] Representative formatter, converter, generator, and validator behavior.
-- [ ] API validation, timeouts, and blocked network destinations.
-- [ ] Homepage → catalog → standalone tool journey.
-- [ ] Homepage → studio sub-tool journey.
+- [x] Registry uniqueness, categories, parents, paths, and component availability.
+- [x] All registered paths resolve to a supported page or studio tab.
+- [x] Search and category filtering.
+- [x] Bookmark persistence and theme persistence.
+- [x] Representative formatter, converter, generator, and validator behavior.
+- [x] API validation, timeouts, and blocked network destinations.
+- [x] Homepage → catalog → standalone tool journey.
+- [x] Homepage → studio sub-tool journey.
+
+Implementation note (2026-01-24): Registry tests now prove every registered path maps to a standalone component or a known studio tab. Unit and jsdom tests cover search/category behavior, persisted bookmarks/themes, and representative formatter, converter, generator, and validator behavior. Network route tests cover malformed input, abort-driven timeouts, and direct local/private destinations without making external calls. Two Chromium journeys cover homepage-to-catalog-to-JSON Formatter and homepage-to-Network Studio DNS Lookup navigation.
 
 ### 4.3 Continuous integration
 

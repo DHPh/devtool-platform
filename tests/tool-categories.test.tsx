@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import ToolsPage from "@/app/tools/page";
 import { getAllCategories } from "@/lib/tool-classification";
-import { getToolsByCategory } from "@/lib/tool-registry";
+import { getToolsByCategory, searchTools } from "@/lib/tool-registry";
 
 const EXPECTED_CATEGORY_COUNTS: Record<string, number> = {
   "text-processing": 9,
@@ -57,5 +57,15 @@ describe("canonical tool categories", () => {
         expect(pageText).toContain(`${category.name} Tools`);
       }
     }
+  });
+
+  it("searches names, descriptions, and tags case-insensitively", () => {
+    expect(searchTools("JSON FORMATTER").map((tool) => tool.id))
+      .toContain("json-formatter");
+    expect(searchTools("DNS").map((tool) => tool.id))
+      .toContain("dns-lookup");
+    expect(searchTools("uuid").map((tool) => tool.id))
+      .toContain("uuid-generator");
+    expect(searchTools("definitely-not-a-tool")).toEqual([]);
   });
 });

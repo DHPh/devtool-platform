@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("opens the maintained tools catalog", async ({ page }) => {
+test("navigates from the homepage through the catalog to a standalone tool", async ({ page }) => {
   await page.goto("/");
 
   await expect(
@@ -13,4 +13,25 @@ test("opens the maintained tools catalog", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Complete Developer Tools Collection" })
   ).toBeVisible();
+
+  await page.locator('a[href="/tools/json-formatter"]').first().click();
+
+  await expect(page).toHaveURL(/\/tools\/json-formatter$/);
+  await expect(page.getByRole("button", { name: "Format JSON" }))
+    .toBeVisible();
+});
+
+test("navigates from the homepage to a studio sub-tool", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("link", { name: "Browse All Tools" }).click();
+
+  await page
+    .locator('a[href="/tools/network-studio?tab=dns-lookup"]')
+    .first()
+    .click();
+
+  await expect(page).toHaveURL(/\/tools\/network-studio\?tab=dns-lookup$/);
+  await expect(
+    page.getByRole("tab", { name: "DNS Lookup", exact: true }),
+  ).toHaveAttribute("data-state", "active");
 });

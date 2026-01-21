@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateHttpDestination } from "@/lib/server/outbound-destination";
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,17 +9,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
     }
 
-    let parsedUrl: URL;
-    try {
-      parsedUrl = new URL(url);
-    } catch {
-      return NextResponse.json({
-        url,
-        exists: false,
-        error: "Invalid URL format",
-        timestamp: Date.now(),
-      });
+    const destination = validateHttpDestination(url);
+    if (!destination.allowed) {
+      return NextResponse.json(
+        {
+          url,
+          exists: false,
+          error: destination.error,
+          timestamp: Date.now(),
+        },
+        { status: 400 },
+      );
     }
+    const parsedUrl = destination.url;
 
     try {
       const response = await fetch(parsedUrl.toString(), {

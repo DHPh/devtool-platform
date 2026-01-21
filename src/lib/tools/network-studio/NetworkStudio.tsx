@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Globe,
@@ -92,16 +93,16 @@ const STUDIO_TABS = [
 type StudioTab = (typeof STUDIO_TABS)[number]["id"];
 
 export default function NetworkStudio() {
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<StudioTab>("api-tester");
 
   // Handle URL parameters
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tab = params.get("tab") as StudioTab;
+    const tab = searchParams.get("tab") as StudioTab;
     if (tab && STUDIO_TABS.some((t) => t.id === tab)) {
       setActiveTab(tab);
     }
-  }, []);
+  }, [searchParams]);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab as StudioTab);
