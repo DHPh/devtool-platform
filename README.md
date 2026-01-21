@@ -71,10 +71,13 @@ devtool-platform/
 ## Testing
 
 ```bash
+npm run lint         # ESLint across maintained source and tests
 npm test             # Vitest unit and React component tests
 npm run test:watch   # Vitest in watch mode
 npm run test:e2e     # Playwright browser tests
 npm run typecheck    # TypeScript validation
+npm run validate:registry # Registry contract validation
+npm run build        # Production build
 ```
 
 Install Playwright's Chromium binary once before running browser tests:
@@ -85,6 +88,9 @@ npx playwright install chromium
 
 Set `PLAYWRIGHT_BASE_URL` when browser tests should use an app instance that is
 already running; otherwise Playwright starts one on port 3100.
+
+Pull requests run linting, type checking, unit/component tests, registry
+validation, a production build, and Chromium smoke tests in GitHub Actions.
 
 ## 🏗️ Architecture
 
