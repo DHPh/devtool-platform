@@ -262,13 +262,15 @@ Acceptance criteria:
 
 ### 5.1 Create a shared outbound-request policy
 
-- [ ] Allow only explicitly supported protocols, normally HTTP and HTTPS.
-- [ ] Reject credentials embedded in URLs.
-- [ ] Resolve hostnames and block loopback, private, link-local, multicast, and reserved addresses.
-- [ ] Revalidate every redirect destination.
-- [ ] Define connection, response, and total request timeouts.
-- [ ] Limit redirect count, response size, request body size, and concurrency.
-- [ ] Return safe user-facing errors without exposing sensitive server details.
+- [x] Allow only explicitly supported protocols, normally HTTP and HTTPS.
+- [x] Reject credentials embedded in URLs.
+- [x] Resolve hostnames and block loopback, private, link-local, multicast, and reserved addresses.
+- [x] Revalidate every redirect destination.
+- [x] Define connection, response, and total request timeouts.
+- [x] Limit redirect count, response size, request body size, and concurrency.
+- [x] Return safe user-facing errors without exposing sensitive server details.
+
+Implementation note (2026-01-24): `src/lib/server/outbound-request-policy.ts` resolves every hostname through the operating system resolver, rejects the entire answer set if any address is non-public, and pins the request socket to a validated address while preserving the original HTTP Host and TLS SNI. Redirects are followed manually through the same validation. Absolute caps cover connection/response/total time, three redirects, 1 MB responses, 256 KB request bodies, and eight concurrent requests. URL Test and File Link Check now return stable policy error codes without raw network details; remaining high-risk endpoint migrations are tracked in 5.2.
 
 ### 5.2 Protect high-risk endpoints
 

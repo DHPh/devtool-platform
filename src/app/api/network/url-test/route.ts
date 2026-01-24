@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { validateHttpDestination } from "@/lib/server/outbound-destination";
+import {
+  getSafeOutboundError,
+  requestOutbound,
+} from "@/lib/server/outbound-request-policy";
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,109 +26,78 @@ export async function POST(request: NextRequest) {
     console.log("URL test request:", { url, timeout });
 
     const startTime = Date.now();
-    const destination = validateHttpDestination(url);
-    if (!destination.allowed) {
-      return NextResponse.json(
-        {
-          url,
-          accessible: false,
-          error: destination.error,
-          timestamp: Date.now(),
-        },
-        { status: 400 },
-      );
-    }
-    const parsedUrl = destination.url;
-
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout * 1000);
+      const timeoutMs = Math.min(
+        Math.max(Math.floor(Number(timeout) * 1_000), 1),
+        30_000,
+      );
+      const requestHeaders = {
+        "user-agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+          "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9," +
+          "image/avif,image/webp,*/*;q=0.8",
+        "accept-language": "en-US,en;q=0.5",
+      };
+      let response = await requestOutbound(url, {
+        method: "HEAD",
+        headers: requestHeaders,
+        totalTimeoutMs: timeoutMs,
+        responseTimeoutMs: timeoutMs,
+      });
 
-      // Try HEAD request first, fallback to GET if HEAD fails
-      let response;
-      try {
-        response = await fetch(parsedUrl.toString(), {
-          method: "HEAD",
-          signal: controller.signal,
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            Accept: "*/*",
-            "Accept-Language": "en-US,en;q=0.5",
-            "Accept-Encoding": "gzip, deflate, br",
-            DNT: "1",
-            Connection: "keep-alive",
-            "Upgrade-Insecure-Requests": "1",
-          },
-        });
-      } catch (headError) {
-        console.log("HEAD request failed, trying GET:", headError);
-        // If HEAD fails, try GET with range to limit download
-        response = await fetch(parsedUrl.toString(), {
+      if (response.status === 405 || response.status === 406) {
+        const remainingMs = Math.max(
+          1,
+          timeoutMs - (Date.now() - startTime),
+        );
+        response = await requestOutbound(url, {
           method: "GET",
-          signal: controller.signal,
           headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            Accept: "*/*",
-            Range: "bytes=0-1023", // Only download first 1KB
+            ...requestHeaders,
+            range: "bytes=0-1023",
           },
+          totalTimeoutMs: remainingMs,
+          responseTimeoutMs: remainingMs,
         });
       }
-
-      clearTimeout(timeoutId);
       const responseTime = Date.now() - startTime;
 
       return NextResponse.json({
-        url: parsedUrl.toString(),
+        url: response.url,
         accessible: true,
         statusCode: response.status,
         statusText: response.statusText,
         responseTime,
-        headers: Object.fromEntries(response.headers.entries()),
-        contentType: response.headers.get("content-type"),
-        server: response.headers.get("server"),
+        headers: response.headers,
+        contentType: response.headers["content-type"] ?? null,
+        server: response.headers.server ?? null,
+        redirectCount: response.redirectCount,
         timestamp: Date.now(),
       });
     } catch (error) {
       const responseTime = Date.now() - startTime;
+      const safeError = getSafeOutboundError(error);
+      const rejectedInput = [
+        "INVALID_URL",
+        "UNSUPPORTED_PROTOCOL",
+        "CREDENTIALS_NOT_ALLOWED",
+        "DESTINATION_BLOCKED",
+      ].includes(safeError.code);
 
-      let errorMessage = "Network error";
-      const statusCode = 0;
-
-      if (error instanceof Error) {
-        console.log("URL test error:", error.message);
-
-        if (error.name === "AbortError") {
-          errorMessage = `Request timeout after ${timeout}s`;
-        } else if (error.message.includes("ENOTFOUND")) {
-          errorMessage = "Host not found (DNS resolution failed)";
-        } else if (error.message.includes("ECONNREFUSED")) {
-          errorMessage = "Connection refused by server";
-        } else if (error.message.includes("ECONNRESET")) {
-          errorMessage = "Connection reset by server";
-        } else if (error.message.includes("ECONNABORTED")) {
-          errorMessage = "Connection aborted";
-        } else if (error.message.includes("ETIMEDOUT")) {
-          errorMessage = "Connection timeout";
-        } else if (error.message.includes("CERT_")) {
-          errorMessage = "SSL/TLS certificate error";
-        } else if (error.message.includes("fetch failed")) {
-          errorMessage =
-            "Network request failed - server may be blocking automated requests";
-        } else {
-          errorMessage = error.message;
-        }
-      }
-
-      return NextResponse.json({
-        url: parsedUrl.toString(),
-        accessible: false,
-        error: errorMessage,
-        statusCode,
-        responseTime,
-        timestamp: Date.now(),
-      });
+      return NextResponse.json(
+        {
+          url,
+          accessible: false,
+          error: safeError.message,
+          errorCode: safeError.code,
+          statusCode: 0,
+          responseTime,
+          timestamp: Date.now(),
+        },
+        { status: rejectedInput ? 400 : 200 },
+      );
     }
   } catch (error) {
     console.error("URL test API error:", error);

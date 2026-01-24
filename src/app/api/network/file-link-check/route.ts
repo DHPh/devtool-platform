@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { validateHttpDestination } from "@/lib/server/outbound-destination";
+import {
+  getSafeOutboundError,
+  requestOutbound,
+} from "@/lib/server/outbound-request-policy";
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,68 +12,45 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
     }
 
-    const destination = validateHttpDestination(url);
-    if (!destination.allowed) {
+    try {
+      const response = await requestOutbound(url, {
+        method: "HEAD",
+        headers: {
+          "user-agent": "DevTool-Platform/1.0",
+        },
+      });
+      const contentLength = response.headers["content-length"];
+
+      return NextResponse.json({
+        url: response.url,
+        exists: response.status >= 200 && response.status < 400,
+        statusCode: response.status,
+        statusText: response.statusText,
+        contentType: response.headers["content-type"] ?? null,
+        contentLength: contentLength ? parseInt(contentLength) : undefined,
+        lastModified: response.headers["last-modified"] ?? null,
+        headers: response.headers,
+        redirectCount: response.redirectCount,
+        timestamp: Date.now(),
+      });
+    } catch (error) {
+      const safeError = getSafeOutboundError(error);
+      const rejectedInput = [
+        "INVALID_URL",
+        "UNSUPPORTED_PROTOCOL",
+        "CREDENTIALS_NOT_ALLOWED",
+        "DESTINATION_BLOCKED",
+      ].includes(safeError.code);
       return NextResponse.json(
         {
           url,
           exists: false,
-          error: destination.error,
+          error: safeError.message,
+          errorCode: safeError.code,
           timestamp: Date.now(),
         },
-        { status: 400 },
+        { status: rejectedInput ? 400 : 200 },
       );
-    }
-    const parsedUrl = destination.url;
-
-    try {
-      const response = await fetch(parsedUrl.toString(), {
-        method: "HEAD",
-        headers: {
-          "User-Agent": "DevTool-Platform/1.0",
-        },
-      });
-
-      const headers: Record<string, string> = {};
-      response.headers.forEach((value, key) => {
-        headers[key] = value;
-      });
-
-      const contentLength = response.headers.get("content-length");
-      const contentType = response.headers.get("content-type");
-      const lastModified = response.headers.get("last-modified");
-
-      return NextResponse.json({
-        url: parsedUrl.toString(),
-        exists: response.ok,
-        statusCode: response.status,
-        statusText: response.statusText,
-        contentType,
-        contentLength: contentLength ? parseInt(contentLength) : undefined,
-        lastModified,
-        headers,
-        timestamp: Date.now(),
-      });
-    } catch (error) {
-      let errorMessage = "Network error";
-      if (error instanceof Error) {
-        if (error.message.includes("ENOTFOUND")) {
-          errorMessage = "Host not found";
-        } else if (error.message.includes("ECONNREFUSED")) {
-          errorMessage = "Connection refused";
-        } else if (error.message.includes("ECONNRESET")) {
-          errorMessage = "Connection reset";
-        } else {
-          errorMessage = error.message;
-        }
-      }
-
-      return NextResponse.json({
-        url: parsedUrl.toString(),
-        exists: false,
-        error: errorMessage,
-        timestamp: Date.now(),
-      });
     }
   } catch (error) {
     console.error("File link check API error:", error);

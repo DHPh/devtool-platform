@@ -20,6 +20,7 @@ import {
   serverUrlTest,
   type ServerUrlTestResult,
 } from "@/lib/utils/network/server-api-client";
+import { classifyUrlTestOutcome } from "@/lib/utils/network/url-test-outcome";
 
 export function UrlTester() {
   const [url, setUrl] = useState("");
@@ -48,6 +49,7 @@ export function UrlTester() {
           401: "Unauthorized - Authentication required",
           403: "Forbidden - Access denied",
           404: "Not Found - The requested resource does not exist",
+          406: "Not Acceptable - The server rejected the requested representation",
           429: "Too Many Requests - Rate limit exceeded",
         };
 
@@ -148,12 +150,9 @@ export function UrlTester() {
     try {
       const testResult = await serverUrlTest(url);
       setResult(testResult);
+      const outcome = classifyUrlTestOutcome(testResult);
 
-      // Check if result has errors even when request succeeds
-      if (
-        !testResult.accessible ||
-        (testResult.statusCode && testResult.statusCode >= 400)
-      ) {
+      if (outcome === "failure") {
         // Create error object from test result
         const resultError = new Error(testResult.error || "Request failed");
 
@@ -165,6 +164,8 @@ export function UrlTester() {
         const errorInfo = categorizeError(resultError, testResult);
         setError(errorInfo);
         toast.error(`URL test failed: ${errorInfo.category}`);
+      } else if (outcome === "http-error") {
+        toast.warning(`URL responded with HTTP ${testResult.statusCode}`);
       } else {
         toast.success(`URL is accessible (${testResult.statusCode || "OK"})`);
       }
@@ -179,6 +180,7 @@ export function UrlTester() {
   };
 
   const urlParts = url ? parseUrl(url) : null;
+  const resultOutcome = result ? classifyUrlTestOutcome(result) : null;
 
   return (
     <div className="space-y-6">
@@ -236,7 +238,9 @@ export function UrlTester() {
               <Globe className="h-5 w-5" />
               Test Results
               {result && (
-                <Badge variant={result.accessible ? "default" : "destructive"}>
+                <Badge
+                  variant={resultOutcome === "success" ? "default" : "destructive"}
+                >
                   {result.statusCode || "Error"}
                 </Badge>
               )}
@@ -253,15 +257,23 @@ export function UrlTester() {
                 <TabsContent value="overview" className="space-y-4">
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
-                      {result.accessible ? (
+                      {resultOutcome === "success" ? (
                         <CheckCircle className="h-4 w-4 text-green-500" />
                       ) : (
-                        <AlertCircle className="h-4 w-4 text-red-500" />
+                        <AlertCircle
+                          className={`h-4 w-4 ${
+                            resultOutcome === "http-error"
+                              ? "text-amber-500"
+                              : "text-red-500"
+                          }`}
+                        />
                       )}
                       <span>
-                        {result.accessible
+                        {resultOutcome === "success"
                           ? "URL is accessible"
-                          : "URL is not accessible"}
+                          : resultOutcome === "http-error"
+                            ? `URL responded with HTTP ${result.statusCode}`
+                            : "URL is not accessible"}
                       </span>
                     </div>
 

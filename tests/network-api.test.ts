@@ -1,8 +1,21 @@
 import { NextRequest } from "next/server";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/lib/server/outbound-request-policy", async (importOriginal) => {
+  const actual = await importOriginal<
+    typeof import("@/lib/server/outbound-request-policy")
+  >();
+  return { ...actual, requestOutbound: vi.fn() };
+});
 
 import { POST as checkFileLink } from "@/app/api/network/file-link-check/route";
 import { POST as testUrl } from "@/app/api/network/url-test/route";
+import {
+  OutboundRequestError,
+  requestOutbound,
+} from "@/lib/server/outbound-request-policy";
+
+const requestOutboundMock = vi.mocked(requestOutbound);
 
 function post(path: string, body: unknown): NextRequest {
   return new NextRequest(`http://localhost${path}`, {
@@ -12,13 +25,59 @@ function post(path: string, body: unknown): NextRequest {
   });
 }
 
-afterEach(() => {
-  vi.restoreAllMocks();
-  vi.unstubAllGlobals();
+beforeEach(() => {
+  requestOutboundMock.mockReset();
 });
 
 describe("network API boundaries", () => {
+  it("retries HEAD-specific 406 responses with a bounded GET", async () => {
+    requestOutboundMock
+      .mockResolvedValueOnce({
+        url: "https://example.com/",
+        status: 406,
+        statusText: "Not Acceptable",
+        headers: { "content-type": "text/html" },
+        body: new Uint8Array(),
+        redirectCount: 0,
+      })
+      .mockResolvedValueOnce({
+        url: "https://example.com/",
+        status: 200,
+        statusText: "OK",
+        headers: { "content-type": "text/html" },
+        body: new Uint8Array(),
+        redirectCount: 0,
+      });
+
+    const response = await testUrl(
+      post("/api/network/url-test", { url: "https://example.com" }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      accessible: true,
+      statusCode: 200,
+      statusText: "OK",
+    });
+    expect(requestOutboundMock).toHaveBeenNthCalledWith(
+      1,
+      "https://example.com",
+      expect.objectContaining({ method: "HEAD" }),
+    );
+    expect(requestOutboundMock).toHaveBeenNthCalledWith(
+      2,
+      "https://example.com",
+      expect.objectContaining({
+        method: "GET",
+        headers: expect.objectContaining({ range: "bytes=0-1023" }),
+      }),
+    );
+  });
+
   it("rejects missing and malformed URL input", async () => {
+    requestOutboundMock.mockRejectedValue(
+      new OutboundRequestError("INVALID_URL"),
+    );
     const missing = await testUrl(post("/api/network/url-test", {}));
     const malformed = await testUrl(
       post("/api/network/url-test", { url: "not a URL" }),
@@ -30,6 +89,7 @@ describe("network API boundaries", () => {
     expect(await malformed.json()).toMatchObject({
       accessible: false,
       error: "Invalid URL format",
+      errorCode: "INVALID_URL",
     });
   });
 
@@ -38,9 +98,10 @@ describe("network API boundaries", () => {
     "http://127.0.0.1/internal",
     "http://10.0.0.1/private",
     "file:///etc/passwd",
-  ])("blocks outbound destination %s", async (url) => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
+  ])("maps blocked outbound destination %s to a safe response", async (url) => {
+    requestOutboundMock.mockRejectedValue(
+      new OutboundRequestError("DESTINATION_BLOCKED"),
+    );
 
     const urlResponse = await testUrl(
       post("/api/network/url-test", { url }),
@@ -51,25 +112,17 @@ describe("network API boundaries", () => {
 
     expect(urlResponse.status).toBe(400);
     expect(fileResponse.status).toBe(400);
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(await urlResponse.json()).toMatchObject({
+      error: "Destination is not allowed",
+      errorCode: "DESTINATION_BLOCKED",
+    });
   });
 
-  it("reports outbound request timeouts", async () => {
-    vi.spyOn(console, "log").mockImplementation(() => undefined);
-    vi.stubGlobal(
-      "fetch",
-      vi.fn((_input: RequestInfo | URL, init?: RequestInit) =>
-        new Promise<Response>((_resolve, reject) => {
-          const abort = () =>
-            reject(new DOMException("The operation was aborted", "AbortError"));
-
-          if (init?.signal?.aborted) {
-            abort();
-          } else {
-            init?.signal?.addEventListener("abort", abort, { once: true });
-          }
-        }),
-      ),
+  it("reports outbound request timeouts without internal details", async () => {
+    requestOutboundMock.mockRejectedValue(
+      new OutboundRequestError("TOTAL_TIMEOUT", {
+        cause: new Error("internal connection details"),
+      }),
     );
 
     const response = await testUrl(
@@ -78,10 +131,13 @@ describe("network API boundaries", () => {
         timeout: 0.001,
       }),
     );
+    const body = await response.json();
 
-    expect(await response.json()).toMatchObject({
+    expect(body).toMatchObject({
       accessible: false,
-      error: "Request timeout after 0.001s",
+      error: "Request timed out",
+      errorCode: "TOTAL_TIMEOUT",
     });
+    expect(JSON.stringify(body)).not.toContain("internal connection details");
   });
 });
