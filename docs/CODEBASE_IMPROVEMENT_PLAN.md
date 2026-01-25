@@ -274,11 +274,13 @@ Implementation note (2026-01-24): `src/lib/server/outbound-request-policy.ts` re
 
 ### 5.2 Protect high-risk endpoints
 
-- [ ] Audit URL test, file-link check, WebSocket test, port scan, ping, and speed-test routes.
-- [ ] Apply the shared destination policy to every applicable endpoint.
-- [ ] Constrain port ranges and scan concurrency.
-- [ ] Add per-client rate limiting or an equivalent platform-level control.
-- [ ] Add structured security logging without recording sensitive payloads.
+- [x] Audit URL test, file-link check, WebSocket test, port scan, ping, and speed-test routes.
+- [x] Apply the shared destination policy to every applicable endpoint.
+- [x] Constrain port ranges and scan concurrency.
+- [x] Add per-client rate limiting or an equivalent platform-level control.
+- [x] Add structured security logging without recording sensitive payloads.
+
+Implementation note (2026-01-24): Ping now uses the bounded HTTP policy and no longer constructs shell commands. WebSocket handshakes and TCP scans reject non-public DNS answer sets and pin connections to a validated address; WebSocket redirects are disabled. Port scans accept at most 20 unique ports in the 1–65535 range, run four connections at a time, and cap per-port timeouts at five seconds. Speed tests use the shared request policy with a 1 MB download, 64 KB upload, and ten-second ceiling. All six high-risk routes use endpoint-specific, per-client fixed-window limits and structured JSON security events containing hashed client identifiers and no URL, host, or request payload. The limiter is process-local; multi-instance deployments should enforce an equivalent shared limit at the gateway or replace the store with distributed state.
 
 ### 5.3 Improve DNS route behavior
 

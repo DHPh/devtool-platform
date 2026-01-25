@@ -3,14 +3,26 @@ import {
   getSafeOutboundError,
   requestOutbound,
 } from "@/lib/server/outbound-request-policy";
+import {
+  checkNetworkRateLimit,
+  logNetworkSecurityEvent,
+  networkRateLimitResponse,
+} from "@/lib/server/network-security";
+
+const ENDPOINT = "url-test";
 
 export async function POST(request: NextRequest) {
+  const rateLimit = checkNetworkRateLimit(request, ENDPOINT, { limit: 30 });
+  if (!rateLimit.allowed) {
+    logNetworkSecurityEvent({ endpoint: ENDPOINT, operation: "http_probe", outcome: "rate_limited", clientId: rateLimit.clientId });
+    return networkRateLimitResponse(rateLimit);
+  }
   try {
     let body;
     try {
       body = await request.json();
-    } catch (parseError) {
-      console.error("JSON parse error:", parseError);
+    } catch {
+      logNetworkSecurityEvent({ endpoint: ENDPOINT, operation: "http_probe", outcome: "failed", clientId: rateLimit.clientId, errorCode: "INVALID_REQUEST" });
       return NextResponse.json(
         { error: "Invalid JSON in request body" },
         { status: 400 }
@@ -22,8 +34,6 @@ export async function POST(request: NextRequest) {
     if (!url) {
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
     }
-
-    console.log("URL test request:", { url, timeout });
 
     const startTime = Date.now();
     try {
@@ -63,6 +73,7 @@ export async function POST(request: NextRequest) {
         });
       }
       const responseTime = Date.now() - startTime;
+      logNetworkSecurityEvent({ endpoint: ENDPOINT, operation: "http_probe", outcome: "completed", clientId: rateLimit.clientId, durationMs: responseTime });
 
       return NextResponse.json({
         url: response.url,
@@ -85,6 +96,7 @@ export async function POST(request: NextRequest) {
         "CREDENTIALS_NOT_ALLOWED",
         "DESTINATION_BLOCKED",
       ].includes(safeError.code);
+      logNetworkSecurityEvent({ endpoint: ENDPOINT, operation: "http_probe", outcome: rejectedInput ? "blocked" : "failed", clientId: rateLimit.clientId, durationMs: responseTime, errorCode: safeError.code });
 
       return NextResponse.json(
         {
@@ -99,12 +111,11 @@ export async function POST(request: NextRequest) {
         { status: rejectedInput ? 400 : 200 },
       );
     }
-  } catch (error) {
-    console.error("URL test API error:", error);
+  } catch {
+    logNetworkSecurityEvent({ endpoint: ENDPOINT, operation: "http_probe", outcome: "failed", clientId: rateLimit.clientId, errorCode: "INTERNAL_ERROR" });
     return NextResponse.json(
       {
         error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );

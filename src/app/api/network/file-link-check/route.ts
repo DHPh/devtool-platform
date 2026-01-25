@@ -3,8 +3,21 @@ import {
   getSafeOutboundError,
   requestOutbound,
 } from "@/lib/server/outbound-request-policy";
+import {
+  checkNetworkRateLimit,
+  logNetworkSecurityEvent,
+  networkRateLimitResponse,
+} from "@/lib/server/network-security";
+
+const ENDPOINT = "file-link-check";
 
 export async function POST(request: NextRequest) {
+  const rateLimit = checkNetworkRateLimit(request, ENDPOINT, { limit: 30 });
+  if (!rateLimit.allowed) {
+    logNetworkSecurityEvent({ endpoint: ENDPOINT, operation: "file_probe", outcome: "rate_limited", clientId: rateLimit.clientId });
+    return networkRateLimitResponse(rateLimit);
+  }
+  const startedAt = Date.now();
   try {
     const { url } = await request.json();
 
@@ -20,6 +33,7 @@ export async function POST(request: NextRequest) {
         },
       });
       const contentLength = response.headers["content-length"];
+      logNetworkSecurityEvent({ endpoint: ENDPOINT, operation: "file_probe", outcome: "completed", clientId: rateLimit.clientId, durationMs: Date.now() - startedAt });
 
       return NextResponse.json({
         url: response.url,
@@ -41,6 +55,7 @@ export async function POST(request: NextRequest) {
         "CREDENTIALS_NOT_ALLOWED",
         "DESTINATION_BLOCKED",
       ].includes(safeError.code);
+      logNetworkSecurityEvent({ endpoint: ENDPOINT, operation: "file_probe", outcome: rejectedInput ? "blocked" : "failed", clientId: rateLimit.clientId, durationMs: Date.now() - startedAt, errorCode: safeError.code });
       return NextResponse.json(
         {
           url,
@@ -52,14 +67,13 @@ export async function POST(request: NextRequest) {
         { status: rejectedInput ? 400 : 200 },
       );
     }
-  } catch (error) {
-    console.error("File link check API error:", error);
+  } catch {
+    logNetworkSecurityEvent({ endpoint: ENDPOINT, operation: "file_probe", outcome: "failed", clientId: rateLimit.clientId, durationMs: Date.now() - startedAt, errorCode: "INVALID_REQUEST" });
     return NextResponse.json(
       {
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
+        error: "Invalid request body",
       },
-      { status: 500 }
+      { status: 400 }
     );
   }
 }

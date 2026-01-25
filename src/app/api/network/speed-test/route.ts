@@ -1,158 +1,90 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  getSafeOutboundError,
+  requestOutbound,
+} from "@/lib/server/outbound-request-policy";
+import {
+  boundedNetworkNumber,
+  checkNetworkRateLimit,
+  logNetworkSecurityEvent,
+  networkRateLimitResponse,
+} from "@/lib/server/network-security";
+
+const ENDPOINT = "speed-test";
+const DOWNLOAD_BYTES = 1_048_576;
+const UPLOAD_BYTES = 64 * 1_024;
+
+function speedResult(testType: "download" | "upload", bytes: number, startedAt: number) {
+  const duration = Math.max((Date.now() - startedAt) / 1_000, 0.001);
+  const speedBps = bytes / duration;
+  const speedKbps = (speedBps * 8) / 1_000;
+  return {
+    testType,
+    bytesTransferred: bytes,
+    duration,
+    speedBps: Math.round(speedBps),
+    speedKbps: Math.round(speedKbps * 100) / 100,
+    speedMbps: Math.round((speedKbps / 1_000) * 100) / 100,
+    completed: true,
+    timestamp: Date.now(),
+  };
+}
 
 export async function POST(request: NextRequest) {
+  const rateLimit = checkNetworkRateLimit(request, ENDPOINT, { limit: 5 });
+  if (!rateLimit.allowed) {
+    logNetworkSecurityEvent({ endpoint: ENDPOINT, operation: "bandwidth_test", outcome: "rate_limited", clientId: rateLimit.clientId });
+    return networkRateLimitResponse(rateLimit);
+  }
+  const startedAt = Date.now();
+
   try {
     const {
-      downloadUrl = "https://httpbin.org/bytes/1048576", // 1MB test file
+      downloadUrl = `https://httpbin.org/bytes/${DOWNLOAD_BYTES}`,
       uploadUrl = "https://httpbin.org/post",
       testType = "download",
       duration = 10,
     } = await request.json();
+    if (testType !== "download" && testType !== "upload") {
+      return NextResponse.json({ error: "Invalid test type. Use 'download' or 'upload'" }, { status: 400 });
+    }
+    const timeoutMs = boundedNetworkNumber(Number(duration) * 1_000, 10_000, 1_000, 10_000);
 
-    if (testType === "download") {
-      return await performDownloadTest(downloadUrl, duration);
-    } else if (testType === "upload") {
-      return await performUploadTest(uploadUrl, duration);
-    } else {
+    try {
+      const response =
+        testType === "download"
+          ? await requestOutbound(downloadUrl, {
+              method: "GET",
+              totalTimeoutMs: timeoutMs,
+              responseTimeoutMs: timeoutMs,
+              maxResponseBytes: DOWNLOAD_BYTES,
+            })
+          : await requestOutbound(uploadUrl, {
+              method: "POST",
+              headers: { "content-type": "application/octet-stream" },
+              body: new Uint8Array(UPLOAD_BYTES).fill(65),
+              totalTimeoutMs: timeoutMs,
+              responseTimeoutMs: timeoutMs,
+              maxResponseBytes: 256 * 1_024,
+              maxRequestBodyBytes: UPLOAD_BYTES,
+            });
+
+      if (response.status < 200 || response.status >= 300) {
+        return NextResponse.json({ testType, error: `Upstream returned HTTP ${response.status}`, timestamp: Date.now() });
+      }
+      const bytes = testType === "download" ? response.body.byteLength : UPLOAD_BYTES;
+      logNetworkSecurityEvent({ endpoint: ENDPOINT, operation: testType, outcome: "completed", clientId: rateLimit.clientId, durationMs: Date.now() - startedAt });
+      return NextResponse.json(speedResult(testType, bytes, startedAt));
+    } catch (error) {
+      const safeError = getSafeOutboundError(error);
+      const rejected = ["INVALID_URL", "UNSUPPORTED_PROTOCOL", "CREDENTIALS_NOT_ALLOWED", "DESTINATION_BLOCKED"].includes(safeError.code);
+      logNetworkSecurityEvent({ endpoint: ENDPOINT, operation: testType, outcome: rejected ? "blocked" : "failed", clientId: rateLimit.clientId, durationMs: Date.now() - startedAt, errorCode: safeError.code });
       return NextResponse.json(
-        { error: "Invalid test type. Use 'download' or 'upload'" },
-        { status: 400 }
+        { testType, error: safeError.message, errorCode: safeError.code, bytesTransferred: 0, duration: (Date.now() - startedAt) / 1_000, timestamp: Date.now() },
+        { status: rejected ? 400 : 200 },
       );
     }
-  } catch (error) {
-    console.error("Speed test API error:", error);
-    return NextResponse.json(
-      {
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
-  }
-}
-
-async function performDownloadTest(url: string, duration: number) {
-  const startTime = Date.now();
-  let bytesDownloaded = 0;
-  let completed = false;
-
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      return NextResponse.json({
-        testType: "download",
-        error: `HTTP ${response.status}: ${response.statusText}`,
-        timestamp: Date.now(),
-      });
-    }
-
-    const reader = response.body?.getReader();
-    if (!reader) {
-      return NextResponse.json({
-        testType: "download",
-        error: "Unable to read response stream",
-        timestamp: Date.now(),
-      });
-    }
-
-    const endTime = startTime + duration * 1000;
-
-    while (Date.now() < endTime && !completed) {
-      const { done, value } = await reader.read();
-
-      if (done) {
-        completed = true;
-        break;
-      }
-
-      if (value) {
-        bytesDownloaded += value.length;
-      }
-    }
-
-    reader.releaseLock();
-
-    const actualDuration = (Date.now() - startTime) / 1000;
-    const speedBps = bytesDownloaded / actualDuration;
-    const speedKbps = (speedBps * 8) / 1000;
-    const speedMbps = speedKbps / 1000;
-
-    return NextResponse.json({
-      testType: "download",
-      bytesTransferred: bytesDownloaded,
-      duration: actualDuration,
-      speedBps: Math.round(speedBps),
-      speedKbps: Math.round(speedKbps * 100) / 100,
-      speedMbps: Math.round(speedMbps * 100) / 100,
-      completed,
-      timestamp: Date.now(),
-    });
-  } catch (error) {
-    const actualDuration = (Date.now() - startTime) / 1000;
-
-    return NextResponse.json({
-      testType: "download",
-      error: error instanceof Error ? error.message : "Download test failed",
-      bytesTransferred: bytesDownloaded,
-      duration: actualDuration,
-      timestamp: Date.now(),
-    });
-  }
-}
-
-async function performUploadTest(url: string, duration: number) {
-  const startTime = Date.now();
-  const chunkSize = 64 * 1024; // 64KB chunks
-  let bytesUploaded = 0;
-
-  try {
-    // Create test data
-    const testData = new Uint8Array(chunkSize).fill(65); // Fill with 'A'
-    const endTime = startTime + duration * 1000;
-
-    while (Date.now() < endTime) {
-      try {
-        const response = await fetch(url, {
-          method: "POST",
-          body: testData,
-          headers: {
-            "Content-Type": "application/octet-stream",
-          },
-        });
-
-        if (response.ok) {
-          bytesUploaded += chunkSize;
-        } else {
-          break;
-        }
-      } catch {
-        break;
-      }
-    }
-
-    const actualDuration = (Date.now() - startTime) / 1000;
-    const speedBps = bytesUploaded / actualDuration;
-    const speedKbps = (speedBps * 8) / 1000;
-    const speedMbps = speedKbps / 1000;
-
-    return NextResponse.json({
-      testType: "upload",
-      bytesTransferred: bytesUploaded,
-      duration: actualDuration,
-      speedBps: Math.round(speedBps),
-      speedKbps: Math.round(speedKbps * 100) / 100,
-      speedMbps: Math.round(speedMbps * 100) / 100,
-      timestamp: Date.now(),
-    });
-  } catch (error) {
-    const actualDuration = (Date.now() - startTime) / 1000;
-
-    return NextResponse.json({
-      testType: "upload",
-      error: error instanceof Error ? error.message : "Upload test failed",
-      bytesTransferred: bytesUploaded,
-      duration: actualDuration,
-      timestamp: Date.now(),
-    });
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 }
