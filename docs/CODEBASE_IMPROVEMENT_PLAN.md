@@ -284,10 +284,12 @@ Implementation note (2026-01-24): Ping now uses the bounded HTTP policy and no l
 
 ### 5.3 Improve DNS route behavior
 
-- [ ] Configure DNS resolver behavior once rather than mutating global servers per lookup.
-- [ ] Validate domain names and record types before resolution.
-- [ ] Add lookup timeouts and consistent error mapping.
-- [ ] Document whether public resolvers are used and what privacy implications that has.
+- [x] Configure DNS resolver behavior once rather than mutating global servers per lookup.
+- [x] Validate domain names and record types before resolution.
+- [x] Add lookup timeouts and consistent error mapping.
+- [x] Document whether public resolvers are used and what privacy implications that has.
+
+Implementation note (2026-01-24): DNS Lookup uses one instance-scoped Node.js resolver configured at module initialization with 2.5-second attempts, two tries, and a five-second route deadline. The deployment host's system resolvers are used by default; operators can opt into custom resolvers once at startup through `DNS_RESOLVERS`. Domains are normalized to ASCII and validated label-by-label, IP literals and malformed names are rejected, and requests are limited to eight supported record types. Stable error codes distinguish no-data/not-found, refusal, server failure, timeout, and temporary unavailability without returning resolver internals. DNS security logs contain only hashed client identifiers, timing, counts, and safe error codes. Resolver privacy and configuration are documented in `docs/network/DNS_RESOLVER_PRIVACY.md`.
 
 Acceptance criteria:
 

@@ -51,6 +51,12 @@ Quick access to all project documentation organized by category.
 | [Null Values Fix](./json-enhancements/JSON_NULL_VALUES_FIX.md)            | Proper null handling             |
 | [Test Samples](./json-enhancements/JSON_TABLE_TEST_SAMPLES.md)            | Testing data examples            |
 
+### 🔐 Network & Security
+
+| Document                                                         | Description                              |
+| ---------------------------------------------------------------- | ---------------------------------------- |
+| [DNS Resolver Privacy](./network/DNS_RESOLVER_PRIVACY.md)        | DNS configuration and privacy disclosure |
+
 ### 📋 Project Status
 
 | Document                                                                    | Description                      |
