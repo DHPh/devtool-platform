@@ -305,11 +305,13 @@ Acceptance criteria:
 
 ### 6.1 Add a tool scaffolding command
 
-- [ ] Add a command such as `npm run create-tool -- <tool-id>`.
-- [ ] Generate a component, processor placeholder, tests, and registry definition.
-- [ ] Support standalone tools and studio sub-tools.
-- [ ] Validate kebab-case IDs and prevent overwriting existing files.
-- [ ] Print the generated files and required follow-up work.
+- [x] Add a command such as `npm run create-tool -- <tool-id>`.
+- [x] Generate a component, processor placeholder, tests, and registry definition.
+- [x] Support standalone tools and studio sub-tools.
+- [x] Validate kebab-case IDs and prevent overwriting existing files.
+- [x] Print the generated files and required follow-up work.
+
+Implementation note (2026-01-24): `npm run create-tool -- <tool-id>` generates an accessible client component or studio tab, a deterministic pure processor placeholder, a Vitest file, and domain registry metadata. Standalone scaffolds also update the ordered registry, component ID contract, and lazy loader; studio sub-tools validate one of the six supported parent studios and print the parent-layout wiring step because studio layouts remain intentionally bespoke. The command validates category, type, processing mode, safe kebab-case IDs, duplicate IDs and paths, required source anchors, and all target paths before writing. `--dry-run` previews the complete file set, and fixture-based tests cover both tool kinds and overwrite protection.
 
 Acceptance criteria:
 

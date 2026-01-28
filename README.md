@@ -118,68 +118,35 @@ src/
 
 ## 🔧 Adding New Tools
 
-1. Create a new tool module in `src/lib/tools/your-tool.tsx`:
+Generate a standalone tool with a component, pure processor placeholder, test,
+registry metadata, component ID, and lazy loader:
 
-```typescript
-"use client";
-
-import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-
-export const metadata = {
-  id: "your-tool",
-  name: "Your Tool Name",
-  description: "Tool description",
-  category: "Utilities",
-  tags: ["tag1", "tag2"],
-  path: "/tools/your-tool",
-  icon: "🔧",
-};
-
-export default function YourTool() {
-  const [input, setInput] = useState("");
-  const [output, setOutput] = useState("");
-
-  const handleProcess = () => {
-    // Your tool logic here
-    setOutput(processInput(input));
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Your Tool</CardTitle>
-        <CardDescription>Tool description</CardDescription>
-      </CardHeader>
-      <CardContent>{/* Your tool UI here */}</CardContent>
-    </Card>
-  );
-}
+```bash
+npm run create-tool -- your-tool \
+  --name "Your Tool" \
+  --description "Describe what the tool does" \
+  --domain web \
+  --category utilities \
+  --type utility \
+  --processing client
 ```
 
-2. Register the tool in `src/lib/tool-registry.ts`:
+Generate a studio sub-tool by supplying its registered parent. The command
+creates the tab component and prints the remaining parent-layout wiring step:
 
-```typescript
-import YourTool, { metadata as yourToolMetadata } from "./tools/your-tool";
-
-// Add to TOOL_REGISTRY array
-export const TOOL_REGISTRY: ToolMetadata[] = [
-  // ... existing tools
-  yourToolMetadata,
-];
-
-// Add to tool mapping in src/app/tools/[slug]/page.tsx
-const toolComponents: Record<string, React.ComponentType> = {
-  // ... existing mappings
-  "your-tool": YourTool,
-};
+```bash
+npm run create-tool -- request-timeline \
+  --kind studio-subtool \
+  --parent network-studio \
+  --tab timeline \
+  --domain network \
+  --processing server
 ```
+
+IDs must be kebab-case, and the command refuses to overwrite existing files or
+registry entries. Use `--dry-run` to preview changes and `--help` for all
+options. After replacing the placeholders, run `npm run validate:registry`,
+`npm run typecheck`, and the generated test.
 
 ## 📋 Available Tools
 
