@@ -18,7 +18,7 @@ Catalog totals are derived from the tool registry and include both standalone to
 
 ## 🛠️ Tech Stack
 
-- **Framework**: Next.js 15 (App Router) with TypeScript
+- **Framework**: Next.js 16 (App Router) with TypeScript
 - **UI Library**: Tailwind CSS + Shadcn UI
 - **State Management**: Zustand
 - **Icons**: Lucide React

@@ -320,10 +320,12 @@ Acceptance criteria:
 
 ### 6.2 Align dependencies and scripts
 
-- [ ] Align `next`, `eslint-config-next`, React, and related type packages.
-- [ ] Replace obsolete lint commands with a supported direct ESLint command.
-- [ ] Add explicit `typecheck`, `test`, `test:e2e`, and `validate:registry` scripts.
-- [ ] Review unused production dependencies after lazy-loading and processor extraction.
+- [x] Align `next`, `eslint-config-next`, React, and related type packages.
+- [x] Replace obsolete lint commands with a supported direct ESLint command.
+- [x] Add explicit `typecheck`, `test`, `test:e2e`, and `validate:registry` scripts.
+- [x] Review unused production dependencies after lazy-loading and processor extraction.
+
+Implementation note (2026-01-24): Next and `eslint-config-next` now share the 16.2 release line, React and React DOM share 19.2, and the React type packages match that minor line. The project declares Node 20.9 or newer, retains ESLint 9 and TypeScript 5 stable release lines, and uses Next 16's native flat ESLint exports with the direct `eslint .` command. The maintained typecheck, Vitest, Playwright, and registry scripts were already established in milestones 4.1–4.3 and remain the CI contract. Unused direct runtime declarations for `@radix-ui/react-icons` and the unimplemented `@vercel/og` integration were removed; type-only and CSS-build packages moved to development dependencies, and redundant `@types/jszip` was removed because JSZip ships its own declarations. `ws` was updated to 8.21 to address its current security advisories. Next 16's newly enabled React effect/purity findings remain warnings pending targeted component refactors. The dependency audit retains two moderate reports for Next's bundled PostCSS version; npm offers only an unsafe Next 9 downgrade, so no forced audit change was applied.
 
 Acceptance criteria:
 
