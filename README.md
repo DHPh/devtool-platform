@@ -1,311 +1,54 @@
 # DevTool Platform
 
-A comprehensive developer tools platform built with Next.js. It provides a centralized hub for standalone tools and studio sub-tools with a modern, responsive interface.
+DevTool Platform is a Next.js application that presents standalone developer tools and grouped studio sub-tools through one validated registry. Most transformations run in the browser; tools marked `server` or `hybrid` use server routes and may contact user-selected or documented third-party services.
 
-## 🚀 Features
+## Requirements
 
-- **Broad Developer Toolkit** - JSON formatter, Base64 encoder, Regex tester, UUID generator, network diagnostics, and more
-- **Microfrontend Architecture** - Modular design where each tool is a separate, maintainable module
-- **Smart Search** - Find tools quickly with intelligent search across names, descriptions, and tags
-- **Bookmarks System** - Save your favorite tools for quick access (stored in localStorage)
-- **Dark/Light Theme** - Toggle between themes with system preference detection
-- **Responsive Design** - Works perfectly on desktop, tablet, and mobile devices
-- **Tool Categories** - Organized by functionality for easy browsing
-- **Real-time Processing** - Most tools process data instantly as you type
-- **Clean UI** - Built with Tailwind CSS and Shadcn UI for a modern look
+- Node.js 20.9 or newer
+- npm with the committed lockfile
 
-Catalog totals are derived from the tool registry and include both standalone tools and the sub-tools available within studios.
-
-## 🛠️ Tech Stack
-
-- **Framework**: Next.js 16 (App Router) with TypeScript
-- **UI Library**: Tailwind CSS + Shadcn UI
-- **State Management**: Zustand
-- **Icons**: Lucide React
-- **Notifications**: Sonner
-- **Architecture**: Modular, microfrontend-ready
-
-## 📦 Installation
-
-1. Clone the repository:
+## Local development
 
 ```bash
-git clone <repository-url>
-cd devtool-platform
-```
-
-2. Install dependencies:
-
-```bash
-npm install
-```
-
-3. Run the development server:
-
-```bash
+npm ci
 npm run dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
+Open `http://localhost:3000`.
 
-## 📁 Project Structure
+## Maintained commands
 
-```
-devtool-platform/
-├── src/                      # Source code
-│   ├── app/                  # Next.js app directory
-│   ├── components/           # Reusable components
-│   ├── lib/                  # Utilities and tools
-│   └── config/               # Configuration files
-├── public/                   # Static assets
-├── docs/                     # 📚 Documentation (organized by category)
-│   ├── production-guides/    # 🚀 Deployment and production guides
-│   ├── ui-fixes/            # 🎨 UI improvements and fixes
-│   ├── seo-optimization/    # 🔍 SEO and performance guides
-│   ├── json-enhancements/   # 📊 JSON parsing improvements
-│   └── implementation-summaries/ # 📋 Project status and summaries
-├── tests/                   # 🧪 Maintained unit, component, and browser tests
-└── scripts/                 # 🛠️ Utilities and ad hoc diagnostics
-```
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the Turbopack development server |
+| `npm run lint` | Run the Next.js and TypeScript ESLint rules |
+| `npm run typecheck` | Check TypeScript without emitting files |
+| `npm test` | Run maintained Vitest unit and component tests |
+| `npm run test:e2e` | Run Chromium smoke journeys with Playwright |
+| `npm run validate:registry` | Validate registry and component invariants |
+| `npm run build` | Create a production build |
+| `npm run start` | Serve a completed production build |
 
-## Testing
+## Adding a tool
+
+Start with the scaffolding command rather than editing registry and loader files independently:
 
 ```bash
-npm run lint         # ESLint across maintained source and tests
-npm test             # Vitest unit and React component tests
-npm run test:watch   # Vitest in watch mode
-npm run test:e2e     # Playwright browser tests
-npm run typecheck    # TypeScript validation
-npm run validate:registry # Registry contract validation
-npm run build        # Production build
+npm run create-tool -- your-tool --name "Your Tool" --dry-run
+npm run create-tool -- your-tool --name "Your Tool"
 ```
 
-Install Playwright's Chromium binary once before running browser tests:
+The command generates a component, pure processor placeholder, test, and registry entry. Standalone tools are also added to the typed lazy-loader contract. Studio sub-tools print the remaining parent-layout wiring step.
 
-```bash
-npx playwright install chromium
-```
+See [Adding a tool](docs/ADDING_A_TOOL.md) for all options and required checks.
 
-Set `PLAYWRIGHT_BASE_URL` when browser tests should use an app instance that is
-already running; otherwise Playwright starts one on port 3100.
+## Documentation
 
-Pull requests run linting, type checking, unit/component tests, registry
-validation, a production build, and Chromium smoke tests in GitHub Actions.
+- [Documentation index](docs/INDEX.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Adding a tool](docs/ADDING_A_TOOL.md)
+- [Testing](docs/TESTING.md)
+- [Deployment](docs/DEPLOYMENT.md)
+- [Security](docs/SECURITY.md)
 
-## 🏗️ Architecture
-
-The platform follows a modular architecture where each tool is a separate module:
-
-```
-src/
-├── app/                    # Next.js App Router pages
-│   ├── layout.tsx         # Root layout with navigation
-│   ├── page.tsx           # Home page with search & categories
-│   └── tools/[slug]/      # Dynamic tool routes
-├── components/            # Reusable UI components
-│   ├── navigation.tsx     # Main navigation with search
-│   ├── theme-toggle.tsx   # Dark/light theme switcher
-│   ├── tool-frame.tsx     # Wrapper for all tools
-│   └── ui/               # Shadcn UI components
-├── lib/
-│   ├── tool-registry.ts   # Tool metadata and registry
-│   ├── tools/            # Individual tool modules
-│   └── utils.ts          # Utility functions
-└── store/                # Zustand state management
-    ├── bookmarks.ts      # Bookmark management
-    └── theme.ts          # Theme management
-```
-
-## 🔧 Adding New Tools
-
-Generate a standalone tool with a component, pure processor placeholder, test,
-registry metadata, component ID, and lazy loader:
-
-```bash
-npm run create-tool -- your-tool \
-  --name "Your Tool" \
-  --description "Describe what the tool does" \
-  --domain web \
-  --category utilities \
-  --type utility \
-  --processing client
-```
-
-Generate a studio sub-tool by supplying its registered parent. The command
-creates the tab component and prints the remaining parent-layout wiring step:
-
-```bash
-npm run create-tool -- request-timeline \
-  --kind studio-subtool \
-  --parent network-studio \
-  --tab timeline \
-  --domain network \
-  --processing server
-```
-
-IDs must be kebab-case, and the command refuses to overwrite existing files or
-registry entries. Use `--dry-run` to preview changes and `--help` for all
-options. After replacing the placeholders, run `npm run validate:registry`,
-`npm run typecheck`, and the generated test.
-
-## 📋 Available Tools
-
-### Text & Format
-
-- JSON Formatter - Format and validate JSON with syntax highlighting
-- HTML Formatter - Format and beautify HTML code
-- CSS Formatter - Format and beautify CSS code
-- Markdown Preview - Live markdown editor with preview
-
-### Encoding & Decoding
-
-- Base64 Encoder/Decoder - Encode and decode Base64 strings
-- URL Encoder/Decoder - Encode and decode URLs
-- HTML Entities - Encode and decode HTML entities
-
-### Generators
-
-- UUID Generator - Generate UUID v1, v4, and other versions
-- Password Generator - Generate secure passwords with options
-- Lorem Ipsum Generator - Generate placeholder text
-
-### Converters
-
-- Timestamp Converter - Convert Unix timestamps to dates
-- Color Converter - Convert between HEX, RGB, HSL formats
-- Case Converter - Convert text between different cases
-
-### Validators
-
-- Regex Tester - Test regular expressions with real-time matching
-- JSON Validator - Validate JSON syntax and structure
-- Email Validator - Validate email addresses
-
-### Utilities
-
-- QR Code Generator - Generate QR codes for text and URLs
-- Text Diff Checker - Compare texts and highlight differences
-- Word Counter - Count words, characters, lines, and paragraphs
-
-### Data Processing
-
-- **CSV Viewer** - Upload and view CSV files with interactive table features
-- **JSON Table Viewer** - Convert JSON data to interactive table with filtering and sorting
-- **Data Explorer** - Advanced data analysis with statistics, filtering, and visualization
-
-## 🎨 Customization
-
-### Theme
-
-The platform supports dark and light themes. Theme preference is saved in localStorage and respects system preferences.
-
-### Bookmarks
-
-Users can bookmark their favorite tools for quick access. Bookmarks are stored in localStorage.
-
-### Search
-
-The search functionality looks through tool names, descriptions, and tags for relevant matches.
-
-## 📱 Mobile Support
-
-The platform is fully responsive and works seamlessly on:
-
-- Desktop computers
-- Tablets
-- Mobile phones
-
-## 🚀 Deployment
-
-### Vercel (Recommended)
-
-1. Push your code to GitHub
-2. Connect your repository to Vercel
-3. Deploy automatically
-
-### Other Platforms
-
-```bash
-npm run build
-npm run start
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Add your tool following the architecture guidelines
-4. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🧪 Testing & Development
-
-### Test Files Organization
-
-All test files and debugging scripts are organized in the `tests/` directory:
-
-```
-tests/
-├── README.md                    # Testing documentation
-├── debug-*.js                  # Debugging scripts
-├── test-*.js                   # JavaScript test files
-├── test-*.mjs                  # ES Module test files
-├── test-*.json                 # JSON test data
-└── *.csv                       # CSV test data
-```
-
-### Available Test Categories
-
-- **JSON Processing Tests** - Nested data parsing and flattening
-- **CSV Processing Tests** - Delimiter detection and parsing
-- **Data Conversion Tests** - Format conversion validations
-- **Component Tests** - UI component functionality
-- **Integration Tests** - Complete workflow testing
-
-### Running Tests
-
-```bash
-# Run specific test files
-node tests/test-nested-json-parser.js
-node tests/debug-csv.js
-
-# ES Module tests
-node tests/test-complete-flow.mjs
-```
-
-### Development Scripts
-
-```bash
-# Check production readiness
-node scripts/production-checker.js
-
-# Update domain URLs
-node scripts/update-domain.js
-
-# Build for production
-npm run build
-
-# Development server
-npm run dev
-```
-
-## 📚 Documentation
-
-Complete project documentation is organized in the `docs/` directory:
-
-- **[📋 Quick Index](./docs/INDEX.md)** - Fast access to all documentation
-- **[🚀 Production Guides](./docs/production-guides/)** - Deployment instructions
-- **[🎨 UI Improvements](./docs/ui-fixes/)** - Interface enhancements
-- **[🔍 SEO Optimization](./docs/seo-optimization/)** - Search engine optimization
-- **[📊 Data Enhancements](./docs/json-enhancements/)** - Data processing improvements
-- **[📋 Implementation Status](./docs/implementation-summaries/)** - Project summaries
-
-## 🔗 Links
-
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Tailwind CSS](https://tailwindcss.com)
-- [Shadcn UI](https://ui.shadcn.com)
-- [Zustand](https://zustand-demo.pmnd.rs)
+Historical implementation reports and superseded guides are retained under [`docs/archive/`](docs/archive/README.md) and are not current instructions.

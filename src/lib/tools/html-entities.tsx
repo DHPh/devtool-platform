@@ -12,6 +12,7 @@ import {
   ModeTabs,
 } from "@/components/layout";
 import { Button } from "@/components/ui/button";
+import { decodeHtmlEntities, encodeHtmlEntities } from "@/lib/processors";
 
 export const metadata = {
   id: "html-entities",
@@ -28,52 +29,8 @@ export default function HtmlEntities() {
     '<div class="example">Hello & "World"</div>'
   );
 
-  const htmlEntities: Record<string, string> = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
-    " ": "&nbsp;",
-    "©": "&copy;",
-    "®": "&reg;",
-    "™": "&trade;",
-    "€": "&euro;",
-    "£": "&pound;",
-    "¥": "&yen;",
-    "§": "&sect;",
-    "¶": "&para;",
-  };
-
-  const reverseEntities = Object.fromEntries(
-    Object.entries(htmlEntities).map(([key, value]) => [value, key])
-  );
-
-  const encodeHtml = (text: string) => {
-    return text.replace(/[&<>"']/g, (match) => htmlEntities[match] || match);
-  };
-
-  const decodeHtml = (text: string) => {
-    return text.replace(/&[#\w]+;/g, (entity) => {
-      if (reverseEntities[entity]) {
-        return reverseEntities[entity];
-      }
-
-      // Handle numeric entities
-      if (entity.startsWith("&#")) {
-        const num = entity.slice(2, -1);
-        const code = num.startsWith("x")
-          ? parseInt(num.slice(1), 16)
-          : parseInt(num, 10);
-        return String.fromCharCode(code);
-      }
-
-      return entity;
-    });
-  };
-
-  const encoded = encodeHtml(input);
-  const decoded = decodeHtml(input);
+  const encoded = encodeHtmlEntities(input);
+  const decoded = decodeHtmlEntities(input);
 
   const examples = [
     {

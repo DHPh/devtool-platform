@@ -9,6 +9,7 @@ import {
   QuickActions,
   ResultCard,
 } from "@/components/layout";
+import { generateUuidV4 } from "@/lib/processors";
 
 export const metadata = {
   id: "uuid-generator",
@@ -27,14 +28,7 @@ export default function UuidGenerator() {
 
   // Generate UUID v4 (random)
   const generateUUIDv4 = () => {
-    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
-      /[xy]/g,
-      function (c) {
-        const r = (Math.random() * 16) | 0;
-        const v = c === "x" ? r : (r & 0x3) | 0x8;
-        return v.toString(16);
-      }
-    );
+    return generateUuidV4(crypto.getRandomValues(new Uint8Array(16)));
   };
 
   // Generate UUID v1 (timestamp-based) - simplified version

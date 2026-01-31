@@ -29,6 +29,7 @@ import {
   Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { hashBytes } from "@/lib/processors";
 
 interface HashedFile {
   id: string;
@@ -90,11 +91,6 @@ export default function FileHasherTab() {
         throw new Error(`Unsupported algorithm: ${algorithm}`);
       }
 
-      // Check if Web Crypto API is available
-      if (!window.crypto || !window.crypto.subtle) {
-        throw new Error("Web Crypto API not available");
-      }
-
       // For MD5, we'll need to use a fallback as it's not supported in Web Crypto API
       if (algorithm === "md5") {
         // Import crypto-js for MD5 as it's not available in Web Crypto API
@@ -108,19 +104,10 @@ export default function FileHasherTab() {
       // Read file as array buffer
       const arrayBuffer = await file.arrayBuffer();
 
-      // Generate hash
-      const hashBuffer = await window.crypto.subtle.digest(
-        cryptoAlgorithm,
-        arrayBuffer
+      return hashBytes(
+        new Uint8Array(arrayBuffer),
+        cryptoAlgorithm as "SHA-1" | "SHA-256" | "SHA-512"
       );
-
-      // Convert to hex string
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-
-      return hashHex;
     } catch (error) {
       console.error("Hash generation failed:", error);
       // Fallback to simulated hash if real implementation fails

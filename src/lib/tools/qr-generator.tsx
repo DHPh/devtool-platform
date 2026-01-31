@@ -17,6 +17,7 @@ import {
   QuickActions,
   ResultCard,
 } from "@/components/layout";
+import { buildQrCodeUrl } from "@/lib/processors";
 
 export const metadata = {
   id: "qr-generator",
@@ -35,8 +36,7 @@ export default function QrGenerator() {
 
   // Using a free QR code API service
   const getQrUrl = () => {
-    const encodedText = encodeURIComponent(text);
-    return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodedText}&ecc=${errorLevel}`;
+    return buildQrCodeUrl(text, Number(size), errorLevel);
   };
 
   const downloadQr = () => {

@@ -289,7 +289,7 @@ Implementation note (2026-01-24): Ping now uses the bounded HTTP policy and no l
 - [x] Add lookup timeouts and consistent error mapping.
 - [x] Document whether public resolvers are used and what privacy implications that has.
 
-Implementation note (2026-01-24): DNS Lookup uses one instance-scoped Node.js resolver configured at module initialization with 2.5-second attempts, two tries, and a five-second route deadline. The deployment host's system resolvers are used by default; operators can opt into custom resolvers once at startup through `DNS_RESOLVERS`. Domains are normalized to ASCII and validated label-by-label, IP literals and malformed names are rejected, and requests are limited to eight supported record types. Stable error codes distinguish no-data/not-found, refusal, server failure, timeout, and temporary unavailability without returning resolver internals. DNS security logs contain only hashed client identifiers, timing, counts, and safe error codes. Resolver privacy and configuration are documented in `docs/network/DNS_RESOLVER_PRIVACY.md`.
+Implementation note (2026-01-24): DNS Lookup uses one instance-scoped Node.js resolver configured at module initialization with 2.5-second attempts, two tries, and a five-second route deadline. The deployment host's system resolvers are used by default; operators can opt into custom resolvers once at startup through `DNS_RESOLVERS`. Domains are normalized to ASCII and validated label-by-label, IP literals and malformed names are rejected, and requests are limited to eight supported record types. Stable error codes distinguish no-data/not-found, refusal, server failure, timeout, and temporary unavailability without returning resolver internals. DNS security logs contain only hashed client identifiers, timing, counts, and safe error codes. Current resolver privacy and configuration guidance is maintained in `docs/SECURITY.md`.
 
 Acceptance criteria:
 
@@ -334,10 +334,12 @@ Acceptance criteria:
 
 ### 6.3 Consolidate documentation
 
-- [ ] Maintain a small active documentation set: architecture, adding a tool, testing, deployment, and security.
-- [ ] Move historical implementation summaries and completed fix notes to `archive/`.
-- [ ] Update `docs/INDEX.md` and the root README.
-- [ ] Clearly mark archived material as historical rather than current guidance.
+- [x] Maintain a small active documentation set: architecture, adding a tool, testing, deployment, and security.
+- [x] Move historical implementation summaries and completed fix notes to `archive/`.
+- [x] Update `docs/INDEX.md` and the root README.
+- [x] Clearly mark archived material as historical rather than current guidance.
+
+Implementation note (2026-01-24): Active contributor guidance is consolidated into architecture, adding-a-tool, testing, deployment, and security documents linked from the root README and `docs/INDEX.md`. Dated feature summaries, fix reports, speculative strategies, old deployment snapshots, and superseded internal READMEs moved under `docs/archive/` with archive-wide and per-file historical warnings. GitHub contributor instructions now point to the maintained set. The active guides reflect the domain registry, typed lazy loading, scaffolding command, current CI commands, Next 16 runtime, outbound destination policy, DNS behavior, rate-limit scaling requirement, and deployment environment variables.
 
 Acceptance criteria:
 

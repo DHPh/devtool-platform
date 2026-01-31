@@ -9,6 +9,7 @@ import {
   QuickActions,
   ResultCard,
 } from "@/components/layout";
+import { countText } from "@/lib/processors";
 
 export const metadata = {
   id: "word-counter",
@@ -24,14 +25,9 @@ export default function WordCounter() {
   const [text, setText] = useState("");
 
   const stats = useMemo(() => {
-    const characters = text.length;
-    const charactersNoSpaces = text.replace(/\s/g, "").length;
-    const words = text.trim() === "" ? 0 : text.trim().split(/\s+/).length;
-    const lines = text === "" ? 0 : text.split("\n").length;
-    const paragraphs =
-      text.trim() === ""
-        ? 0
-        : text.split(/\n\s*\n/).filter((p) => p.trim() !== "").length;
+    const counts = countText(text);
+    const { characters, words, lines, paragraphs } = counts;
+    const charactersNoSpaces = counts.charactersWithoutSpaces;
 
     // Enhanced sentence detection for Vietnamese
     const sentences =

@@ -19,6 +19,7 @@ import {
   ResultCard,
   CopyableResult,
 } from "@/components/layout";
+import { dateToTimestamp, timestampToIso } from "@/lib/processors";
 
 export const metadata = {
   id: "timestamp-converter",
@@ -59,11 +60,10 @@ export default function TimestampConverter() {
         return;
       }
 
-      const date = unit === "seconds" ? new Date(num * 1000) : new Date(num);
-
       if (timezone === "UTC") {
-        setHumanDate(date.toISOString().replace("T", " ").replace("Z", " UTC"));
+        setHumanDate(timestampToIso(num, unit).replace("T", " ").replace("Z", " UTC"));
       } else {
+        const date = new Date(unit === "seconds" ? num * 1000 : num);
         setHumanDate(date.toLocaleString());
       }
       toast.success("Timestamp converted!");
@@ -74,13 +74,7 @@ export default function TimestampConverter() {
 
   const convertToTimestamp = () => {
     try {
-      const date = new Date(humanDate);
-      if (isNaN(date.getTime())) {
-        toast.error("Invalid date format");
-        return;
-      }
-
-      const ts = unit === "seconds" ? Math.floor(date.getTime() / 1000) : date.getTime();
+      const ts = dateToTimestamp(humanDate, unit);
       setTimestamp(ts.toString());
       toast.success("Date converted to timestamp!");
     } catch {
