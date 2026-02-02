@@ -86,12 +86,12 @@ export function WebSocketTester() {
         };
       }
 
-      if (error.message.includes("CORS") || error.message.includes("blocked")) {
+      if (error.message.includes("blocked")) {
         return {
           category: "Security Error",
           message: "Connection blocked by security policy",
           details:
-            "The WebSocket connection was blocked by browser security policy or server CORS settings.",
+            "The server-side handshake was blocked by the destination policy.",
         };
       }
 
@@ -148,7 +148,7 @@ export function WebSocketTester() {
       <div className="text-center">
         <h2 className="text-2xl font-bold mb-2">WebSocket Tester</h2>
         <p className="text-muted-foreground">
-          Test WebSocket connections and measure response times
+          Run a short server-side opening handshake and measure its latency
         </p>
       </div>
 
@@ -166,6 +166,10 @@ export function WebSocketTester() {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
               />
+              <p className="text-xs text-muted-foreground">
+                This verifies only the opening handshake. It does not keep a
+                connection open or send and receive messages.
+              </p>
             </div>
             <Button
               onClick={handleTest}
@@ -272,7 +276,7 @@ export function WebSocketTester() {
                       </li>
                       <li>Verify the server supports WebSocket protocol</li>
                       <li>
-                        Some networks/firewalls may block WebSocket connections
+                        Some networks/firewalls may block WebSocket handshakes
                       </li>
                       <li>Try the test URL: wss://echo.websocket.org</li>
                     </ul>

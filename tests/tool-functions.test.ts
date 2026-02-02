@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import JSZip from "jszip";
 import { PDFDocument } from "pdf-lib";
+import { inspectZip } from "@/lib/processors/archive-core";
+import JSZip from "jszip";
 import { TOOL_REGISTRY } from "@/lib/registry";
 import {
   buildQrCodeUrl,
@@ -24,7 +25,8 @@ import {
   generateLorem,
   generateUuidV4,
   groupDuplicateFiles,
-  hashBytes,
+  hashFileContent,
+  hashFileForDuplicateDetection,
   iconPackManifest,
   markdownToHtml,
   minifyCss,
@@ -79,7 +81,7 @@ const cases: FunctionalCase[] = [
   { id: "json-formatter", run: () => expect(formatJson('{"b":2,"a":1}', { sortKeys: true }).result).toBe('{\n  "a": 1,\n  "b": 2\n}') },
   { id: "html-formatter", run: () => expect(formatHtml("<main><p>Hello</p></main>")).toBe("<main>\n  <p>Hello\n  </p>\n</main>") },
   { id: "css-formatter", run: () => expect(formatCss("a { color: red; }")).toContain("  color: red;") },
-  { id: "markdown-preview", run: () => expect(markdownToHtml("# Title\n**bold**")).toBe("<h1>Title</h1><br><strong>bold</strong>") },
+  { id: "markdown-preview", run: () => expect(markdownToHtml("# Title\n\n**bold**")).toBe("<h1>Title</h1>\n<p><strong>bold</strong></p>") },
   { id: "word-counter", run: () => expect(countText("one two\n\nthree")).toMatchObject({ words: 3, lines: 3, paragraphs: 2 }) },
   { id: "case-converter", run: () => expect(convertTextCase("hello world", "camelCase")).toBe("helloWorld") },
   { id: "diff-checker", run: () => expect(diffLines("same\nold", "same\nnew")).toEqual([{ line: 1, left: "same", right: "same", equal: true }, { line: 2, left: "old", right: "new", equal: false }]) },
@@ -128,10 +130,10 @@ const cases: FunctionalCase[] = [
   { id: "image-resizer", run: () => expect(calculateImageSize(1920, 1080, 640)).toEqual({ width: 640, height: 360 }) },
   { id: "pdf-tools", run: async () => { const pdf = await PDFDocument.create(); pdf.addPage([200, 300]); const loaded = await PDFDocument.load(await pdf.save()); expect(loaded.getPageCount()).toBe(1); } },
   { id: "file-converter", run: () => expect(convertTextFile("a\nb", "json")).toBe('["a","b"]') },
-  { id: "archive-manager", run: async () => { const zip = new JSZip(); zip.file("hello.txt", "hello"); const loaded = await JSZip.loadAsync(await zip.generateAsync({ type: "uint8array" })); expect(await loaded.file("hello.txt")?.async("string")).toBe("hello"); } },
-  { id: "file-hasher", run: async () => expect(await hashBytes(new TextEncoder().encode("abc"))).toBe("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad") },
+  { id: "archive-manager", run: async () => { const zip = new JSZip(); zip.file("hello.txt", "hello"); expect(await inspectZip(await zip.generateAsync({ type: "uint8array" }))).toEqual([{ name: "hello.txt", path: "hello.txt", size: 5, isDirectory: false }]); } },
+  { id: "file-hasher", run: async () => { const bytes = new TextEncoder().encode("abc"); expect(await hashFileContent({ arrayBuffer: async () => bytes.buffer }, "sha256")).toBe("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"); } },
   { id: "metadata-viewer", run: () => expect(fileMetadata({ name: "report.PDF", size: 42, type: "application/pdf", lastModified: 0 })).toMatchObject({ extension: "pdf", size: 42 }) },
-  { id: "duplicate-finder", run: () => expect(groupDuplicateFiles([{ name: "a", hash: "x" }, { name: "b", hash: "x" }, { name: "c", hash: "y" }])[0].map((file) => file.name)).toEqual(["a", "b"]) },
+  { id: "duplicate-finder", run: async () => { const bytes = new TextEncoder().encode("same content"); const file = { arrayBuffer: async () => bytes.buffer }; const hash = await hashFileForDuplicateDetection(file); expect(groupDuplicateFiles([{ name: "a", hash }, { name: "b", hash }])[0].map((entry) => entry.name)).toEqual(["a", "b"]); } },
   { id: "file-organizer", run: () => expect([categorizeFile("photo.JPG"), categorizeFile("notes.unknown")]).toEqual(["images", "other"]) },
 ];
 

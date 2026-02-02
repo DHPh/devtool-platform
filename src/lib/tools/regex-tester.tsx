@@ -37,6 +37,7 @@ import {
   ValidationMessages,
   ResponsiveTextArea,
 } from "@/components/layout";
+import { RegexMatchHighlighter } from "@/lib/tools/regex-studio/components/RegexMatchHighlighter";
 
 // Common regex patterns library
 const REGEX_PATTERNS = {
@@ -434,39 +435,6 @@ export default function RegexTester() {
     }
   };
 
-  // Highlight matches in test string
-  const highlightMatches = (text: string, matches: RegexMatch[]) => {
-    if (!matches.length) return text;
-
-    const parts = [];
-    let lastIndex = 0;
-
-    matches.forEach((match, i) => {
-      // Add text before match
-      if (match.index > lastIndex) {
-        parts.push(text.substring(lastIndex, match.index));
-      }
-
-      // Add highlighted match
-      parts.push(
-        `<mark class="bg-yellow-200 dark:bg-yellow-900/50 px-1 rounded border border-yellow-300 dark:border-yellow-700" data-match="${i}" title="Match ${
-          i + 1
-        }: ${match.match}">
-          ${match.match}
-        </mark>`
-      );
-
-      lastIndex = match.index + match.match.length;
-    });
-
-    // Add remaining text
-    if (lastIndex < text.length) {
-      parts.push(text.substring(lastIndex));
-    }
-
-    return parts.join("");
-  };
-
   // Copy to clipboard
   const copyToClipboard = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
@@ -784,11 +752,10 @@ export default function RegexTester() {
                           </Button>
                         </div>
                         <div className="p-4 bg-muted/50 rounded-lg border min-h-[100px] overflow-auto">
-                          <div
-                            className="font-mono text-sm whitespace-pre-wrap leading-relaxed"
-                            dangerouslySetInnerHTML={{
-                              __html: highlightMatches(testString, matches),
-                            }}
+                          <RegexMatchHighlighter
+                            text={testString}
+                            matches={matches}
+                            className="font-mono text-sm leading-relaxed"
                           />
                         </div>
                       </div>

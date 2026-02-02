@@ -150,9 +150,9 @@ export function hslToRgb(h: number, s: number, l: number): RGBColor {
   }
 
   return {
-    r: Math.round(r * 255),
-    g: Math.round(g * 255),
-    b: Math.round(b * 255),
+    r: Math.round(r * 255 + 1e-9),
+    g: Math.round(g * 255 + 1e-9),
+    b: Math.round(b * 255 + 1e-9),
   };
 }
 
@@ -284,7 +284,7 @@ export function cmykToRgb(
 export function getLuminance(r: number, g: number, b: number): number {
   const [rs, gs, bs] = [r, g, b].map((c) => {
     c = c / 255;
-    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
   });
   return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
 }
@@ -303,8 +303,26 @@ export function getContrastRatio(color1: RGBColor, color2: RGBColor): number {
 /**
  * Get comprehensive color information
  */
-export function getColorInfo(hex: string): ColorInfo | null {
-  const rgb = hexToRgb(hex);
+export function getColorInfo(input: string): ColorInfo | null {
+  const value = input.trim();
+  let rgb = hexToRgb(value);
+
+  if (!rgb) {
+    const hslMatch = /^hsl\(\s*([+-]?(?:\d+\.?\d*|\.\d+))(?:deg)?\s*,\s*([+-]?(?:\d+\.?\d*|\.\d+))%\s*,\s*([+-]?(?:\d+\.?\d*|\.\d+))%\s*\)$/i.exec(value);
+    if (hslMatch) {
+      const hue = ((Number(hslMatch[1]) % 360) + 360) % 360;
+      const saturation = Number(hslMatch[2]);
+      const lightness = Number(hslMatch[3]);
+      if (
+        Number.isFinite(hue) &&
+        saturation >= 0 && saturation <= 100 &&
+        lightness >= 0 && lightness <= 100
+      ) {
+        rgb = hslToRgb(hue, saturation, lightness);
+      }
+    }
+  }
+
   if (!rgb) return null;
 
   const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
@@ -313,7 +331,7 @@ export function getColorInfo(hex: string): ColorInfo | null {
   const luminance = getLuminance(rgb.r, rgb.g, rgb.b);
 
   return {
-    hex: hex.toUpperCase(),
+    hex: rgbToHex(rgb.r, rgb.g, rgb.b).toUpperCase(),
     rgb,
     hsl,
     hsv,

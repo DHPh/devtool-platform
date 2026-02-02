@@ -3,6 +3,11 @@
  * Core functions for password generation, analysis, and security
  */
 
+import {
+  drawRandomInteger,
+  type RandomIntegerSource,
+} from "./secure-random";
+
 export interface PasswordOptions {
   length: number;
   includeUppercase: boolean;
@@ -49,98 +54,56 @@ const AMBIGUOUS_CHARS = "{}[]()/\\'\"`~,;.<>";
 /**
  * Generate a secure password based on options
  */
-export function generatePassword(options: PasswordOptions): string {
-  let charset = "";
-
-  if (options.includeUppercase) {
-    charset += UPPERCASE_CHARS;
-  }
-  if (options.includeLowercase) {
-    charset += LOWERCASE_CHARS;
-  }
-  if (options.includeNumbers) {
-    charset += NUMBER_CHARS;
-  }
-  if (options.includeSymbols) {
-    charset += options.customSymbols || SYMBOL_CHARS;
+export function generatePassword(
+  options: PasswordOptions,
+  randomInteger?: RandomIntegerSource,
+): string {
+  if (!Number.isSafeInteger(options.length) || options.length < 1) {
+    throw new RangeError("Password length must be a positive integer");
   }
 
-  // Remove similar characters if requested
-  if (options.excludeSimilar) {
-    charset = charset
-      .split("")
-      .filter((char) => !SIMILAR_CHARS.includes(char))
-      .join("");
+  const draw = (maxExclusive: number) =>
+    drawRandomInteger(maxExclusive, randomInteger);
+  const isAllowed = (char: string) =>
+    (!options.excludeSimilar || !SIMILAR_CHARS.includes(char)) &&
+    (!options.excludeAmbiguous || !AMBIGUOUS_CHARS.includes(char)) &&
+    (!options.excludeCharacters?.includes(char));
+  const filterPool = (characters: string) =>
+    [...new Set(characters.split("").filter(isAllowed))].join("");
+
+  const selectedCategories = [
+    options.includeUppercase && ["uppercase", UPPERCASE_CHARS],
+    options.includeLowercase && ["lowercase", LOWERCASE_CHARS],
+    options.includeNumbers && ["numbers", NUMBER_CHARS],
+    options.includeSymbols && ["symbols", options.customSymbols || SYMBOL_CHARS],
+  ].filter(Boolean) as [string, string][];
+
+  if (selectedCategories.length === 0) {
+    throw new Error("Select at least one character category");
   }
 
-  // Remove ambiguous characters if requested
-  if (options.excludeAmbiguous) {
-    charset = charset
-      .split("")
-      .filter((char) => !AMBIGUOUS_CHARS.includes(char))
-      .join("");
-  }
-
-  // Remove custom excluded characters
-  if (options.excludeCharacters) {
-    charset = charset
-      .split("")
-      .filter((char) => !options.excludeCharacters!.includes(char))
-      .join("");
-  }
-
-  if (charset.length === 0) {
-    throw new Error("No characters available for password generation");
-  }
-
-  // Generate password ensuring at least one character from each selected category
-  let password = "";
-  const requiredChars: string[] = [];
-
-  if (options.includeUppercase) {
-    const filtered = UPPERCASE_CHARS.split("").filter((char) =>
-      charset.includes(char)
-    );
-    if (filtered.length > 0) {
-      requiredChars.push(filtered[Math.floor(Math.random() * filtered.length)]);
+  const categoryPools = selectedCategories.map(([name, characters]) => {
+    const pool = filterPool(characters);
+    if (!pool) {
+      throw new Error(`No characters available for selected category: ${name}`);
     }
-  }
-  if (options.includeLowercase) {
-    const filtered = LOWERCASE_CHARS.split("").filter((char) =>
-      charset.includes(char)
-    );
-    if (filtered.length > 0) {
-      requiredChars.push(filtered[Math.floor(Math.random() * filtered.length)]);
-    }
-  }
-  if (options.includeNumbers) {
-    const filtered = NUMBER_CHARS.split("").filter((char) =>
-      charset.includes(char)
-    );
-    if (filtered.length > 0) {
-      requiredChars.push(filtered[Math.floor(Math.random() * filtered.length)]);
-    }
-  }
-  if (options.includeSymbols) {
-    const symbols = options.customSymbols || SYMBOL_CHARS;
-    const filtered = symbols.split("").filter((char) => charset.includes(char));
-    if (filtered.length > 0) {
-      requiredChars.push(filtered[Math.floor(Math.random() * filtered.length)]);
-    }
-  }
-
-  // Add required characters first
-  requiredChars.forEach((char) => {
-    password += char;
+    return pool;
   });
 
-  // Fill the rest randomly
-  for (let i = password.length; i < options.length; i++) {
-    password += charset[Math.floor(Math.random() * charset.length)];
+  if (options.length < categoryPools.length) {
+    throw new RangeError(
+      "Password length must be at least the number of selected character categories",
+    );
   }
 
-  // Shuffle the password to avoid predictable patterns
-  return shuffleString(password);
+  const charset = [...new Set(categoryPools.join("").split(""))].join("");
+  const characters = categoryPools.map((pool) => pool[draw(pool.length)]);
+
+  while (characters.length < options.length) {
+    characters.push(charset[draw(charset.length)]);
+  }
+
+  return shuffleString(characters.join(""), randomInteger);
 }
 
 /**
@@ -249,12 +212,17 @@ export function analyzePasswordStrength(password: string): PasswordStrength {
  */
 export function generateMultiplePasswords(
   options: PasswordOptions,
-  count: number = 10
+  count: number = 10,
+  randomInteger?: RandomIntegerSource,
 ): PasswordGenerationResult[] {
+  if (!Number.isSafeInteger(count) || count < 0) {
+    throw new RangeError("Password count must be a non-negative integer");
+  }
+
   const results: PasswordGenerationResult[] = [];
 
   for (let i = 0; i < count; i++) {
-    const password = generatePassword(options);
+    const password = generatePassword(options, randomInteger);
     const strength = analyzePasswordStrength(password);
 
     results.push({
@@ -335,10 +303,13 @@ function hasCommonPatterns(password: string): boolean {
 /**
  * Shuffle string characters randomly
  */
-function shuffleString(str: string): string {
+function shuffleString(
+  str: string,
+  randomInteger?: RandomIntegerSource,
+): string {
   const arr = str.split("");
   for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = drawRandomInteger(i + 1, randomInteger);
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr.join("");

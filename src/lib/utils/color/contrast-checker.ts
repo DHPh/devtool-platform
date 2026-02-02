@@ -1,6 +1,6 @@
 /**
  * Color contrast and accessibility utilities
- * WCAG 2.1 compliance checking
+ * WCAG 2.2 contrast compliance checking
  */
 
 import { getColorInfo, getContrastRatio } from "./color-converter";
@@ -47,7 +47,7 @@ export function calculateWCAGCompliance(
 
   const ratio = getContrastRatio(fgColor.rgb, bgColor.rgb);
 
-  // WCAG 2.1 Guidelines:
+  // WCAG 2.2 contrast thresholds:
   // Normal text: AA = 4.5:1, AAA = 7:1
   // Large text (18pt+/14pt+ bold): AA = 3:1, AAA = 4.5:1
   // UI Components: AA = 3:1

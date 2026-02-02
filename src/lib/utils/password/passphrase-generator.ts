@@ -3,6 +3,11 @@
  * Functions for generating secure passphrases using word lists
  */
 
+import {
+  drawRandomInteger,
+  type RandomIntegerSource,
+} from "./secure-random";
+
 export interface PassphraseOptions {
   wordCount: number;
   separator: string;
@@ -121,15 +126,22 @@ const SEPARATORS = ["-", "_", ".", " ", "/", "|", "+", "="];
  * Generate a secure passphrase
  */
 export function generatePassphrase(
-  options: PassphraseOptions
+  options: PassphraseOptions,
+  randomInteger?: RandomIntegerSource,
 ): PassphraseResult {
+  const validationErrors = validatePassphraseOptions(options);
+  if (validationErrors.length > 0) {
+    throw new RangeError(validationErrors.join("; "));
+  }
+
   const wordList = options.customWordList || COMMON_WORDS;
 
   // Filter words by length if specified
-  const filteredWords = wordList.filter(
+  const filteredWords = [...new Set(wordList)].filter(
     (word) =>
+      typeof word === "string" &&
       word.length >= options.minWordLength &&
-      word.length <= options.maxWordLength
+      word.length <= options.maxWordLength,
   );
 
   if (filteredWords.length < options.wordCount) {
@@ -139,33 +151,33 @@ export function generatePassphrase(
   }
 
   // Select random words
-  const selectedWords: string[] = [];
-  const usedIndices = new Set<number>();
+  const availableWords = [...filteredWords];
+  const selectedWords = Array.from({ length: options.wordCount }, (_, index) => {
+    const selectedIndex =
+      index +
+      drawRandomInteger(availableWords.length - index, randomInteger);
+    [availableWords[index], availableWords[selectedIndex]] = [
+      availableWords[selectedIndex],
+      availableWords[index],
+    ];
 
-  while (selectedWords.length < options.wordCount) {
-    const index = Math.floor(Math.random() * filteredWords.length);
-    if (!usedIndices.has(index)) {
-      usedIndices.add(index);
-      let word = filteredWords[index];
-
-      if (options.capitalizeWords) {
-        word = word.charAt(0).toUpperCase() + word.slice(1);
-      }
-
-      selectedWords.push(word);
-    }
-  }
+    const word = availableWords[index];
+    return options.capitalizeWords
+      ? word.charAt(0).toUpperCase() + word.slice(1)
+      : word;
+  });
 
   // Add numbers and symbols if requested
   const enhancedWords = selectedWords.map((word) => {
     let enhancedWord = word;
 
     if (options.includeNumbers) {
-      enhancedWord += Math.floor(Math.random() * 100);
+      enhancedWord += drawRandomInteger(100, randomInteger);
     }
 
     if (options.includeSymbols) {
-      enhancedWord += SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+      enhancedWord +=
+        SYMBOLS[drawRandomInteger(SYMBOLS.length, randomInteger)];
     }
 
     return enhancedWord;
@@ -192,12 +204,17 @@ export function generatePassphrase(
  */
 export function generateMultiplePassphrases(
   options: PassphraseOptions,
-  count: number = 10
+  count: number = 10,
+  randomInteger?: RandomIntegerSource,
 ): PassphraseResult[] {
+  if (!Number.isSafeInteger(count) || count < 0) {
+    throw new RangeError("Passphrase count must be a non-negative integer");
+  }
+
   const results: PassphraseResult[] = [];
 
   for (let i = 0; i < count; i++) {
-    results.push(generatePassphrase(options));
+    results.push(generatePassphrase(options, randomInteger));
   }
 
   return results;
@@ -289,19 +306,23 @@ export function validatePassphraseOptions(
 ): string[] {
   const errors: string[] = [];
 
-  if (options.wordCount < 2) {
+  if (!Number.isSafeInteger(options.wordCount)) {
+    errors.push("Word count must be an integer");
+  } else if (options.wordCount < 2) {
     errors.push("Word count must be at least 2");
-  }
-
-  if (options.wordCount > 10) {
+  } else if (options.wordCount > 10) {
     errors.push("Word count should not exceed 10 for practical use");
   }
 
-  if (options.minWordLength < 3) {
+  if (!Number.isSafeInteger(options.minWordLength)) {
+    errors.push("Minimum word length must be an integer");
+  } else if (options.minWordLength < 3) {
     errors.push("Minimum word length should be at least 3");
   }
 
-  if (options.maxWordLength < options.minWordLength) {
+  if (!Number.isSafeInteger(options.maxWordLength)) {
+    errors.push("Maximum word length must be an integer");
+  } else if (options.maxWordLength < options.minWordLength) {
     errors.push("Maximum word length must be greater than minimum word length");
   }
 

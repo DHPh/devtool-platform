@@ -1,7 +1,12 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import JSZip from "jszip";
+import {
+  extractZip,
+  inspectZip,
+  type ZipEntryInfo,
+} from "@/lib/processors/archive-core";
 import {
   Card,
   CardContent,
@@ -38,15 +43,9 @@ interface ArchiveFile {
   name: string;
   size: number;
   type: string;
-  url: string;
 }
 
-interface ArchiveEntry {
-  name: string;
-  size: number;
-  isDirectory: boolean;
-  path: string;
-}
+type ArchiveEntry = ZipEntryInfo;
 
 interface ExtractedFile {
   name: string;
@@ -61,8 +60,8 @@ interface ProcessedArchive {
   name: string;
   size: number;
   entries: ArchiveEntry[];
-  url: string;
-  type: "zip" | "rar" | "7z" | "tar" | "gz";
+  file: File;
+  type: "zip";
   extractedFiles?: ExtractedFile[];
   isExtracted?: boolean;
 }
@@ -74,9 +73,19 @@ export default function ArchiveManagerTab() {
   const [compressionLevel, setCompressionLevel] = useState<number>(5);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const archiveInputRef = useRef<HTMLInputElement>(null);
   const filesInputRef = useRef<HTMLInputElement>(null);
+  const objectUrlsRef = useRef(new Set<string>());
+
+  useEffect(() => {
+    const objectUrls = objectUrlsRef.current;
+    return () => {
+      objectUrls.forEach((url) => URL.revokeObjectURL(url));
+      objectUrls.clear();
+    };
+  }, []);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return "0 Bytes";
@@ -86,73 +95,33 @@ export default function ArchiveManagerTab() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  const getArchiveType = (filename: string): ProcessedArchive["type"] => {
-    const ext = filename.toLowerCase().split(".").pop();
-    switch (ext) {
-      case "zip":
-        return "zip";
-      case "rar":
-        return "rar";
-      case "7z":
-        return "7z";
-      case "tar":
-        return "tar";
-      case "gz":
-        return "gz";
-      default:
-        return "zip";
-    }
-  };
-
   const handleArchiveUpload = async (files: FileList | null) => {
     if (!files) return;
 
     setIsProcessing(true);
     setProgress(0);
+    setErrorMessage(null);
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const archiveType = getArchiveType(file.name);
+      try {
+        if (!file.name.toLowerCase().endsWith(".zip")) {
+          throw new Error(`"${file.name}" is not a ZIP file.`);
+        }
+        const entries = await inspectZip(await file.arrayBuffer());
+        const processedArchive: ProcessedArchive = {
+          id: `${Date.now()}-${i}`,
+          name: file.name,
+          size: file.size,
+          entries,
+          file,
+          type: "zip",
+        };
 
-      // Simulate archive extraction
-      const simulatedEntries: ArchiveEntry[] = [
-        {
-          name: "document.pdf",
-          size: 1024000,
-          isDirectory: false,
-          path: "/document.pdf",
-        },
-        { name: "images", size: 0, isDirectory: true, path: "/images" },
-        {
-          name: "photo1.jpg",
-          size: 2048000,
-          isDirectory: false,
-          path: "/images/photo1.jpg",
-        },
-        {
-          name: "photo2.jpg",
-          size: 1856000,
-          isDirectory: false,
-          path: "/images/photo2.jpg",
-        },
-        {
-          name: "readme.txt",
-          size: 1024,
-          isDirectory: false,
-          path: "/readme.txt",
-        },
-      ];
-
-      const processedArchive: ProcessedArchive = {
-        id: Date.now().toString() + i,
-        name: file.name,
-        size: file.size,
-        entries: simulatedEntries,
-        url: URL.createObjectURL(file),
-        type: archiveType,
-      };
-
-      setArchives((prev) => [...prev, processedArchive]);
+        setArchives((prev) => [...prev, processedArchive]);
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : `Could not read "${file.name}".`);
+      }
       setProgress(((i + 1) / files.length) * 100);
     }
 
@@ -173,7 +142,6 @@ export default function ArchiveManagerTab() {
         name: file.name,
         size: file.size,
         type: file.type,
-        url: URL.createObjectURL(file),
       };
 
       newFiles.push(archiveFile);
@@ -211,7 +179,7 @@ export default function ArchiveManagerTab() {
         type: "blob",
         compression: "DEFLATE",
         compressionOptions: {
-          level: 6,
+          level: compressionLevel,
         },
       });
 
@@ -254,80 +222,65 @@ export default function ArchiveManagerTab() {
     setProgress(0);
 
     try {
-      if (archive.type === "zip") {
-        // Use JSZip to extract the archive
-        const response = await fetch(archive.url);
-        const arrayBuffer = await response.arrayBuffer();
+      setErrorMessage(null);
+      const files = await extractZip(await archive.file.arrayBuffer());
+      setProgress(70);
 
-        setProgress(20);
+      archive.extractedFiles?.forEach((file) => {
+        URL.revokeObjectURL(file.url);
+        objectUrlsRef.current.delete(file.url);
+      });
+      const extractedFiles = files.map((file): ExtractedFile => {
+        const blob = new Blob([new Uint8Array(file.data)], { type: "application/octet-stream" });
+        const url = URL.createObjectURL(blob);
+        objectUrlsRef.current.add(url);
+        return { name: file.path, size: file.size, type: blob.type, url, blob };
+      });
 
-        const zip = new JSZip();
-        const loadedZip = await zip.loadAsync(arrayBuffer);
-
-        setProgress(40);
-
-        const extractedFiles: ExtractedFile[] = [];
-        const filePromises: Promise<void>[] = [];
-
-        Object.keys(loadedZip.files).forEach((filename) => {
-          const zipEntry = loadedZip.files[filename];
-          if (!zipEntry.dir) {
-            const promise = zipEntry.async("blob").then((blob) => {
-              const url = URL.createObjectURL(blob);
-              extractedFiles.push({
-                name: filename,
-                size: blob.size,
-                type: blob.type || "application/octet-stream",
-                url: url,
-                blob: blob,
-              });
-            });
-            filePromises.push(promise);
-          }
-        });
-
-        await Promise.all(filePromises);
-        setProgress(80);
-
-        // Update archive with extracted files
-        setArchives((prev) =>
-          prev.map((a) =>
-            a.id === archiveId ? { ...a, extractedFiles, isExtracted: true } : a
-          )
-        );
-
-        setProgress(100);
-
-        // Reset progress after a delay
-        setTimeout(() => setProgress(0), 1000);
-      } else {
-        alert(
-          `Extraction for ${archive.type.toUpperCase()} files is not yet supported. Only ZIP files can be extracted.`
-        );
-      }
+      setArchives((prev) =>
+        prev.map((item) =>
+          item.id === archiveId ? { ...item, extractedFiles, isExtracted: true } : item
+        )
+      );
+      setProgress(100);
+      setTimeout(() => setProgress(0), 1000);
     } catch (error) {
       console.error("Error extracting archive:", error);
-      alert(
-        "Error extracting archive. Please make sure it's a valid ZIP file."
-      );
+      setErrorMessage(error instanceof Error ? error.message : "Could not extract this ZIP archive.");
     }
 
     setIsProcessing(false);
   };
 
   const downloadArchive = (archive: ProcessedArchive) => {
+    const url = URL.createObjectURL(archive.file);
     const link = document.createElement("a");
-    link.href = archive.url;
+    link.href = url;
     link.download = archive.name;
     link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
   };
 
   const removeArchive = (archiveId: string) => {
-    setArchives((prev) => prev.filter((archive) => archive.id !== archiveId));
+    setArchives((prev) => {
+      const archive = prev.find((item) => item.id === archiveId);
+      archive?.extractedFiles?.forEach((file) => {
+        URL.revokeObjectURL(file.url);
+        objectUrlsRef.current.delete(file.url);
+      });
+      return prev.filter((item) => item.id !== archiveId);
+    });
   };
 
   const removeFileToCompress = (fileId: string) => {
     setFilesToCompress((prev) => prev.filter((file) => file.id !== fileId));
+  };
+
+  const downloadExtractedFile = (file: ExtractedFile) => {
+    const link = document.createElement("a");
+    link.href = file.url;
+    link.download = file.name.split("/").at(-1) ?? "download";
+    link.click();
   };
 
   const getTotalSizeToCompress = (): number => {
@@ -340,9 +293,15 @@ export default function ArchiveManagerTab() {
         <div className="text-center">
           <h2 className="text-3xl font-bold mb-2">Archive Manager</h2>
           <p className="text-muted-foreground">
-            Extract and create ZIP archives (ZIP creation fully functional!)
+            Inspect, extract, and create ZIP archives locally in your browser
           </p>
         </div>
+
+        {errorMessage && (
+          <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+            {errorMessage}
+          </div>
+        )}
 
         <Tabs defaultValue="extract" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
@@ -355,7 +314,7 @@ export default function ArchiveManagerTab() {
               <CardHeader>
                 <CardTitle>Upload Archives</CardTitle>
                 <CardDescription>
-                  Upload ZIP, RAR, 7Z, TAR, or GZ files to extract
+                  Upload ZIP files to inspect and extract their real contents
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -369,12 +328,12 @@ export default function ArchiveManagerTab() {
                   <Archive className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
                   <p className="text-lg font-medium">Upload Archive Files</p>
                   <p className="text-sm text-muted-foreground">
-                    Click to select or drag and drop archive files
+                    Click to select one or more ZIP files
                   </p>
                   <input
                     ref={archiveInputRef}
                     type="file"
-                    accept=".zip,.rar,.7z,.tar,.gz"
+                    accept=".zip,application/zip"
                     multiple
                     onChange={(e) => handleArchiveUpload(e.target.files)}
                     className="hidden"
@@ -480,6 +439,24 @@ export default function ArchiveManagerTab() {
                             )}
                           </div>
                         </div>
+
+                        {archive.isExtracted && archive.extractedFiles && (
+                          <div className="rounded border p-3">
+                            <p className="text-sm font-medium mb-2">Extracted files:</p>
+                            <div className="space-y-1 max-h-40 overflow-y-auto">
+                              {archive.extractedFiles.map((file) => (
+                                <div key={file.name} className="flex items-center gap-2 text-sm">
+                                  <File className="h-3 w-3 text-gray-500" />
+                                  <span className="flex-1 truncate">{file.name}</span>
+                                  <span className="text-muted-foreground">{formatFileSize(file.size)}</span>
+                                  <Button size="sm" variant="ghost" onClick={() => downloadExtractedFile(file)}>
+                                    <Download className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

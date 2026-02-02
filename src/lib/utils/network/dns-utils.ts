@@ -19,17 +19,6 @@ export interface DnsLookupResult {
   provider?: string;
 }
 
-export interface WhoisResult {
-  domain: string;
-  registrar?: string;
-  registrationDate?: string;
-  expirationDate?: string;
-  nameServers?: string[];
-  status?: string[];
-  error?: string;
-  timestamp: number;
-}
-
 export interface IpInfo {
   ip: string;
   hostname?: string;
@@ -303,41 +292,6 @@ export async function checkIpReputation(ip: string): Promise<{
       reputation: "unknown",
       sources: [],
       error: error instanceof Error ? error.message : "Reputation check failed",
-      timestamp,
-    };
-  }
-}
-
-/**
- * Perform WHOIS lookup (simulated - real WHOIS requires backend)
- */
-export async function performWhoisLookup(domain: string): Promise<WhoisResult> {
-  const timestamp = Date.now();
-
-  try {
-    // In a real implementation, this would use a WHOIS API
-    // For demo purposes, we'll use a public WHOIS API
-    const response = await fetch(
-      `https://api.whois.vu/?q=${encodeURIComponent(domain)}`
-    );
-    const data = await response.text();
-
-    // Parse basic WHOIS data (simplified)
-    const registrarMatch = data.match(/Registrar:\s*(.+)/i);
-    const createdMatch = data.match(/Creation Date:\s*(.+)/i);
-    const expiresMatch = data.match(/Registry Expiry Date:\s*(.+)/i);
-
-    return {
-      domain,
-      registrar: registrarMatch?.[1]?.trim(),
-      registrationDate: createdMatch?.[1]?.trim(),
-      expirationDate: expiresMatch?.[1]?.trim(),
-      timestamp,
-    };
-  } catch (error) {
-    return {
-      domain,
-      error: error instanceof Error ? error.message : "WHOIS lookup failed",
       timestamp,
     };
   }

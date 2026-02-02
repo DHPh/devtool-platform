@@ -19,6 +19,10 @@ import {
   ResponsiveTextArea,
   ModeTabs,
 } from "@/components/layout";
+import {
+  MarkdownPreviewContent,
+  renderMarkdownToSafeHtml,
+} from "@/lib/markdown/markdown-renderer";
 
 export const metadata = {
   id: "markdown-preview",
@@ -70,163 +74,13 @@ function hello() {
     "both"
   );
 
-  // Enhanced markdown to HTML converter
-  const convertMarkdownToHtml = (markdown: string) => {
-    let html = markdown;
-
-    // Handle code blocks first (to prevent other conversions inside them)
-    html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
-      return `<pre><code class="language-${
-        lang || "text"
-      }">${code.trim()}</code></pre>`;
-    });
-
-    // Handle inline code
-    html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
-
-    // Handle headers (must be on their own line)
-    html = html.replace(/^# (.*$)/gm, "<h1>$1</h1>");
-    html = html.replace(/^## (.*$)/gm, "<h2>$1</h2>");
-    html = html.replace(/^### (.*$)/gm, "<h3>$1</h3>");
-    html = html.replace(/^#### (.*$)/gm, "<h4>$1</h4>");
-    html = html.replace(/^##### (.*$)/gm, "<h5>$1</h5>");
-    html = html.replace(/^###### (.*$)/gm, "<h6>$1</h6>");
-
-    // Handle bold and italic
-    html = html.replace(/\*\*\*(.*?)\*\*\*/g, "<strong><em>$1</em></strong>");
-    html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-    html = html.replace(/\*(.*?)\*/g, "<em>$1</em>");
-
-    // Handle links
-    html = html.replace(
-      /\[([^\]]+)\]\(([^)]+)\)/g,
-      '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
-    );
-
-    // Handle images
-    html = html.replace(
-      /!\[([^\]]*)\]\(([^)]+)\)/g,
-      '<img src="$2" alt="$1" style="max-width: 100%;">'
-    );
-
-    // Handle blockquotes
-    html = html.replace(/^> (.*$)/gm, "<blockquote>$1</blockquote>");
-
-    // Handle tables
-    const tableRegex = /^(\|.+\|)\n(\|[-:| ]+\|)\n((\|.+\|(?:\n|$))*)/gm;
-    html = html.replace(tableRegex, (match, header, separator, body) => {
-      // Parse header
-      const headerCells = header
-        .split("|")
-        .slice(1, -1)
-        .map((cell: string) => cell.trim());
-
-      // Parse body rows
-      const bodyRows = body
-        .trim()
-        .split("\n")
-        .map((row: string) =>
-          row
-            .split("|")
-            .slice(1, -1)
-            .map((cell: string) => cell.trim())
-        );
-
-      let table = "<table><thead><tr>";
-      headerCells.forEach((cell: string) => {
-        table += `<th>${cell}</th>`;
-      });
-      table += "</tr></thead><tbody>";
-
-      bodyRows.forEach((row: string[]) => {
-        table += "<tr>";
-        row.forEach((cell: string) => {
-          table += `<td>${cell}</td>`;
-        });
-        table += "</tr>";
-      });
-
-      table += "</tbody></table>";
-      return table;
-    });
-
-    // Handle horizontal rules
-    html = html.replace(/^---$/gm, "<hr>");
-
-    // Handle lists (numbered and bullet)
-    const lines = html.split("\n");
-    let inOrderedList = false;
-    let inUnorderedList = false;
-    const result: string[] = [];
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-
-      // Check for ordered list
-      if (/^\d+\. /.test(line)) {
-        if (!inOrderedList) {
-          if (inUnorderedList) {
-            result.push("</ul>");
-            inUnorderedList = false;
-          }
-          result.push("<ol>");
-          inOrderedList = true;
-        }
-        result.push("<li>" + line.replace(/^\d+\. /, "") + "</li>");
-      }
-      // Check for unordered list
-      else if (/^- /.test(line)) {
-        if (!inUnorderedList) {
-          if (inOrderedList) {
-            result.push("</ol>");
-            inOrderedList = false;
-          }
-          result.push("<ul>");
-          inUnorderedList = true;
-        }
-        result.push("<li>" + line.replace(/^- /, "") + "</li>");
-      }
-      // Not a list item
-      else {
-        if (inOrderedList) {
-          result.push("</ol>");
-          inOrderedList = false;
-        }
-        if (inUnorderedList) {
-          result.push("</ul>");
-          inUnorderedList = false;
-        }
-        result.push(line);
-      }
-    }
-
-    // Close any remaining lists
-    if (inOrderedList) result.push("</ol>");
-    if (inUnorderedList) result.push("</ul>");
-
-    html = result.join("\n");
-
-    // Handle line breaks (but not in code blocks)
-    html = html.replace(/\n/g, "<br>");
-
-    // Clean up extra breaks around block elements
-    html = html.replace(/<br><(h[1-6]|div|p|blockquote|pre|table)>/g, "<$1>");
-    html = html.replace(
-      /<\/(h[1-6]|div|p|blockquote|pre|table)><br>/g,
-      "</$1>"
-    );
-
-    return html;
-  };
-
-  const htmlOutput = convertMarkdownToHtml(input);
-
   const copyMarkdown = () => {
     navigator.clipboard.writeText(input);
     toast.success("Markdown copied to clipboard!");
   };
 
   const copyHtml = () => {
+    const htmlOutput = renderMarkdownToSafeHtml(input);
     navigator.clipboard.writeText(htmlOutput);
     toast.success("HTML copied to clipboard!");
   };
@@ -243,6 +97,7 @@ function hello() {
   };
 
   const downloadHtml = () => {
+    const htmlOutput = renderMarkdownToSafeHtml(input);
     const fullHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -429,10 +284,9 @@ function hello() {
             </CardHeader>
             <CardContent>
               <div className="border rounded-lg p-4 min-h-[400px] max-h-[600px] overflow-y-auto">
-                <div
-                  className="markdown-preview prose prose-sm max-w-none dark:prose-invert"
-                  dangerouslySetInnerHTML={{ __html: htmlOutput }}
-                />
+                <div className="markdown-preview prose prose-sm max-w-none dark:prose-invert">
+                  <MarkdownPreviewContent markdown={input} />
+                </div>
               </div>
             </CardContent>
           </Card>

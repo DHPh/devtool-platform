@@ -22,7 +22,7 @@ import { buildQrCodeUrl } from "@/lib/processors";
 export const metadata = {
   id: "qr-generator",
   name: "QR Code Generator",
-  description: "Generate QR codes for text, URLs, and more",
+  description: "Generate QR images using a third-party service",
   category: "Utilities",
   tags: ["qr", "code", "generator", "url"],
   path: "/tools/qr-generator",
@@ -34,7 +34,6 @@ export default function QrGenerator() {
   const [size, setSize] = useState("200");
   const [errorLevel, setErrorLevel] = useState("M");
 
-  // Using a free QR code API service
   const getQrUrl = () => {
     return buildQrCodeUrl(text, Number(size), errorLevel);
   };
@@ -71,7 +70,7 @@ export default function QrGenerator() {
     <div className="space-y-6">
       <ToolHeader
         title="QR Code Generator"
-        description="Generate QR codes for URLs, text, email, phone numbers, and more"
+        description="Generate QR images through api.qrserver.com"
         icon={QrCode}
       />
 
@@ -98,11 +97,16 @@ export default function QrGenerator() {
                   placeholder="Enter text, URL, email, or any data..."
                   value={text}
                   onChange={(e) => setText(e.target.value)}
+                  maxLength={2000}
                   rows={4}
                   className="resize-none"
                 />
                 <p className="text-xs text-muted-foreground">
-                  {text.length} characters
+                  {text.length}/2000 characters
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  Privacy notice: your entered content is sent to
+                  api.qrserver.com to create the image. Do not enter secrets.
                 </p>
               </div>
 

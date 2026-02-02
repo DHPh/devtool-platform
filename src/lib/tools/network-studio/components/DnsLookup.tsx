@@ -6,13 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Search, Globe, Clock, AlertCircle, Info } from "lucide-react";
+import { Copy, Search, AlertCircle, Info } from "lucide-react";
 import { toast } from "sonner";
 import {
-  performWhoisLookup,
   isValidDomain,
   DNS_RECORD_TYPES,
-  type WhoisResult,
   type DnsRecordType,
 } from "@/lib/utils/network/dns-utils";
 import {
@@ -29,7 +27,6 @@ export function DnsLookup() {
     "TXT",
   ]);
   const [dnsResults, setDnsResults] = useState<ServerDnsResult[]>([]);
-  const [whoisResult, setWhoisResult] = useState<WhoisResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<{
     message: string;
@@ -112,13 +109,8 @@ export function DnsLookup() {
         serverDnsLookup(domain, recordType)
       );
 
-      const [dnsData, whoisData] = await Promise.all([
-        Promise.all(dnsPromises),
-        performWhoisLookup(domain),
-      ]);
-
+      const dnsData = await Promise.all(dnsPromises);
       setDnsResults(dnsData);
-      setWhoisResult(whoisData);
       toast.success(`DNS lookup completed for ${domain}`);
     } catch (error) {
       const errorInfo = categorizeError(error);
@@ -146,7 +138,7 @@ export function DnsLookup() {
       <div className="text-center">
         <h2 className="text-2xl font-bold mb-2">DNS Lookup</h2>
         <p className="text-muted-foreground">
-          Lookup DNS records and WHOIS information for domains
+          Resolve DNS records for public domain names from the server
         </p>
       </div>
 
@@ -285,62 +277,6 @@ export function DnsLookup() {
         </Card>
       )}
 
-      {/* WHOIS Results */}
-      {whoisResult && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Globe className="h-5 w-5" />
-              WHOIS Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {whoisResult.error ? (
-              <p className="text-red-500">{whoisResult.error}</p>
-            ) : (
-              <div className="grid md:grid-cols-2 gap-4">
-                {whoisResult.registrar && (
-                  <div>
-                    <span className="text-sm text-muted-foreground">
-                      Registrar:
-                    </span>
-                    <div className="font-medium">{whoisResult.registrar}</div>
-                  </div>
-                )}
-                {whoisResult.registrationDate && (
-                  <div>
-                    <span className="text-sm text-muted-foreground">
-                      Created:
-                    </span>
-                    <div className="font-medium">
-                      {whoisResult.registrationDate}
-                    </div>
-                  </div>
-                )}
-                {whoisResult.expirationDate && (
-                  <div>
-                    <span className="text-sm text-muted-foreground">
-                      Expires:
-                    </span>
-                    <div className="font-medium">
-                      {whoisResult.expirationDate}
-                    </div>
-                  </div>
-                )}
-                <div>
-                  <span className="text-sm text-muted-foreground">
-                    Checked:
-                  </span>
-                  <div className="font-medium flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {new Date(whoisResult.timestamp).toLocaleString()}
-                  </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

@@ -5,11 +5,15 @@
 
 "use client";
 
-import { RegexMatch } from "@/lib/utils/regex";
+type HighlightMatch = {
+  match: string;
+  index: number;
+  length: number;
+};
 
 interface RegexMatchHighlighterProps {
   text: string;
-  matches: RegexMatch[];
+  matches: HighlightMatch[];
   className?: string;
 }
 
@@ -38,13 +42,14 @@ export function RegexMatchHighlighter({
 
     // Add highlighted match
     elements.push(
-      <span
+      <mark
         key={`match-${i}`}
         className="bg-yellow-200 dark:bg-yellow-800 px-1 rounded font-medium"
+        data-match={i}
         title={`Match ${i + 1}: "${match.match}" at position ${match.index}`}
       >
         {match.match}
-      </span>
+      </mark>
     );
 
     lastIndex = match.index + match.length;

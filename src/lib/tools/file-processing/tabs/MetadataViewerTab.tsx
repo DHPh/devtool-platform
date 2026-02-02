@@ -1,611 +1,187 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import React, { useRef, useState } from "react";
+import { Download, Eye, Image as ImageIcon, Info, Music, Trash2, Upload, Video } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  Upload,
-  Eye,
-  Download,
-  Trash2,
-  Image as ImageIcon,
-  FileText,
-  Music,
-  Video,
-  Info,
-} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { basicFileMetadata, validateMetadataFile } from "@/lib/processors/file-capabilities";
 import { cn } from "@/lib/utils";
 
-interface FileMetadata {
+interface ExtractedMetadata {
+  basic: ReturnType<typeof basicFileMetadata>;
+  image?: { width: number; height: number };
+  audio?: { durationSeconds: number };
+  video?: { durationSeconds: number; width: number; height: number };
+}
+
+interface MetadataEntry {
   id: string;
   file: File;
-  name: string;
-  size: number;
-  type: string;
-  lastModified: Date;
-  metadata: {
-    basic: {
-      name: string;
-      size: string;
-      type: string;
-      lastModified: string;
-      extension: string;
-    };
-    image?: {
-      dimensions?: string;
-    };
-    audio?: {
-      duration?: string;
-      title?: string;
-    };
-    video?: {
-      duration?: string;
-      resolution?: string;
-    };
-    document?: {
-      title?: string;
-      pages?: number;
-    };
-  };
+  metadata: ExtractedMetadata;
   isLoading: boolean;
   error?: string;
 }
 
-export default function MetadataViewerTab() {
-  const [files, setFiles] = useState<FileMetadata[]>([]);
-  const [selectedFile, setSelectedFile] = useState<FileMetadata | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+function fileCategory(type: string): "image" | "audio" | "video" | "other" {
+  if (type.startsWith("image/")) return "image";
+  if (type.startsWith("audio/")) return "audio";
+  if (type.startsWith("video/")) return "video";
+  return "other";
+}
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  };
+function categoryIcon(category: ReturnType<typeof fileCategory>) {
+  if (category === "image") return <ImageIcon className="h-5 w-5" />;
+  if (category === "audio") return <Music className="h-5 w-5" />;
+  if (category === "video") return <Video className="h-5 w-5" />;
+  return <Info className="h-5 w-5" />;
+}
 
-  const getFileCategory = (mimeType: string): string => {
-    if (mimeType.startsWith("image/")) return "image";
-    if (mimeType.startsWith("audio/")) return "audio";
-    if (mimeType.startsWith("video/")) return "video";
-    if (
-      mimeType.includes("pdf") ||
-      mimeType.includes("document") ||
-      mimeType.includes("text")
-    )
-      return "document";
-    return "unknown";
-  };
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return "0 Bytes";
+  const units = ["Bytes", "KB", "MB", "GB"];
+  const unit = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  return `${parseFloat((bytes / 1024 ** unit).toFixed(2))} ${units[unit]}`;
+}
 
-  const getFileIcon = (category: string) => {
-    switch (category) {
-      case "image":
-        return <ImageIcon className="h-5 w-5" />;
-      case "document":
-        return <FileText className="h-5 w-5" />;
-      case "audio":
-        return <Music className="h-5 w-5" />;
-      case "video":
-        return <Video className="h-5 w-5" />;
-      default:
-        return <Info className="h-5 w-5" />;
-    }
-  };
-
-  const extractMetadata = async (
-    file: File
-  ): Promise<FileMetadata["metadata"]> => {
-    // Basic metadata that's always available
-    const basic = {
-      name: file.name,
-      size: formatFileSize(file.size),
-      type: file.type || "Unknown",
-      lastModified: new Date(file.lastModified).toLocaleString(),
-      extension: file.name.split(".").pop()?.toUpperCase() || "Unknown",
+function mediaMetadata(element: HTMLMediaElement, url: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const timeout = window.setTimeout(() => {
+      cleanup();
+      reject(new Error("Timed out while reading media metadata."));
+    }, 5000);
+    const cleanup = () => {
+      window.clearTimeout(timeout);
+      element.removeEventListener("loadedmetadata", loaded);
+      element.removeEventListener("error", failed);
     };
+    const loaded = () => { cleanup(); resolve(); };
+    const failed = () => { cleanup(); reject(new Error("The browser could not read this media file.")); };
+    element.addEventListener("loadedmetadata", loaded);
+    element.addEventListener("error", failed);
+    element.src = url;
+  });
+}
 
-    const category = getFileCategory(file.type);
-    const metadata: FileMetadata["metadata"] = { basic };
+async function extractIntrinsicMetadata(file: File): Promise<ExtractedMetadata> {
+  const metadata: ExtractedMetadata = { basic: basicFileMetadata(file) };
+  const category = fileCategory(file.type);
+  if (category === "other") return metadata;
 
-    try {
-      if (category === "image" && file.type.startsWith("image/")) {
-        // Extract real image dimensions
-        const img = new Image();
-        const url = URL.createObjectURL(file);
-
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-          img.src = url;
-        });
-
-        metadata.image = {
-          dimensions: `${img.width} × ${img.height}`,
-        };
-
-        URL.revokeObjectURL(url);
-      } else if (category === "audio" && file.type.startsWith("audio/")) {
-        // Extract audio duration
-        const audio = new Audio();
-        const url = URL.createObjectURL(file);
-
-        try {
-          await new Promise((resolve, reject) => {
-            const timeout = setTimeout(
-              () => reject(new Error("Timeout")),
-              3000
-            );
-            audio.addEventListener("loadedmetadata", () => {
-              clearTimeout(timeout);
-              resolve(undefined);
-            });
-            audio.addEventListener("error", () => {
-              clearTimeout(timeout);
-              reject(new Error("Cannot load audio"));
-            });
-            audio.src = url;
-          });
-
-          const duration = audio.duration;
-          const minutes = Math.floor(duration / 60);
-          const seconds = Math.floor(duration % 60);
-
-          metadata.audio = {
-            duration: `${minutes}:${seconds.toString().padStart(2, "0")}`,
-            title: file.name.replace(/\.[^/.]+$/, ""),
-          };
-        } catch {
-          metadata.audio = {
-            duration: "Unknown",
-            title: file.name.replace(/\.[^/.]+$/, ""),
-          };
-        }
-
-        URL.revokeObjectURL(url);
-      } else if (category === "video" && file.type.startsWith("video/")) {
-        // Extract video info
-        const video = document.createElement("video");
-        const url = URL.createObjectURL(file);
-
-        try {
-          await new Promise((resolve, reject) => {
-            const timeout = setTimeout(
-              () => reject(new Error("Timeout")),
-              3000
-            );
-            video.addEventListener("loadedmetadata", () => {
-              clearTimeout(timeout);
-              resolve(undefined);
-            });
-            video.addEventListener("error", () => {
-              clearTimeout(timeout);
-              reject(new Error("Cannot load video"));
-            });
-            video.src = url;
-          });
-
-          const duration = video.duration;
-          const minutes = Math.floor(duration / 60);
-          const seconds = Math.floor(duration % 60);
-
-          metadata.video = {
-            duration: `${minutes}:${seconds.toString().padStart(2, "0")}`,
-            resolution: `${video.videoWidth} × ${video.videoHeight}`,
-          };
-        } catch {
-          metadata.video = {
-            duration: "Unknown",
-            resolution: "Unknown",
-          };
-        }
-
-        URL.revokeObjectURL(url);
-      } else if (category === "document") {
-        metadata.document = {
-          title: file.name.replace(/\.[^/.]+$/, ""),
-          pages: 1,
-        };
-      }
-    } catch {
-      // If metadata extraction fails, we'll just have basic info
+  const url = URL.createObjectURL(file);
+  try {
+    if (category === "image") {
+      const image = new Image();
+      await new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve();
+        image.onerror = () => reject(new Error("The browser could not read this image."));
+        image.src = url;
+      });
+      metadata.image = { width: image.naturalWidth, height: image.naturalHeight };
+    } else if (category === "audio") {
+      const audio = new Audio();
+      await mediaMetadata(audio, url);
+      if (!Number.isFinite(audio.duration)) throw new Error("The media duration is unavailable.");
+      metadata.audio = { durationSeconds: audio.duration };
+      audio.removeAttribute("src");
+      audio.load();
+    } else {
+      const video = document.createElement("video");
+      await mediaMetadata(video, url);
+      if (!Number.isFinite(video.duration)) throw new Error("The media duration is unavailable.");
+      metadata.video = { durationSeconds: video.duration, width: video.videoWidth, height: video.videoHeight };
+      video.removeAttribute("src");
+      video.load();
     }
-
     return metadata;
-  };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
 
-  const handleFileSelect = async (files: FileList | null) => {
-    if (!files) return;
+function metadataRows(metadata: Record<string, unknown>) {
+  return Object.entries(metadata).map(([key, value]) => (
+    <div key={key} className="space-y-1">
+      <dt className="text-sm font-medium text-muted-foreground capitalize">{key.replace(/([A-Z])/g, " $1").trim()}</dt>
+      <dd className="text-sm font-mono break-all">{String(value)}</dd>
+    </div>
+  ));
+}
 
-    const newFiles: FileMetadata[] = [];
+export default function MetadataViewerTab() {
+  const [files, setFiles] = useState<MetadataEntry[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const selectedFile = files.find((file) => file.id === selectedId) ?? null;
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-
-      const newFile: FileMetadata = {
-        id: Date.now() + i + Math.random().toString(36).substr(2, 9),
+  const handleFileSelect = async (selection: FileList | null) => {
+    if (!selection) return;
+    const entries = Array.from(selection).map((file, index): MetadataEntry => {
+      const error = validateMetadataFile(file);
+      return {
+        id: `${Date.now()}-${index}-${file.name}`,
         file,
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        lastModified: new Date(file.lastModified),
-        metadata: {
-          basic: {
-            name: "",
-            size: "",
-            type: "",
-            lastModified: "",
-            extension: "",
-          },
-        },
-        isLoading: true,
+        metadata: { basic: basicFileMetadata(file) },
+        isLoading: !error,
+        error: error ?? undefined,
       };
+    });
+    setFiles((current) => [...current, ...entries]);
+    if (!selectedId && entries[0]) setSelectedId(entries[0].id);
+    if (fileInputRef.current) fileInputRef.current.value = "";
 
-      newFiles.push(newFile);
-    }
-
-    setFiles((prev) => [...prev, ...newFiles]);
-
-    // Process metadata extraction for each file
-    for (const newFile of newFiles) {
+    for (const entry of entries.filter((file) => file.isLoading)) {
       try {
-        const metadata = await extractMetadata(newFile.file);
-
-        setFiles((prev) =>
-          prev.map((f) =>
-            f.id === newFile.id
-              ? {
-                  ...f,
-                  metadata,
-                  isLoading: false,
-                }
-              : f
-          )
-        );
-      } catch {
-        setFiles((prev) =>
-          prev.map((f) =>
-            f.id === newFile.id
-              ? {
-                  ...f,
-                  isLoading: false,
-                  error: "Failed to extract metadata",
-                }
-              : f
-          )
-        );
+        const metadata = await extractIntrinsicMetadata(entry.file);
+        setFiles((current) => current.map((file) => file.id === entry.id ? { ...file, metadata, isLoading: false } : file));
+      } catch (error) {
+        setFiles((current) => current.map((file) => file.id === entry.id
+          ? { ...file, isLoading: false, error: error instanceof Error ? error.message : "Metadata extraction failed." }
+          : file));
       }
     }
   };
 
   const removeFile = (id: string) => {
-    setFiles((prev) => prev.filter((f) => f.id !== id));
-    if (selectedFile?.id === id) {
-      setSelectedFile(null);
+    setFiles((current) => current.filter((file) => file.id !== id));
+    if (selectedId === id) setSelectedId(null);
+  };
+
+  const exportMetadata = (entry: MetadataEntry) => {
+    const url = URL.createObjectURL(new Blob([JSON.stringify(entry.metadata, null, 2)], { type: "application/json" }));
+    try {
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${entry.file.name}.metadata.json`;
+      link.click();
+    } finally {
+      URL.revokeObjectURL(url);
     }
   };
 
-  const exportMetadata = (file: FileMetadata) => {
-    const dataStr = JSON.stringify(file.metadata, null, 2);
-    const dataBlob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${file.name}_metadata.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  return (
-    <TooltipProvider>
-      <div className="space-y-6">
-        {/* File Upload */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Eye className="h-5 w-5 mr-2" />
-              Metadata Viewer
-            </CardTitle>
-            <CardDescription>
-              Extract and view detailed metadata from your files including
-              dimensions, duration, and basic file information
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div
-              className={cn(
-                "border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6",
-                "hover:border-gray-400 dark:hover:border-gray-500 transition-colors cursor-pointer"
-              )}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                className="hidden"
-                onChange={(e) => handleFileSelect(e.target.files)}
-                accept="*/*"
-              />
-              <div className="text-center">
-                <Upload className="h-10 w-10 mx-auto text-gray-400 mb-4" />
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Click to upload files or drag and drop
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                  Supports all file types
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* File List */}
-        {files.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Files */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Files ({files.length})</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {files.map((file) => (
-                    <div
-                      key={file.id}
-                      className={cn(
-                        "flex items-center justify-between p-3 rounded-lg border cursor-pointer",
-                        "hover:bg-gray-50 dark:hover:bg-gray-800",
-                        selectedFile?.id === file.id &&
-                          "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800"
-                      )}
-                      onClick={() => setSelectedFile(file)}
-                    >
-                      <div className="flex items-center space-x-3 flex-1 min-w-0">
-                        <div className="text-gray-500">
-                          {getFileIcon(getFileCategory(file.type))}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            {file.name}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {formatFileSize(file.size)} •{" "}
-                            {file.type || "Unknown type"}
-                          </p>
-                          {file.isLoading && (
-                            <div className="flex items-center mt-1">
-                              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse mr-1"></div>
-                              <span className="text-xs text-blue-600">
-                                Extracting metadata...
-                              </span>
-                            </div>
-                          )}
-                          {file.error && (
-                            <Badge
-                              variant="destructive"
-                              className="mt-1 text-xs"
-                            >
-                              {file.error}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        {!file.isLoading && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  exportMetadata(file);
-                                }}
-                              >
-                                <Download className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Export metadata as JSON</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                removeFile(file.id);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Remove file</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Metadata Display */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Metadata</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {selectedFile ? (
-                  <div className="space-y-4 max-h-96 overflow-y-auto">
-                    {/* Basic Information */}
-                    <Card className="mb-4">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="flex items-center text-lg">
-                          <Info className="h-5 w-5" />
-                          <span className="ml-2">Basic Information</span>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {Object.entries(selectedFile.metadata.basic).map(
-                            ([key, value]) => (
-                              <div key={key} className="space-y-1">
-                                <dt className="text-sm font-medium text-muted-foreground capitalize">
-                                  {key.replace(/([A-Z])/g, " $1").trim()}
-                                </dt>
-                                <dd className="text-sm font-mono">
-                                  {String(value)}
-                                </dd>
-                              </div>
-                            )
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Image Metadata */}
-                    {selectedFile.metadata.image && (
-                      <Card className="mb-4">
-                        <CardHeader className="pb-3">
-                          <CardTitle className="flex items-center text-lg">
-                            <ImageIcon className="h-5 w-5" />
-                            <span className="ml-2">Image Properties</span>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {Object.entries(selectedFile.metadata.image).map(
-                              ([key, value]) => (
-                                <div key={key} className="space-y-1">
-                                  <dt className="text-sm font-medium text-muted-foreground capitalize">
-                                    {key.replace(/([A-Z])/g, " $1").trim()}
-                                  </dt>
-                                  <dd className="text-sm font-mono">
-                                    {String(value)}
-                                  </dd>
-                                </div>
-                              )
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-
-                    {/* Audio Metadata */}
-                    {selectedFile.metadata.audio && (
-                      <Card className="mb-4">
-                        <CardHeader className="pb-3">
-                          <CardTitle className="flex items-center text-lg">
-                            <Music className="h-5 w-5" />
-                            <span className="ml-2">Audio Properties</span>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {Object.entries(selectedFile.metadata.audio).map(
-                              ([key, value]) => (
-                                <div key={key} className="space-y-1">
-                                  <dt className="text-sm font-medium text-muted-foreground capitalize">
-                                    {key.replace(/([A-Z])/g, " $1").trim()}
-                                  </dt>
-                                  <dd className="text-sm font-mono">
-                                    {String(value)}
-                                  </dd>
-                                </div>
-                              )
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-
-                    {/* Video Metadata */}
-                    {selectedFile.metadata.video && (
-                      <Card className="mb-4">
-                        <CardHeader className="pb-3">
-                          <CardTitle className="flex items-center text-lg">
-                            <Video className="h-5 w-5" />
-                            <span className="ml-2">Video Properties</span>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {Object.entries(selectedFile.metadata.video).map(
-                              ([key, value]) => (
-                                <div key={key} className="space-y-1">
-                                  <dt className="text-sm font-medium text-muted-foreground capitalize">
-                                    {key.replace(/([A-Z])/g, " $1").trim()}
-                                  </dt>
-                                  <dd className="text-sm font-mono">
-                                    {String(value)}
-                                  </dd>
-                                </div>
-                              )
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-
-                    {/* Document Metadata */}
-                    {selectedFile.metadata.document && (
-                      <Card className="mb-4">
-                        <CardHeader className="pb-3">
-                          <CardTitle className="flex items-center text-lg">
-                            <FileText className="h-5 w-5" />
-                            <span className="ml-2">Document Properties</span>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {Object.entries(selectedFile.metadata.document).map(
-                              ([key, value]) => (
-                                <div key={key} className="space-y-1">
-                                  <dt className="text-sm font-medium text-muted-foreground capitalize">
-                                    {key.replace(/([A-Z])/g, " $1").trim()}
-                                  </dt>
-                                  <dd className="text-sm font-mono">
-                                    {String(value)}
-                                  </dd>
-                                </div>
-                              )
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center text-gray-500 py-8">
-                    <Eye className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Select a file to view its metadata</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        )}
+  return <TooltipProvider><div className="space-y-6">
+    <Card><CardHeader><CardTitle className="flex items-center"><Eye className="h-5 w-5 mr-2" />Metadata Viewer</CardTitle><CardDescription>View browser-provided file facts and intrinsic image or media properties.</CardDescription></CardHeader><CardContent>
+      <div className={cn("border-2 border-dashed rounded-lg p-6 cursor-pointer transition-colors", "hover:border-primary/50")} onClick={() => fileInputRef.current?.click()}>
+        <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(event) => handleFileSelect(event.target.files)} />
+        <div className="text-center"><Upload className="h-10 w-10 mx-auto text-muted-foreground mb-4" /><p className="text-sm">Click to select files</p><p className="text-xs text-muted-foreground mt-1">Maximum 100 MB per file. Image dimensions and browser-readable audio/video properties are extracted locally.</p><p className="text-xs text-muted-foreground">EXIF, embedded tags, and document page counts are not parsed.</p></div>
       </div>
-    </TooltipProvider>
-  );
+    </CardContent></Card>
+
+    {files.length > 0 && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <Card><CardHeader><CardTitle>Files ({files.length})</CardTitle></CardHeader><CardContent><div className="space-y-2 max-h-96 overflow-y-auto">{files.map((entry) => (
+        <div key={entry.id} className={cn("flex items-center justify-between p-3 rounded-lg border cursor-pointer", selectedId === entry.id && "bg-primary/5 border-primary/30")} onClick={() => setSelectedId(entry.id)}>
+          <div className="flex items-center gap-3 min-w-0"><div className="text-muted-foreground">{categoryIcon(fileCategory(entry.file.type))}</div><div className="min-w-0"><p className="text-sm font-medium truncate">{entry.file.name}</p><p className="text-xs text-muted-foreground">{formatFileSize(entry.file.size)} • {entry.file.type || "Unknown type"}</p>{entry.isLoading && <p className="text-xs text-blue-600">Reading intrinsic metadata…</p>}{entry.error && <Badge variant="destructive" className="mt-1 text-xs">{entry.error}</Badge>}</div></div>
+          <div className="flex gap-2">{!entry.isLoading && <Tooltip><TooltipTrigger asChild><Button size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); exportMetadata(entry); }}><Download className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Export verified metadata as JSON</TooltipContent></Tooltip>}<Tooltip><TooltipTrigger asChild><Button size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); removeFile(entry.id); }}><Trash2 className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Remove file</TooltipContent></Tooltip></div>
+        </div>
+      ))}</div></CardContent></Card>
+
+      <Card><CardHeader><CardTitle>Metadata</CardTitle></CardHeader><CardContent>{selectedFile ? <div className="space-y-4 max-h-96 overflow-y-auto">
+        <Card><CardHeader className="pb-3"><CardTitle className="text-lg">Basic Information</CardTitle></CardHeader><CardContent><dl className="grid grid-cols-1 md:grid-cols-2 gap-3">{metadataRows(selectedFile.metadata.basic)}</dl></CardContent></Card>
+        {selectedFile.metadata.image && <Card><CardHeader className="pb-3"><CardTitle className="text-lg">Image Properties</CardTitle></CardHeader><CardContent><dl className="grid grid-cols-2 gap-3">{metadataRows(selectedFile.metadata.image)}</dl></CardContent></Card>}
+        {selectedFile.metadata.audio && <Card><CardHeader className="pb-3"><CardTitle className="text-lg">Audio Properties</CardTitle></CardHeader><CardContent><dl>{metadataRows(selectedFile.metadata.audio)}</dl></CardContent></Card>}
+        {selectedFile.metadata.video && <Card><CardHeader className="pb-3"><CardTitle className="text-lg">Video Properties</CardTitle></CardHeader><CardContent><dl className="grid grid-cols-2 gap-3">{metadataRows(selectedFile.metadata.video)}</dl></CardContent></Card>}
+      </div> : <div className="text-center text-muted-foreground py-8"><Eye className="h-12 w-12 mx-auto mb-4 opacity-50" /><p>Select a file to view its metadata</p></div>}</CardContent></Card>
+    </div>}
+  </div></TooltipProvider>;
 }

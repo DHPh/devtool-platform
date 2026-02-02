@@ -305,8 +305,8 @@ export function UnifiedHttpTester() {
       <div className="text-center">
         <h2 className="text-2xl font-bold mb-2">HTTP Tester & API Client</h2>
         <p className="text-muted-foreground">
-          Unified HTTP testing tool with comprehensive header library and
-          detailed error reporting
+          Requests run in your browser. Cross-origin targets must allow your
+          origin through CORS, and browser-restricted headers cannot be set.
         </p>
       </div>
 

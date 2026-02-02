@@ -43,6 +43,7 @@ export interface ServerIpInfoResult {
   organization?: string;
   asn?: string;
   error?: string;
+  errorCode?: string;
   timestamp: number;
 }
 

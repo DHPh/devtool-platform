@@ -9,6 +9,7 @@ These documents describe the current codebase:
 | [Testing](TESTING.md) | Local checks, test boundaries, browser tests, and CI |
 | [Deployment](DEPLOYMENT.md) | Runtime requirements, environment variables, builds, and Vercel CI/CD |
 | [Security](SECURITY.md) | Processing modes, outbound-request controls, DNS, rate limits, and logging |
+| [100+ executable tools plan](100_PLUS_TOOLS_PLAN.md) | Proposed catalog, delivery phases, runtime boundaries, and quality gates |
 | [Codebase improvement plan](CODEBASE_IMPROVEMENT_PLAN.md) | Completed modernization milestones and implementation notes |
 
 The [archive](archive/README.md) preserves superseded plans, fix reports, and old production snapshots for historical context only.

@@ -29,7 +29,10 @@ import {
   Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { hashBytes } from "@/lib/processors";
+import {
+  hashFileContent,
+  type FileHashAlgorithm,
+} from "@/lib/processors";
 
 interface HashedFile {
   id: string;
@@ -55,7 +58,7 @@ const HASH_ALGORITHMS = [
 
 export default function FileHasherTab() {
   const [files, setFiles] = useState<HashedFile[]>([]);
-  const [selectedAlgorithms, setSelectedAlgorithms] = useState<string[]>([
+  const [selectedAlgorithms, setSelectedAlgorithms] = useState<FileHashAlgorithm[]>([
     "sha256",
   ]);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -70,60 +73,6 @@ export default function FileHasherTab() {
     const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  };
-
-  // Simulate hash generation (in real implementation, use crypto.subtle or crypto-js)
-  const generateHash = async (
-    file: File,
-    algorithm: string
-  ): Promise<string> => {
-    try {
-      // Map algorithm names to Web Crypto API names
-      const algorithmMap: Record<string, string> = {
-        md5: "MD5",
-        sha1: "SHA-1",
-        sha256: "SHA-256",
-        sha512: "SHA-512",
-      };
-
-      const cryptoAlgorithm = algorithmMap[algorithm];
-      if (!cryptoAlgorithm) {
-        throw new Error(`Unsupported algorithm: ${algorithm}`);
-      }
-
-      // For MD5, we'll need to use a fallback as it's not supported in Web Crypto API
-      if (algorithm === "md5") {
-        // Import crypto-js for MD5 as it's not available in Web Crypto API
-        const { MD5, lib } = await import("crypto-js");
-        const arrayBuffer = await file.arrayBuffer();
-        const wordArray = lib.WordArray.create(arrayBuffer);
-        const hash = MD5(wordArray);
-        return hash.toString();
-      }
-
-      // Read file as array buffer
-      const arrayBuffer = await file.arrayBuffer();
-
-      return hashBytes(
-        new Uint8Array(arrayBuffer),
-        cryptoAlgorithm as "SHA-1" | "SHA-256" | "SHA-512"
-      );
-    } catch (error) {
-      console.error("Hash generation failed:", error);
-      // Fallback to simulated hash if real implementation fails
-      const hashLength =
-        algorithm === "md5"
-          ? 32
-          : algorithm === "sha1"
-          ? 40
-          : algorithm === "sha256"
-          ? 64
-          : 128;
-      return Array(hashLength)
-        .fill(0)
-        .map(() => Math.floor(Math.random() * 16).toString(16))
-        .join("");
-    }
   };
 
   const handleFileSelect = async (files: FileList | null) => {
@@ -166,7 +115,10 @@ export default function FileHasherTab() {
         const algorithm = selectedAlgorithms[i];
         setProgress((i / selectedAlgorithms.length) * 100);
 
-        const hash = await generateHash(file.file, algorithm);
+        const hash = await hashFileContent(
+          file.file,
+          algorithm,
+        );
         hashes[algorithm as keyof HashedFile["hashes"]] = hash;
       }
 
@@ -235,7 +187,7 @@ export default function FileHasherTab() {
     setFiles((prev) => prev.filter((file) => file.id !== fileId));
   };
 
-  const toggleAlgorithm = (algorithm: string) => {
+  const toggleAlgorithm = (algorithm: FileHashAlgorithm) => {
     setSelectedAlgorithms((prev) =>
       prev.includes(algorithm)
         ? prev.filter((a) => a !== algorithm)

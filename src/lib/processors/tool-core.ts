@@ -1,3 +1,5 @@
+import { renderMarkdownToSafeHtml } from "@/lib/markdown/markdown-renderer";
+
 export interface TextStatistics {
   words: number;
   characters: number;
@@ -63,15 +65,7 @@ export function minifyCss(input: string): string {
 }
 
 export function markdownToHtml(markdown: string): string {
-  return markdown
-    .replace(/^### (.*$)/gim, "<h3>$1</h3>")
-    .replace(/^## (.*$)/gim, "<h2>$1</h2>")
-    .replace(/^# (.*$)/gim, "<h1>$1</h1>")
-    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.*?)\*/g, "<em>$1</em>")
-    .replace(/`([^`]+)`/g, "<code>$1</code>")
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
-    .replace(/\n/g, "<br>");
+  return renderMarkdownToSafeHtml(markdown);
 }
 
 export function countText(input: string): TextStatistics {
@@ -140,9 +134,12 @@ export function generateLorem(wordCount: number): string {
 }
 
 export function buildQrCodeUrl(text: string, size = 256, errorLevel = "M"): string {
-  if (!text) throw new Error("QR content is required");
+  if (!text.trim()) throw new Error("QR content is required");
+  if (text.length > 2_000) throw new Error("QR content must be 2,000 characters or fewer");
   if (!Number.isInteger(size) || size < 64 || size > 1024) throw new Error("QR size must be between 64 and 1024");
-  const query = new URLSearchParams({ size: `${size}x${size}`, data: text, ecc: errorLevel });
+  const normalizedErrorLevel = errorLevel.toUpperCase();
+  if (!["L", "M", "Q", "H"].includes(normalizedErrorLevel)) throw new Error("Unsupported QR error correction level");
+  const query = new URLSearchParams({ size: `${size}x${size}`, data: text, ecc: normalizedErrorLevel });
   return `https://api.qrserver.com/v1/create-qr-code/?${query.toString()}`;
 }
 

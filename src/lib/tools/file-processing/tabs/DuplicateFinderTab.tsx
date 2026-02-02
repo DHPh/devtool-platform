@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -22,6 +22,10 @@ import {
   Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  groupDuplicateFiles,
+  hashFileForDuplicateDetection,
+} from "@/lib/processors";
 
 interface DuplicateFile {
   id: string;
@@ -33,6 +37,7 @@ interface DuplicateFile {
   lastModified: Date;
   url: string;
   selected: boolean;
+  error?: string;
 }
 
 interface DuplicateGroup {
@@ -50,6 +55,18 @@ export default function DuplicateFinderTab() {
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const filesRef = useRef<DuplicateFile[]>([]);
+
+  useEffect(() => {
+    filesRef.current = files;
+  }, [files]);
+
+  useEffect(
+    () => () => {
+      filesRef.current.forEach((file) => URL.revokeObjectURL(file.url));
+    },
+    [],
+  );
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return "0 Bytes";
@@ -57,17 +74,6 @@ export default function DuplicateFinderTab() {
     const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  };
-
-  // Simple hash generation (in production, use crypto.subtle or crypto-js)
-  const generateFileHash = async (file: File): Promise<string> => {
-    // Simulate hash generation based on file content
-    const content = await file.arrayBuffer();
-    const hash = Array.from(new Uint8Array(content))
-      .slice(0, 32) // Use first 32 bytes for demo
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-    return hash;
   };
 
   const handleFileSelect = async (files: FileList | null) => {
@@ -111,45 +117,33 @@ export default function DuplicateFinderTab() {
       setProgress((i / files.length) * 50); // First 50% for hashing
 
       try {
-        const hash = await generateFileHash(file.file);
-        filesWithHashes.push({ ...file, hash });
+        const hash = await hashFileForDuplicateDetection(file.file);
+        filesWithHashes.push({ ...file, hash, error: undefined });
       } catch (error) {
         console.error("Error hashing file:", error);
-        filesWithHashes.push({ ...file, hash: "error" });
+        filesWithHashes.push({
+          ...file,
+          hash: "",
+          error: error instanceof Error ? error.message : "Hash generation failed",
+        });
       }
     }
 
     setFiles(filesWithHashes);
 
-    // Group files by hash
-    const hashGroups: { [hash: string]: DuplicateFile[] } = {};
+    const groupedFiles = groupDuplicateFiles(
+      filesWithHashes.filter((file) => file.hash),
+    );
+    const duplicateGroups: DuplicateGroup[] = groupedFiles.map((groupFiles) => {
+      const sortedFiles = [...groupFiles].sort((a, b) => a.name.localeCompare(b.name));
+      const totalSize = sortedFiles.reduce((sum, file) => sum + file.size, 0);
 
-    filesWithHashes.forEach((file) => {
-      if (file.hash && file.hash !== "error") {
-        if (!hashGroups[file.hash]) {
-          hashGroups[file.hash] = [];
-        }
-        hashGroups[file.hash].push(file);
-      }
-    });
-
-    // Filter groups with duplicates
-    const duplicateGroups: DuplicateGroup[] = [];
-
-    Object.entries(hashGroups).forEach(([hash, groupFiles], index) => {
-      setProgress(50 + (index / Object.keys(hashGroups).length) * 50); // Second 50% for grouping
-
-      if (groupFiles.length > 1) {
-        const totalSize = groupFiles.reduce((sum, file) => sum + file.size, 0);
-        const wastedSpace = totalSize - groupFiles[0].size; // Size that could be saved
-
-        duplicateGroups.push({
-          hash,
-          files: groupFiles.sort((a, b) => a.name.localeCompare(b.name)),
-          totalSize,
-          wastedSpace,
-        });
-      }
+      return {
+        hash: sortedFiles[0].hash,
+        files: sortedFiles,
+        totalSize,
+        wastedSpace: totalSize - sortedFiles[0].size,
+      };
     });
 
     setDuplicateGroups(
@@ -194,6 +188,9 @@ export default function DuplicateFinderTab() {
   };
 
   const deleteSelectedFiles = () => {
+    files
+      .filter((file) => selectedFiles.includes(file.id))
+      .forEach((file) => URL.revokeObjectURL(file.url));
     const remainingFiles = files.filter(
       (file) => !selectedFiles.includes(file.id)
     );
@@ -202,10 +199,18 @@ export default function DuplicateFinderTab() {
 
     // Recalculate duplicate groups
     const updatedGroups = duplicateGroups
-      .map((group) => ({
-        ...group,
-        files: group.files.filter((file) => !selectedFiles.includes(file.id)),
-      }))
+      .map((group) => {
+        const groupFiles = group.files.filter(
+          (file) => !selectedFiles.includes(file.id),
+        );
+        const totalSize = groupFiles.reduce((total, file) => total + file.size, 0);
+        return {
+          ...group,
+          files: groupFiles,
+          totalSize,
+          wastedSpace: totalSize - (groupFiles[0]?.size ?? 0),
+        };
+      })
       .filter((group) => group.files.length > 1);
 
     setDuplicateGroups(updatedGroups);
@@ -289,6 +294,20 @@ export default function DuplicateFinderTab() {
                 <Progress value={progress} className="w-full" />
               </div>
             )}
+            {!isScanning && files.some((file) => file.error) && (
+              <div className="space-y-1 text-sm text-red-600">
+                <p className="font-medium">
+                  {files.filter((file) => file.error).length} file(s) could not be hashed:
+                </p>
+                {files
+                  .filter((file) => file.error)
+                  .map((file) => (
+                    <p key={file.id}>
+                      {file.name}: {file.error}
+                    </p>
+                  ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -355,6 +374,14 @@ export default function DuplicateFinderTab() {
                     </Button>
                   </div>
                 )}
+              </div>
+            ) : files.some((file) => file.error) && !isScanning ? (
+              <div className="py-8 text-center text-red-600">
+                <AlertTriangle className="mx-auto mb-4 h-10 w-10" />
+                <p className="font-medium">Scan incomplete</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Retry the files that could not be hashed before relying on the result.
+                </p>
               </div>
             ) : files.length > 0 && !isScanning ? (
               <div className="text-center text-green-600 py-8">

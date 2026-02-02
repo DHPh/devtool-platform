@@ -34,9 +34,9 @@ export const GENERATOR_TOOLS = [
   {
     id: "qr-generator",
     kind: "standalone",
-    processing: "client",
+    processing: "hybrid",
     name: "QR Code Generator",
-    description: "Generate QR codes for text, URLs, and more",
+    description: "Generate QR images through a third-party service; entered content is sent to that provider",
     category: TOOL_CATEGORIES.GENERATORS.id,
     type: TOOL_TYPES.GENERATOR,
     tags: ["qr", "code", "generator"],
