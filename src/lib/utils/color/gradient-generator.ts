@@ -2,11 +2,20 @@
  * CSS Gradient generator utilities
  */
 
-import { getColorInfo } from "./color-converter";
+import {
+  ColorInterpolationOptions,
+  interpolateColor,
+  parseInterpolationColor,
+} from "./color-interpolation";
 
 export interface GradientStop {
   color: string;
   position: number; // 0-100
+}
+
+export interface MaterializeGradientOptions extends ColorInterpolationOptions {
+  /** Number of intervals generated between each authored stop. */
+  samplesPerSegment?: number;
 }
 
 export interface LinearGradient {
@@ -198,26 +207,93 @@ export function generateRandomGradient(
 export function interpolateColors(
   color1: string,
   color2: string,
-  steps: number
+  steps: number,
+  options: ColorInterpolationOptions = {}
 ): string[] {
-  const c1 = getColorInfo(color1);
-  const c2 = getColorInfo(color2);
+  if (!Number.isInteger(steps) || steps < 1) {
+    throw new Error("Interpolation steps must be a positive integer");
+  }
+  if (!parseInterpolationColor(color1) || !parseInterpolationColor(color2)) {
+    throw new Error("Invalid colors for interpolation");
+  }
+  if (steps === 1) return [interpolateColor(color1, color2, 0, options)];
+  return Array.from({ length: steps }, (_, index) =>
+    interpolateColor(color1, color2, index / (steps - 1), options)
+  );
+}
 
-  if (!c1 || !c2) throw new Error("Invalid colors for interpolation");
+/** Materialize the selected interpolation engine and serialize the exact CSS shown by the UI. */
+export function generateInterpolatedGradientCSS(
+  gradient: Gradient,
+  options: MaterializeGradientOptions = {},
+): string {
+  return generateGradientCSS({
+    ...gradient,
+    stops: materializeGradientStops(gradient.stops, options),
+  } as Gradient);
+}
 
-  const colors: string[] = [];
+/** Return the color displayed by the gradient picker at a percentage position. */
+export function interpolateGradientColorAtPosition(
+  stops: GradientStop[],
+  position: number,
+  options: ColorInterpolationOptions = {},
+): string {
+  if (stops.length === 0) throw new Error("Gradient requires at least one color stop");
+  if (!Number.isFinite(position)) throw new Error("Gradient position must be finite");
 
-  for (let i = 0; i < steps; i++) {
-    const ratio = i / (steps - 1);
+  const sorted = [...stops].sort((a, b) => a.position - b.position);
+  const exactMatch = sorted.find((stop) => stop.position === position);
+  if (exactMatch) return exactMatch.color;
+  if (position <= sorted[0].position) return sorted[0].color;
+  if (position >= sorted[sorted.length - 1].position) return sorted[sorted.length - 1].color;
 
-    const r = Math.round(c1.rgb.r + (c2.rgb.r - c1.rgb.r) * ratio);
-    const g = Math.round(c1.rgb.g + (c2.rgb.g - c1.rgb.g) * ratio);
-    const b = Math.round(c1.rgb.b + (c2.rgb.b - c1.rgb.b) * ratio);
-
-    colors.push(`rgb(${r}, ${g}, ${b})`);
+  for (let index = 0; index < sorted.length - 1; index++) {
+    const left = sorted[index];
+    const right = sorted[index + 1];
+    if (position > left.position && position < right.position) {
+      const ratio = (position - left.position) / (right.position - left.position);
+      return interpolateColor(left.color, right.color, ratio, options);
+    }
   }
 
-  return colors;
+  return sorted[sorted.length - 1].color;
+}
+
+/**
+ * Approximate a selected interpolation engine with ordinary CSS color stops.
+ * This keeps previews and copied CSS consistent across browsers that do not
+ * support gradient color-space/hue interpolation syntax.
+ */
+export function materializeGradientStops(
+  stops: GradientStop[],
+  options: MaterializeGradientOptions = {}
+): GradientStop[] {
+  if (stops.length < 2) return [...stops];
+  const samplesPerSegment = options.samplesPerSegment ?? 12;
+  if (!Number.isInteger(samplesPerSegment) || samplesPerSegment < 1) {
+    throw new Error("Samples per segment must be a positive integer");
+  }
+
+  const sorted = [...stops].sort((a, b) => a.position - b.position);
+  const materialized: GradientStop[] = [];
+  for (let index = 0; index < sorted.length - 1; index++) {
+    const start = sorted[index];
+    const end = sorted[index + 1];
+    for (let sample = 0; sample < samplesPerSegment; sample++) {
+      const ratio = sample / samplesPerSegment;
+      materialized.push({
+        color: interpolateColor(start.color, end.color, ratio, options),
+        position: start.position + (end.position - start.position) * ratio,
+      });
+    }
+  }
+  const last = sorted[sorted.length - 1];
+  materialized.push({
+    color: interpolateColor(last.color, last.color, 1, options),
+    position: last.position,
+  });
+  return materialized;
 }
 
 /**

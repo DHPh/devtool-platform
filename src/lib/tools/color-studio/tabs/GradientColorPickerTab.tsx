@@ -5,16 +5,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Copy, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  generateGradientCSS,
+  generateInterpolatedGradientCSS,
+  interpolateGradientColorAtPosition,
   createEvenGradient,
   type Gradient,
   type GradientStop,
 } from "@/lib/utils/color/gradient-generator";
 import { GradientColorStops } from "../components/GradientColorStops";
-import { hexToRgb, rgbToHex } from "@/lib/utils/color";
+import { rgbToHex } from "@/lib/utils/color";
+import {
+  parseInterpolationColor,
+  type ColorInterpolationSpace,
+  type HueInterpolationMethod,
+} from "@/lib/utils/color/color-interpolation";
 
 interface ColorPickerResult {
   hex: string;
@@ -30,6 +43,10 @@ export function GradientColorPickerTab() {
   const [selectedPosition, setSelectedPosition] = useState(50);
   const [pickedColors, setPickedColors] = useState<ColorPickerResult[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [interpolationSpace, setInterpolationSpace] =
+    useState<ColorInterpolationSpace>("srgb");
+  const [hueMethod, setHueMethod] =
+    useState<HueInterpolationMethod>("shorter");
   const gradientRef = useRef<HTMLDivElement>(null);
 
   const updateGradientStops = (newStops: GradientStop[]) => {
@@ -66,80 +83,46 @@ export function GradientColorPickerTab() {
     toast.success("Random gradient generated!");
   };
 
-  // Color interpolation function
-  const interpolateColor = useCallback(
-    (color1: string, color2: string, ratio: number): string => {
-      const rgb1 = hexToRgb(color1);
-      const rgb2 = hexToRgb(color2);
-
-      if (!rgb1 || !rgb2) return color1;
-
-      const r = Math.round(rgb1.r + (rgb2.r - rgb1.r) * ratio);
-      const g = Math.round(rgb1.g + (rgb2.g - rgb1.g) * ratio);
-      const b = Math.round(rgb1.b + (rgb2.b - rgb1.b) * ratio);
-
-      return rgbToHex(r, g, b);
-    },
-    []
-  );
-
   const interpolateColorAtPosition = useCallback(
-    (position: number): string => {
-      const sortedStops = [...gradient.stops].sort(
-        (a, b) => a.position - b.position
-      );
-
-      // If position matches a stop exactly
-      const exactMatch = sortedStops.find((stop) => stop.position === position);
-      if (exactMatch) {
-        return exactMatch.color;
-      }
-
-      // Find the two stops to interpolate between
-      let leftStop = sortedStops[0];
-      let rightStop = sortedStops[sortedStops.length - 1];
-
-      for (let i = 0; i < sortedStops.length - 1; i++) {
-        if (
-          position >= sortedStops[i].position &&
-          position <= sortedStops[i + 1].position
-        ) {
-          leftStop = sortedStops[i];
-          rightStop = sortedStops[i + 1];
-          break;
-        }
-      }
-
-      // If position is outside range, return closest stop
-      if (position <= leftStop.position) return leftStop.color;
-      if (position >= rightStop.position) return rightStop.color;
-
-      // Interpolate between the two stops
-      const ratio =
-        (position - leftStop.position) /
-        (rightStop.position - leftStop.position);
-      return interpolateColor(leftStop.color, rightStop.color, ratio);
-    },
-    [gradient.stops, interpolateColor]
+    (position: number): string =>
+      interpolateGradientColorAtPosition(gradient.stops, position, {
+        space: interpolationSpace,
+        hue: hueMethod,
+      }),
+    [gradient.stops, hueMethod, interpolationSpace]
   );
 
   const pickColorAtPosition = () => {
     const pickedColor = interpolateColorAtPosition(selectedPosition);
 
-    // Convert hex to RGB and HSL
-    const hexColor = pickedColor;
-    const rgb = hexToRgb(hexColor);
-    if (!rgb) return;
+    const rgba = parseInterpolationColor(pickedColor);
+    if (!rgba) return;
+    const rgb = {
+      r: Math.round(rgba.r * 255),
+      g: Math.round(rgba.g * 255),
+      b: Math.round(rgba.b * 255),
+    };
+    const alphaHex = Math.round(rgba.a * 255)
+      .toString(16)
+      .padStart(2, "0");
+    const hexColor = `${rgbToHex(rgb.r, rgb.g, rgb.b)}${
+      rgba.a < 1 ? alphaHex : ""
+    }`;
 
     // Simple HSL conversion
     const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
 
     const result: ColorPickerResult = {
       hex: hexColor,
-      rgb: `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`,
-      hsl: `hsl(${Math.round(hsl.h)}, ${Math.round(hsl.s * 100)}%, ${Math.round(
-        hsl.l * 100
-      )}%)`,
+      rgb:
+        rgba.a < 1
+          ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${Number(rgba.a.toFixed(4))})`
+          : `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`,
+      hsl: `${rgba.a < 1 ? "hsla" : "hsl"}(${Math.round(hsl.h)}, ${Math.round(
+        hsl.s * 100
+      )}%, ${Math.round(hsl.l * 100)}%${
+        rgba.a < 1 ? `, ${Number(rgba.a.toFixed(4))}` : ""
+      })`,
       position: selectedPosition,
     };
 
@@ -223,7 +206,10 @@ export function GradientColorPickerTab() {
     return { h: h * 360, s, l };
   }
 
-  const gradientCSS = generateGradientCSS(gradient);
+  const gradientCSS = generateInterpolatedGradientCSS(gradient, {
+    space: interpolationSpace,
+    hue: hueMethod,
+  });
   const pickedColor = interpolateColorAtPosition(selectedPosition);
 
   return (
@@ -247,6 +233,48 @@ export function GradientColorPickerTab() {
           </p>
         </CardHeader>
         <CardContent>
+          <div className="mb-4 grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label>Interpolation space</Label>
+              <Select
+                value={interpolationSpace}
+                onValueChange={(value: ColorInterpolationSpace) =>
+                  setInterpolationSpace(value)
+                }
+              >
+                <SelectTrigger aria-label="Interpolation space">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="srgb">sRGB</SelectItem>
+                  <SelectItem value="linear-srgb">Linear sRGB</SelectItem>
+                  <SelectItem value="oklab">OKLab</SelectItem>
+                  <SelectItem value="oklch">OKLCH</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {interpolationSpace === "oklch" && (
+              <div>
+                <Label>OKLCH hue path</Label>
+                <Select
+                  value={hueMethod}
+                  onValueChange={(value: HueInterpolationMethod) =>
+                    setHueMethod(value)
+                  }
+                >
+                  <SelectTrigger aria-label="OKLCH hue path">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="shorter">Shorter</SelectItem>
+                    <SelectItem value="longer">Longer</SelectItem>
+                    <SelectItem value="increasing">Increasing</SelectItem>
+                    <SelectItem value="decreasing">Decreasing</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
           <div
             ref={gradientRef}
             className="w-full h-24 rounded-lg border mb-4 relative cursor-crosshair"

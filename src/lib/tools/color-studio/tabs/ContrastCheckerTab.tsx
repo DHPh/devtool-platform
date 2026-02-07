@@ -9,7 +9,7 @@ export function ContrastCheckerTab() {
       <div className="text-center">
         <h2 className="text-2xl font-bold mb-2">Contrast Checker</h2>
         <p className="text-muted-foreground">
-          Check color contrast ratios for WCAG accessibility compliance
+          Check text contrast ratios against WCAG 2.2 AA and AAA thresholds
         </p>
       </div>
 

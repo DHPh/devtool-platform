@@ -1,3 +1,5 @@
+import { mapCSSColorToGamut, parseCSSColor, type CSSColor } from "./css-color-4";
+
 /**
  * Color conversion utilities
  * Supports HEX, RGB, HSL, CMYK, and HSV color spaces
@@ -38,6 +40,8 @@ export interface ColorInfo {
   luminance: number;
   isDark: boolean;
   isLight: boolean;
+  alpha?: number;
+  cssColor?: CSSColor;
 }
 
 /**
@@ -304,26 +308,28 @@ export function getContrastRatio(color1: RGBColor, color2: RGBColor): number {
  * Get comprehensive color information
  */
 export function getColorInfo(input: string): ColorInfo | null {
-  const value = input.trim();
-  let rgb = hexToRgb(value);
-
-  if (!rgb) {
-    const hslMatch = /^hsl\(\s*([+-]?(?:\d+\.?\d*|\.\d+))(?:deg)?\s*,\s*([+-]?(?:\d+\.?\d*|\.\d+))%\s*,\s*([+-]?(?:\d+\.?\d*|\.\d+))%\s*\)$/i.exec(value);
-    if (hslMatch) {
-      const hue = ((Number(hslMatch[1]) % 360) + 360) % 360;
-      const saturation = Number(hslMatch[2]);
-      const lightness = Number(hslMatch[3]);
-      if (
-        Number.isFinite(hue) &&
-        saturation >= 0 && saturation <= 100 &&
-        lightness >= 0 && lightness <= 100
-      ) {
-        rgb = hslToRgb(hue, saturation, lightness);
-      }
-    }
+  const cssColor = parseCSSColor(input);
+  if (!cssColor) return null;
+  let rgb: RGBColor;
+  if (cssColor.space === "hsl") {
+    // Preserve the legacy API's validation contract and integer rounding.
+    const hslInput = /^hsla?\(\s*[^\s,\/]+\s*(?:,\s*|\s+)([+-]?(?:\d+\.?\d*|\.\d+))%\s*(?:,\s*|\s+)([+-]?(?:\d+\.?\d*|\.\d+))%/i.exec(input.trim());
+    if (!hslInput || Number(hslInput[1]) < 0 || Number(hslInput[1]) > 100 || Number(hslInput[2]) < 0 || Number(hslInput[2]) > 100) return null;
+    rgb = hslToRgb(...cssColor.components);
+  } else if (cssColor.space === "srgb") {
+    rgb = {
+      r: Math.round(cssColor.components[0] * 255),
+      g: Math.round(cssColor.components[1] * 255),
+      b: Math.round(cssColor.components[2] * 255),
+    };
+  } else {
+    const mapped = mapCSSColorToGamut(cssColor, "srgb");
+    rgb = {
+      r: Math.round(mapped.components[0] * 255),
+      g: Math.round(mapped.components[1] * 255),
+      b: Math.round(mapped.components[2] * 255),
+    };
   }
-
-  if (!rgb) return null;
 
   const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
   const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
@@ -339,6 +345,8 @@ export function getColorInfo(input: string): ColorInfo | null {
     luminance,
     isDark: luminance < 0.5,
     isLight: luminance >= 0.5,
+    alpha: cssColor.alpha,
+    cssColor,
   };
 }
 
@@ -346,7 +354,7 @@ export function getColorInfo(input: string): ColorInfo | null {
  * Validate color format
  */
 export function isValidHex(hex: string): boolean {
-  return /^#?([a-f\d]{3}|[a-f\d]{6})$/i.test(hex);
+  return /^#?([a-f\d]{3}|[a-f\d]{4}|[a-f\d]{6}|[a-f\d]{8})$/i.test(hex);
 }
 
 export function isValidRgb(r: number, g: number, b: number): boolean {

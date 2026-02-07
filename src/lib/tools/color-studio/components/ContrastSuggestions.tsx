@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, Palette } from "lucide-react";
@@ -24,30 +24,18 @@ export function ContrastSuggestions({
   isVisible,
   onColorSelect,
 }: ContrastSuggestionsProps) {
-  const [suggestions, setSuggestions] =
-    useState<ContrastSuggestionRange | null>(null);
   const [activeTab, setActiveTab] = useState<"all" | "aa" | "aaa">("aa");
   const [isExpanded, setIsExpanded] = useState(true);
-  const [loading, setLoading] = useState(false);
 
-  const generateSuggestions = React.useCallback(async () => {
-    setLoading(true);
+  const suggestions = React.useMemo<ContrastSuggestionRange | null>(() => {
+    if (!isVisible || !baseColor) return null;
     try {
-      const result = generateContrastSuggestions(baseColor, isBackground, 30);
-      setSuggestions(result);
+      return generateContrastSuggestions(baseColor, isBackground, 30);
     } catch (error) {
-      toast.error("Failed to generate contrast suggestions");
       console.error(error);
-    } finally {
-      setLoading(false);
+      return null;
     }
-  }, [baseColor, isBackground]);
-
-  useEffect(() => {
-    if (isVisible && baseColor) {
-      generateSuggestions();
-    }
-  }, [isVisible, baseColor, generateSuggestions]);
+  }, [baseColor, isBackground, isVisible]);
 
   const getCurrentSuggestions = (): ContrastSuggestion[] => {
     if (!suggestions) return [];
@@ -84,7 +72,7 @@ export function ContrastSuggestions({
         };
       case "A":
         return {
-          label: "A",
+          label: "Large text/UI only",
           variant: "outline" as const,
           color: "text-yellow-600",
         };
@@ -121,43 +109,43 @@ export function ContrastSuggestions({
         </div>
 
         {isExpanded && (
-          <div className="flex gap-2 mt-3">
-            <Button
+          <div className="mt-3 space-y-2">
+            <p className="text-xs text-muted-foreground">
+              WCAG 2.2 normal-text contrast: AA ≥4.5:1; AAA ≥7:1.
+            </p>
+            <div className="flex gap-2">
+              <Button
               variant={activeTab === "aaa" ? "default" : "outline"}
               size="sm"
               onClick={() => setActiveTab("aaa")}
               className="flex items-center gap-1"
             >
-              <span className="text-xs">Best</span>
-            </Button>
-            <Button
+                <span className="text-xs">AAA normal text</span>
+              </Button>
+              <Button
               variant={activeTab === "aa" ? "default" : "outline"}
               size="sm"
               onClick={() => setActiveTab("aa")}
               className="flex items-center gap-1"
             >
-              <span className="text-xs">Good</span>
-            </Button>
-            <Button
+                <span className="text-xs">AA normal text</span>
+              </Button>
+              <Button
               variant={activeTab === "all" ? "default" : "outline"}
               size="sm"
               onClick={() => setActiveTab("all")}
               className="flex items-center gap-1"
             >
-              <span className="text-xs">All</span>
-            </Button>
+                <span className="text-xs">All (≥3:1)</span>
+              </Button>
+            </div>
           </div>
         )}
       </CardHeader>
 
       {isExpanded && (
         <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            </div>
-          ) : (
-            <div className="space-y-4">
+          <div className="space-y-4">
               <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 lg:grid-cols-16 gap-2">
                 {getCurrentSuggestions()
                   .slice(0, 48)
@@ -182,7 +170,7 @@ export function ContrastSuggestions({
                         <div
                           className={getContrastLevel(suggestion.level).color}
                         >
-                          {suggestion.level}
+                          {getContrastLevel(suggestion.level).label}
                         </div>
                       </div>
                     </div>
@@ -193,8 +181,8 @@ export function ContrastSuggestions({
                 <div className="text-center py-8 text-muted-foreground">
                   <Palette className="h-12 w-12 mx-auto mb-3 opacity-50" />
                   <p className="text-sm">
-                    No colors found that meet {activeTab.toUpperCase()}{" "}
-                    accessibility standards
+                    No colors found that meet the selected WCAG 2.2
+                    normal-text contrast target
                   </p>
                   <p className="text-xs mt-1">
                     Try selecting a different base color or lower standard
@@ -208,8 +196,7 @@ export function ContrastSuggestions({
                   <span>Click any color to copy and apply</span>
                 </div>
               )}
-            </div>
-          )}
+          </div>
         </CardContent>
       )}
     </Card>

@@ -13,25 +13,14 @@ import {
   type ColorInfo,
 } from "./color-converter";
 import {
+  calculateOKLabDeltaE,
   simulateColorBlindness,
   type ColorBlindnessType,
 } from "./color-blindness";
 
-/**
- * Calculate Euclidean distance between two colors in RGB space
- */
-function getColorDistance(color1: string, color2: string): number {
-  const c1 = getColorInfo(color1);
-  const c2 = getColorInfo(color2);
-
-  if (!c1 || !c2) return 0;
-
-  const dr = c1.rgb.r - c2.rgb.r;
-  const dg = c1.rgb.g - c2.rgb.g;
-  const db = c1.rgb.b - c2.rgb.b;
-
-  return Math.sqrt(dr * dr + dg * dg + db * db);
-}
+// OKLab delta-E below this value is treated as too similar for a color-only
+// distinction. This is a conservative product heuristic, not a WCAG threshold.
+export const MINIMUM_DISTINGUISHABLE_OKLAB_DELTA_E = 0.08;
 
 export interface ColorBlindnessPaletteItem {
   original: string;
@@ -98,7 +87,10 @@ export function generateColorBlindnessPalette(
         customColors.slice(0, index).every((otherColor) => {
           const dist1 = simulateColorBlindness(color, colorBlindnessType);
           const dist2 = simulateColorBlindness(otherColor, colorBlindnessType);
-          return getColorDistance(dist1, dist2) > 30; // Threshold for distinguishability
+          return (
+            calculateOKLabDeltaE(dist1, dist2) >=
+            MINIMUM_DISTINGUISHABLE_OKLAB_DELTA_E
+          );
         });
 
       return {
@@ -159,6 +151,7 @@ export function generateColorBlindnessPalette(
 
   // Filter colors to meet contrast requirements
   const filteredColors = filterByContrastRequirements(colors, contrastLevel);
+  annotatePairwiseDistinguishability(filteredColors);
 
   // Calculate accessibility metrics
   const isAccessible = checkPaletteAccessibility(filteredColors);
@@ -217,7 +210,7 @@ function generateHueShiftPalette(
       simulated,
       rgb,
       hsl,
-      isDistinguishable: calculateDistinguishability(hex, simulated) > 0.1,
+      isDistinguishable: true,
     });
   }
 
@@ -252,7 +245,7 @@ function generateLightnessVariationPalette(
       simulated,
       rgb,
       hsl,
-      isDistinguishable: calculateDistinguishability(hex, simulated) > 0.1,
+      isDistinguishable: true,
     });
   }
 
@@ -287,7 +280,7 @@ function generateSaturationVariationPalette(
       simulated,
       rgb,
       hsl,
-      isDistinguishable: calculateDistinguishability(hex, simulated) > 0.1,
+      isDistinguishable: true,
     });
   }
 
@@ -326,7 +319,7 @@ function generateComplementaryPalette(
       simulated,
       rgb,
       hsl,
-      isDistinguishable: calculateDistinguishability(hex, simulated) > 0.1,
+      isDistinguishable: true,
     });
   }
 
@@ -370,26 +363,26 @@ function getSafeHueRanges(
 }
 
 /**
- * Calculate distinguishability between original and simulated colors
+ * Calculate perceptual distinguishability using OKLab delta-E.
  */
 function calculateDistinguishability(
-  original: string,
-  simulated: string
+  color1: string,
+  color2: string
 ): number {
-  const originalInfo = getColorInfo(original);
-  const simulatedInfo = getColorInfo(simulated);
+  return calculateOKLabDeltaE(color1, color2);
+}
 
-  if (!originalInfo || !simulatedInfo) return 0;
-
-  // Calculate perceptual difference
-  const deltaR = originalInfo.rgb.r - simulatedInfo.rgb.r;
-  const deltaG = originalInfo.rgb.g - simulatedInfo.rgb.g;
-  const deltaB = originalInfo.rgb.b - simulatedInfo.rgb.b;
-
-  const euclideanDistance = Math.sqrt(
-    deltaR * deltaR + deltaG * deltaG + deltaB * deltaB
-  );
-  return euclideanDistance / 441.67; // Normalize to 0-1 range
+function annotatePairwiseDistinguishability(
+  colors: ColorBlindnessPaletteItem[]
+): void {
+  for (let i = 0; i < colors.length; i++) {
+    colors[i].isDistinguishable = colors.every(
+      (other, j) =>
+        i === j ||
+        calculateDistinguishability(colors[i].simulated, other.simulated) >=
+          MINIMUM_DISTINGUISHABLE_OKLAB_DELTA_E
+    );
+  }
 }
 
 /**
@@ -431,7 +424,7 @@ function checkPaletteAccessibility(
         colors[j].simulated
       );
 
-      if (distinguishability < 0.15) {
+      if (distinguishability < MINIMUM_DISTINGUISHABLE_OKLAB_DELTA_E) {
         return false; // Colors are too similar
       }
     }

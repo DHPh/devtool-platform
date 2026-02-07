@@ -13,7 +13,7 @@ export function ColorPickerTab() {
       <div className="text-center">
         <h2 className="text-2xl font-bold mb-2">Color Picker</h2>
         <p className="text-muted-foreground">
-          Pick and adjust colors with interactive controls and instant preview
+          Adjust RGB, HSL, HSV, or OKLCH with live sRGB and Display-P3 gamut feedback
         </p>
       </div>
 

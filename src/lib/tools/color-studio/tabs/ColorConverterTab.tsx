@@ -13,7 +13,7 @@ export function ColorConverterTab() {
       <div className="text-center">
         <h2 className="text-2xl font-bold mb-2">Color Converter</h2>
         <p className="text-muted-foreground">
-          Convert colors between different formats and explore color properties
+          Convert CSS Color 4 values, inspect alpha and gamut, and copy perceptual or display-ready formats
         </p>
       </div>
 

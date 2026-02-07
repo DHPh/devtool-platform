@@ -10,6 +10,16 @@ import {
   hslToRgb,
   rgbToHex,
 } from "./color-converter";
+import {
+  ColorInterpolationOptions,
+  formatInterpolatedColor,
+  interpolateColorValues,
+  oklabToOklch,
+  oklchToOklab,
+  oklabToRgba,
+  parseInterpolationColor,
+  rgbaToOklab,
+} from "./color-interpolation";
 
 export interface PaletteColor {
   hex: string;
@@ -310,27 +320,29 @@ export function generateRandomPalette(count: number = 5): ColorPalette {
 export function generateGradient(
   startHex: string,
   endHex: string,
-  steps: number = 5
+  steps: number = 5,
+  options: ColorInterpolationOptions = {}
 ): PaletteColor[] {
   const startColor = getColorInfo(startHex);
   const endColor = getColorInfo(endHex);
+  const startRgba = parseInterpolationColor(startHex);
+  const endRgba = parseInterpolationColor(endHex);
 
-  if (!startColor || !endColor) throw new Error("Invalid color(s)");
+  if (!startColor || !endColor || !startRgba || !endRgba) {
+    throw new Error("Invalid color(s)");
+  }
+  if (!Number.isInteger(steps) || steps < 1) {
+    throw new Error("Gradient steps must be a positive integer");
+  }
 
   const colors: PaletteColor[] = [];
 
   for (let i = 0; i < steps; i++) {
-    const ratio = i / (steps - 1);
-
-    const r = Math.round(
-      startColor.rgb.r + (endColor.rgb.r - startColor.rgb.r) * ratio
-    );
-    const g = Math.round(
-      startColor.rgb.g + (endColor.rgb.g - startColor.rgb.g) * ratio
-    );
-    const b = Math.round(
-      startColor.rgb.b + (endColor.rgb.b - startColor.rgb.b) * ratio
-    );
+    const ratio = steps === 1 ? 0 : i / (steps - 1);
+    const interpolated = interpolateColorValues(startRgba, endRgba, ratio, options);
+    const r = Math.round(interpolated.r * 255);
+    const g = Math.round(interpolated.g * 255);
+    const b = Math.round(interpolated.b * 255);
 
     const hex = rgbToHex(r, g, b);
     const colorInfo = getColorInfo(hex);
@@ -346,6 +358,73 @@ export function generateGradient(
   }
 
   return colors;
+}
+
+export interface OklchPaletteOptions {
+  /** Darkest palette lightness, in the OKLCH 0..1 scale. */
+  minLightness?: number;
+  /** Lightest palette lightness, in the OKLCH 0..1 scale. */
+  maxLightness?: number;
+  /** Multiplier applied to the source chroma. */
+  chromaScale?: number;
+}
+
+/**
+ * Generate a perceptually ordered palette by holding OKLCH hue/chroma stable
+ * while increasing lightness. Out-of-sRGB results are clipped for the legacy
+ * PaletteColor return shape.
+ */
+export function generateOklchPalette(
+  baseHex: string,
+  count: number = 5,
+  options: OklchPaletteOptions = {}
+): ColorPalette {
+  const base = getColorInfo(baseHex);
+  const rgba = parseInterpolationColor(baseHex);
+  if (!base || !rgba) throw new Error("Invalid base color");
+  if (!Number.isInteger(count) || count < 1) {
+    throw new Error("Palette count must be a positive integer");
+  }
+
+  const minLightness = options.minLightness ?? 0.2;
+  const maxLightness = options.maxLightness ?? 0.9;
+  const chromaScale = options.chromaScale ?? 1;
+  if (
+    minLightness < 0 ||
+    maxLightness > 1 ||
+    minLightness > maxLightness ||
+    chromaScale < 0
+  ) {
+    throw new Error("Invalid OKLCH palette options");
+  }
+
+  const source = oklabToOklch(rgbaToOklab(rgba));
+  const colors = Array.from({ length: count }, (_, index): PaletteColor => {
+    const ratio = count === 1 ? 0.5 : index / (count - 1);
+    const lightness = minLightness + (maxLightness - minLightness) * ratio;
+    const generated = oklabToRgba(
+      oklchToOklab({
+        l: lightness,
+        c: source.c * chromaScale,
+        h: source.h,
+      })
+    );
+    const css = formatInterpolatedColor(generated);
+    const match = /rgb\((\d+), (\d+), (\d+)\)/.exec(css);
+    const rgb = match
+      ? { r: Number(match[1]), g: Number(match[2]), b: Number(match[3]) }
+      : { r: 0, g: 0, b: 0 };
+    const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
+    const info = getColorInfo(hex);
+    if (!info) throw new Error("Failed to generate palette color");
+    return { hex, rgb, hsl: info.hsl, name: `Tone ${index + 1}` };
+  });
+
+  return {
+    name: "OKLCH",
+    description: "Perceptually ordered tones with stable OKLCH hue and chroma",
+    colors,
+  };
 }
 
 /**

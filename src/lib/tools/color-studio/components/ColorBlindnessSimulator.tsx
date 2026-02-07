@@ -194,6 +194,11 @@ export function ColorBlindnessSimulator() {
           <CardTitle>Color Blindness Type</CardTitle>
         </CardHeader>
         <CardContent>
+          <p className="mb-4 text-sm text-muted-foreground">
+            This preview applies fixed matrices in linear sRGB. It is an
+            approximation for design review, not a diagnostic or an exact
+            model of any individual&apos;s vision.
+          </p>
           <Select
             value={selectedType}
             onValueChange={(value: ColorBlindnessType) =>
@@ -364,8 +369,8 @@ export function ColorBlindnessSimulator() {
               <ul className="text-sm space-y-1 text-muted-foreground">
                 <li>• Don&apos;t rely solely on color to convey information</li>
                 <li>• Use patterns, shapes, or text labels as well</li>
-                <li>• Test your designs with color blindness simulators</li>
-                <li>• Ensure sufficient contrast between colors</li>
+                <li>• Use simulations as one review aid, not as proof</li>
+                <li>• Check text contrast against WCAG 2.2 thresholds</li>
               </ul>
             </div>
 

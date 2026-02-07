@@ -29,6 +29,12 @@ export interface SimulationResult {
   difference: number; // Perceptual difference percentage
 }
 
+interface PerceptualOKLabColor {
+  l: number;
+  a: number;
+  b: number;
+}
+
 /**
  * Color blindness type information
  */
@@ -88,8 +94,9 @@ export const COLOR_BLINDNESS_TYPES: Record<
 };
 
 /**
- * Transformation matrices for color blindness simulation
- * Based on Brettel, Viénot and Mollon (1997) algorithm
+ * Fixed linear-sRGB transformation matrices for an approximate preview of
+ * common color-vision deficiencies. This is a lightweight visual aid, not a
+ * physiological model, diagnostic tool, or exact Brettel/Machado simulation.
  */
 const TRANSFORMATION_MATRICES = {
   protanopia: [
@@ -130,6 +137,34 @@ const TRANSFORMATION_MATRICES = {
 function rgbToLinear(value: number): number {
   const v = value / 255;
   return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+}
+
+/** Convert an sRGB color to OKLab for perceptual comparisons. */
+export function rgbToOKLab(rgb: RGBColor): PerceptualOKLabColor {
+  const r = rgbToLinear(rgb.r);
+  const g = rgbToLinear(rgb.g);
+  const b = rgbToLinear(rgb.b);
+
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+
+  return {
+    l: 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+    a: 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+    b: 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
+  };
+}
+
+/** OKLab Euclidean delta-E. A just-noticeable difference is roughly 0.02. */
+export function calculateOKLabDeltaE(color1: string, color2: string): number {
+  const c1 = getColorInfo(color1);
+  const c2 = getColorInfo(color2);
+  if (!c1 || !c2) return 0;
+
+  const lab1 = rgbToOKLab(c1.rgb);
+  const lab2 = rgbToOKLab(c2.rgb);
+  return Math.hypot(lab1.l - lab2.l, lab1.a - lab2.a, lab1.b - lab2.b);
 }
 
 /**
@@ -226,23 +261,14 @@ export function simulateColorPalette(
 }
 
 /**
- * Calculate perceptual difference between two colors (Delta E)
+ * Calculate perceptual difference as OKLab delta-E on a 0-100 display scale.
+ * The score is delta-E * 100, preserving the historical percentage-like API.
  */
-function calculatePerceptualDifference(color1: string, color2: string): number {
-  const c1 = getColorInfo(color1);
-  const c2 = getColorInfo(color2);
-
-  if (!c1 || !c2) return 0;
-
-  // Simple RGB difference (could be improved with LAB color space)
-  const dr = c1.rgb.r - c2.rgb.r;
-  const dg = c1.rgb.g - c2.rgb.g;
-  const db = c1.rgb.b - c2.rgb.b;
-
-  const distance = Math.sqrt(dr * dr + dg * dg + db * db);
-  const maxDistance = Math.sqrt(255 * 255 * 3); // Maximum possible distance
-
-  return Math.round((distance / maxDistance) * 100);
+export function calculatePerceptualDifference(
+  color1: string,
+  color2: string
+): number {
+  return Math.round(calculateOKLabDeltaE(color1, color2) * 100);
 }
 
 /**

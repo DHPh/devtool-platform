@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -51,7 +51,15 @@ export function AccessibilityPaletteGenerator() {
   const [algorithm, setAlgorithm] = useState<
     "hue-shift" | "lightness-variation" | "saturation-variation" | "complement"
   >("hue-shift");
-  const [palette, setPalette] = useState<ColorBlindnessPalette | null>(null);
+  const [palette, setPalette] = useState<ColorBlindnessPalette | null>(() =>
+    generateColorBlindnessPalette({
+      colorBlindnessType: "deuteranopia",
+      baseColor: "#3b82f6",
+      colorCount: 5,
+      contrastLevel: "AA",
+      algorithm: "hue-shift",
+    })
+  );
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Custom palette management
@@ -65,7 +73,7 @@ export function AccessibilityPaletteGenerator() {
     string | null
   >(null);
 
-  const generatePalette = useCallback(async () => {
+  const generatePalette = () => {
     setIsGenerating(true);
     try {
       let generatedPalette: ColorBlindnessPalette;
@@ -100,19 +108,7 @@ export function AccessibilityPaletteGenerator() {
     } finally {
       setIsGenerating(false);
     }
-  }, [
-    baseColor,
-    colorBlindnessType,
-    colorCount,
-    contrastLevel,
-    algorithm,
-    useCustomPalette,
-    customColors,
-  ]);
-
-  useEffect(() => {
-    generatePalette();
-  }, [generatePalette]);
+  };
 
   const copyColor = (color: string) => {
     navigator.clipboard.writeText(color);
@@ -201,6 +197,12 @@ export function AccessibilityPaletteGenerator() {
             <Palette className="h-5 w-5" />
             Accessibility Palette Generator
           </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            WCAG 2.2 contrast is checked against black or white text. Color
+            separation uses OKLab delta-E after an approximate linear-sRGB
+            color-vision simulation; it is a design heuristic, not a WCAG
+            success criterion.
+          </p>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Palette Mode Toggle */}
@@ -526,12 +528,12 @@ export function AccessibilityPaletteGenerator() {
                 </div>
                 <div className="text-xs text-muted-foreground space-y-1">
                   <div>
-                    Average Distinguishability:{" "}
-                    {(palette.averageDistinguishability * 100).toFixed(1)}%
+                    Average OKLab delta-E:{" "}
+                    {palette.averageDistinguishability.toFixed(3)}
                   </div>
                   <div>Colors Generated: {palette.colors.length}</div>
                   <div>
-                    Target Contrast: {contrastLevel} (
+                    WCAG 2.2 text contrast target: {contrastLevel} (
                     {contrastLevel === "AAA" ? "7:1" : "4.5:1"})
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,14 +16,19 @@ import {
 import { Copy, Shuffle } from "lucide-react";
 import { toast } from "sonner";
 import {
-  generateGradientCSS,
+  generateInterpolatedGradientCSS,
   createEvenGradient,
+  materializeGradientStops,
   type Gradient,
   type GradientStop,
   type LinearGradient,
   type RadialGradient,
   type ConicGradient,
 } from "@/lib/utils/color/gradient-generator";
+import type {
+  ColorInterpolationSpace,
+  HueInterpolationMethod,
+} from "@/lib/utils/color/color-interpolation";
 import { ColorPicker } from "./ColorPicker";
 import { GradientColorStops } from "./GradientColorStops";
 
@@ -33,6 +38,10 @@ export function GradientCreator() {
     createEvenGradient(["#ff0000", "#0000ff"], "linear")
   );
   const [showColorPicker, setShowColorPicker] = useState<number | null>(null);
+  const [interpolationSpace, setInterpolationSpace] =
+    useState<ColorInterpolationSpace>("srgb");
+  const [hueMethod, setHueMethod] =
+    useState<HueInterpolationMethod>("shorter");
 
   const updateGradient = (updates: any) => {
     setGradient((prev) => ({ ...prev, ...updates }));
@@ -107,7 +116,21 @@ export function GradientCreator() {
     }
   };
 
-  const gradientCSS = generateGradientCSS(gradient);
+  const renderedGradient = useMemo(
+    () =>
+      ({
+        ...gradient,
+        stops: materializeGradientStops(gradient.stops, {
+          space: interpolationSpace,
+          hue: hueMethod,
+        }),
+      }) as Gradient,
+    [gradient, hueMethod, interpolationSpace]
+  );
+  const gradientCSS = generateInterpolatedGradientCSS(gradient, {
+    space: interpolationSpace,
+    hue: hueMethod,
+  });
 
   const copyCss = () => {
     navigator.clipboard.writeText(gradientCSS);
@@ -115,7 +138,7 @@ export function GradientCreator() {
   };
 
   const generateSwiftUICode = (): string => {
-    const colors = gradient.stops
+    const colors = renderedGradient.stops
       .map((stop) => `Color(hex: "${stop.color}")`)
       .join(", ");
 
@@ -195,6 +218,52 @@ export function GradientCreator() {
                 </SelectContent>
               </Select>
             </div>
+
+            <div>
+              <Label>Interpolation space</Label>
+              <Select
+                value={interpolationSpace}
+                onValueChange={(value: ColorInterpolationSpace) =>
+                  setInterpolationSpace(value)
+                }
+              >
+                <SelectTrigger aria-label="Interpolation space">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="srgb">sRGB</SelectItem>
+                  <SelectItem value="linear-srgb">Linear sRGB</SelectItem>
+                  <SelectItem value="oklab">OKLab</SelectItem>
+                  <SelectItem value="oklch">OKLCH</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Exported CSS includes sampled stops so its colors match this
+                preview across browsers.
+              </p>
+            </div>
+
+            {interpolationSpace === "oklch" && (
+              <div>
+                <Label>OKLCH hue path</Label>
+                <Select
+                  value={hueMethod}
+                  onValueChange={(value: HueInterpolationMethod) =>
+                    setHueMethod(value)
+                  }
+                >
+                  <SelectTrigger aria-label="OKLCH hue path">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="shorter">Shorter</SelectItem>
+                    <SelectItem value="longer">Longer</SelectItem>
+                    <SelectItem value="increasing">Increasing</SelectItem>
+                    <SelectItem value="decreasing">Decreasing</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {gradient.type === "linear" && (
               <div>

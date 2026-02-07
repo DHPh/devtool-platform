@@ -168,7 +168,7 @@ export default function ColorStudio() {
         <div className="mt-12 pt-8 border-t text-center text-sm text-muted-foreground">
           <p>
             Professional color tools for design and development. Supports HEX,
-            RGB, HSL, HSV, CMYK formats with WCAG accessibility compliance.
+            RGB, HSL, HSV, and CMYK formats, plus WCAG 2.2 contrast checks.
           </p>
         </div>
       </div>

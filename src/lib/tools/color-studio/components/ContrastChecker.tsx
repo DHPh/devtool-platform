@@ -97,10 +97,10 @@ export function ContrastChecker() {
   const copyContrastInfo = () => {
     const info = `
 Contrast Ratio: ${contrastResult.ratio.toFixed(2)}:1
-WCAG AA Normal: ${contrastResult.details.normalText.aa ? "Pass" : "Fail"}
-WCAG AA Large: ${contrastResult.details.largeText.aa ? "Pass" : "Fail"}
-WCAG AAA Normal: ${contrastResult.details.normalText.aaa ? "Pass" : "Fail"}
-WCAG AAA Large: ${contrastResult.details.largeText.aaa ? "Pass" : "Fail"}
+WCAG 2.2 AA Normal Text: ${contrastResult.details.normalText.aa ? "Pass" : "Fail"}
+WCAG 2.2 AA Large Text: ${contrastResult.details.largeText.aa ? "Pass" : "Fail"}
+WCAG 2.2 AAA Normal Text: ${contrastResult.details.normalText.aaa ? "Pass" : "Fail"}
+WCAG 2.2 AAA Large Text: ${contrastResult.details.largeText.aaa ? "Pass" : "Fail"}
 Foreground: ${foregroundColor}
 Background: ${backgroundColor}
     `.trim();
@@ -319,7 +319,7 @@ Background: ${backgroundColor}
           {/* WCAG Compliance */}
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <h4 className="font-medium mb-3">WCAG AA</h4>
+              <h4 className="font-medium mb-3">WCAG 2.2 AA</h4>
               <div className="space-y-2">
                 <div className="flex items-center justify-between p-2 bg-muted rounded">
                   <span>Normal Text (≥4.5:1)</span>
@@ -363,7 +363,7 @@ Background: ${backgroundColor}
             </div>
 
             <div>
-              <h4 className="font-medium mb-3">WCAG AAA</h4>
+              <h4 className="font-medium mb-3">WCAG 2.2 AAA</h4>
               <div className="space-y-2">
                 <div className="flex items-center justify-between p-2 bg-muted rounded">
                   <span>Normal Text (≥7:1)</span>
@@ -419,8 +419,11 @@ Background: ${backgroundColor}
                 }}
               >
                 <p className="text-sm">Normal text example (14px)</p>
-                <p className="text-lg font-medium">
-                  Large text example (18px+)
+                <p className="text-2xl font-normal">
+                  Large text example (24px+ regular)
+                </p>
+                <p className="text-[19px] font-bold">
+                  Large bold text example (about 19px+)
                 </p>
                 <p className="text-xs">
                   Small text that might be harder to read
@@ -452,9 +455,9 @@ Background: ${backgroundColor}
                     Accessibility Warning
                   </p>
                   <p className="text-yellow-700 mt-1">
-                    The current color combination does not meet WCAG AA
-                    standards. Consider using colors with higher contrast for
-                    better accessibility.
+                    The current color combination does not meet the WCAG 2.2 AA
+                    contrast requirement for normal text. Consider using colors
+                    with higher contrast.
                     {contrastResult.ratio < 3 && (
                       <span className="block mt-1">
                         Try increasing the lightness difference between the

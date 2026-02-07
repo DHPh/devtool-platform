@@ -14,20 +14,26 @@ import { Shuffle } from "lucide-react";
 import { PaletteDisplay, ColorPicker } from "../components";
 import {
   generatePalette,
+  generateOklchPalette,
   PALETTE_TYPES,
   type PaletteType,
 } from "@/lib/utils/color/palette-generator";
 import { getColorInfo } from "@/lib/utils/color";
 
 const initialColor = "#3b82f6"; // Default blue color
+type PaletteSelection = PaletteType | "oklch";
 
 export function PaletteGeneratorTab() {
   const [baseColor, setBaseColor] = useState(initialColor);
   const [pickedColor, setPickedColor] = useState(initialColor);
-  const [paletteType, setPaletteType] = useState<PaletteType>("analogous");
+  const [paletteType, setPaletteType] =
+    useState<PaletteSelection>("analogous");
   const [showColorPicker, setShowColorPicker] = useState(false);
 
-  const palette = generatePalette(paletteType, baseColor);
+  const palette =
+    paletteType === "oklch"
+      ? generateOklchPalette(baseColor, 7, { chromaScale: 0.7 })
+      : generatePalette(paletteType, baseColor);
 
   const generateRandomPalette = () => {
     const colors = [
@@ -92,7 +98,9 @@ export function PaletteGeneratorTab() {
               <label className="text-sm font-medium">Palette Type</label>
               <Select
                 value={paletteType}
-                onValueChange={(value: PaletteType) => setPaletteType(value)}
+                onValueChange={(value: PaletteSelection) =>
+                  setPaletteType(value)
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -108,6 +116,14 @@ export function PaletteGeneratorTab() {
                       </div>
                     </SelectItem>
                   ))}
+                  <SelectItem value="oklch">
+                    <div>
+                      <div className="font-medium">OKLCH Tones</div>
+                      <div className="text-xs text-muted-foreground">
+                        Perceptually ordered from dark to light
+                      </div>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
