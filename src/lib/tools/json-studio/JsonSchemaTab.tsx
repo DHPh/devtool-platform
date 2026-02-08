@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, FileCheck, Code } from "lucide-react";
 import { JsonSchemaValidator, JsonStatsDisplay } from "./components";
@@ -16,30 +16,25 @@ interface JsonSchemaTabProps {
 }
 
 export function JsonSchemaTab({ input }: JsonSchemaTabProps) {
-  const [parsedData, setParsedData] = useState<unknown>(null);
-  const [stats, setStats] = useState<JsonStats | null>(null);
-  const [isValid, setIsValid] = useState(false);
-
-  useEffect(() => {
+  const { parsedData, stats, isValid } = useMemo<{
+    parsedData: unknown;
+    stats: JsonStats | null;
+    isValid: boolean;
+  }>(() => {
     if (!input.trim()) {
-      setParsedData(null);
-      setStats(null);
-      setIsValid(false);
-      return;
+      return { parsedData: null, stats: null, isValid: false };
     }
 
     const validation = validateJson(input);
-    setIsValid(validation.isValid);
-
-    if (validation.isValid) {
-      try {
-        const parsed = JSON.parse(input);
-        setParsedData(parsed);
-
-        // Calculate basic stats
-        const size = JSON.stringify(parsed).length;
-        const lines = JSON.stringify(parsed, null, 2).split("\n").length;
-        setStats({
+    if (!validation.isValid) return { parsedData: null, stats: null, isValid: false };
+    try {
+      const parsed = JSON.parse(input);
+      const size = JSON.stringify(parsed).length;
+      const lines = JSON.stringify(parsed, null, 2).split("\n").length;
+      return {
+        parsedData: parsed,
+        isValid: true,
+        stats: {
           size,
           lines,
           objects: 0,
@@ -49,14 +44,10 @@ export function JsonSchemaTab({ input }: JsonSchemaTabProps) {
           booleans: 0,
           nulls: 0,
           depth: 0,
-        });
-      } catch {
-        setParsedData(null);
-        setStats(null);
-      }
-    } else {
-      setParsedData(null);
-      setStats(null);
+        },
+      };
+    } catch {
+      return { parsedData: null, stats: null, isValid: false };
     }
   }, [input]);
 
@@ -112,8 +103,9 @@ export function JsonSchemaTab({ input }: JsonSchemaTabProps) {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Validate your JSON data against a JSON Schema. You can provide your
-            own schema or generate one from your data as a starting point.
+            Validate with JSON Schema Draft 2020-12, including prefix items,
+            unevaluated values, dependencies, contains bounds, and local references.
+            Generated schemas provide a conservative starting point.
           </p>
         </CardContent>
       </Card>
@@ -137,6 +129,10 @@ export function JsonSchemaTab({ input }: JsonSchemaTabProps) {
             <CardContent className="space-y-3">
               <div className="text-xs space-y-2">
                 <div>
+                  <h4 className="font-medium text-sm mb-1">Draft:</h4>
+                  <div className="mb-3">
+                    <code className="bg-muted px-1 py-0.5 rounded">2020-12</code>
+                  </div>
                   <h4 className="font-medium text-sm mb-1">Common Types:</h4>
                   <div className="space-y-1">
                     <div>
@@ -216,7 +212,9 @@ export function JsonSchemaTab({ input }: JsonSchemaTabProps) {
                 <li>• Add validation rules like minLength, maximum, pattern</li>
                 <li>• Use required array for mandatory properties</li>
                 <li>• Set additionalProperties: false to be strict</li>
-                <li>• Use anyOf/oneOf for multiple valid schemas</li>
+                <li>• Use $defs with local $ref for reusable schemas</li>
+                <li>• Use prefixItems for tuples and items for the remainder</li>
+                <li>• Remote schema fetching is intentionally disabled</li>
               </ul>
             </CardContent>
           </Card>
@@ -229,6 +227,7 @@ export function JsonSchemaTab({ input }: JsonSchemaTabProps) {
             <CardContent>
               <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
                 {`{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
     "name": {

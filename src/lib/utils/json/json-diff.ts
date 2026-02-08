@@ -1,7 +1,4 @@
-/**
- * JSON Diff Utilities
- * Provides comprehensive JSON comparison and diff visualization
- */
+/** RFC 6901 JSON Pointer, RFC 6902 JSON Patch, and applicable diff utilities. */
 
 export interface JsonDiffResult {
   differences: DiffEntry[];
@@ -26,445 +23,318 @@ export interface DiffSummary {
   unchanged: number;
 }
 
-export interface JsonPatch {
-  op: "add" | "remove" | "replace" | "move" | "copy" | "test";
-  path: string;
-  from?: string;
-  value?: unknown;
+export type JsonPatch =
+  | { op: "add"; path: string; value: unknown }
+  | { op: "remove"; path: string }
+  | { op: "replace"; path: string; value: unknown }
+  | { op: "move"; path: string; from: string }
+  | { op: "copy"; path: string; from: string }
+  | { op: "test"; path: string; value: unknown };
+
+export type JsonPatchErrorCode =
+  | "INVALID_OPERATION"
+  | "INVALID_POINTER"
+  | "PATH_NOT_FOUND"
+  | "INVALID_ARRAY_INDEX"
+  | "MISSING_MEMBER"
+  | "TEST_FAILED"
+  | "MOVE_INTO_DESCENDANT";
+
+export class JsonPatchError extends Error {
+  readonly name = "JsonPatchError";
+
+  constructor(
+    message: string,
+    readonly code: JsonPatchErrorCode,
+    readonly operationIndex: number,
+    readonly operation: unknown,
+    readonly path?: string,
+  ) {
+    super(`Operation ${operationIndex}: ${message}`);
+  }
 }
 
-/**
- * Compare two JSON objects and generate diff
- */
-export function compareJsonObjects(
-  obj1: unknown,
-  obj2: unknown
-): JsonDiffResult {
+export interface JsonPatchApplicationResult {
+  success: boolean;
+  value?: unknown;
+  error?: JsonPatchError;
+  appliedOperations: number;
+}
+
+const hasOwn = (object: object, key: string) => Object.prototype.hasOwnProperty.call(object, key);
+
+function cloneJson<T>(value: T): T {
+  return structuredClone(value);
+}
+
+export function encodeJsonPointerSegment(segment: string): string {
+  return segment.replace(/~/g, "~0").replace(/\//g, "~1");
+}
+
+export function parseJsonPointer(pointer: string): string[] {
+  if (pointer === "") return [];
+  if (!pointer.startsWith("/")) throw new Error("JSON Pointer must be empty or begin with '/'");
+  return pointer.slice(1).split("/").map(segment => {
+    if (/~(?:[^01]|$)/.test(segment)) throw new Error(`Invalid JSON Pointer escape in segment '${segment}'`);
+    return segment.replace(/~1/g, "/").replace(/~0/g, "~");
+  });
+}
+
+function pointer(segments: string[]): string {
+  return segments.length === 0 ? "" : `/${segments.map(encodeJsonPointerSegment).join("/")}`;
+}
+
+function deepEqual(left: unknown, right: unknown): boolean {
+  if (left === right) return true;
+  if (typeof left !== typeof right || left === null || right === null) return false;
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return Array.isArray(left) && Array.isArray(right)
+      && left.length === right.length
+      && left.every((value, index) => deepEqual(value, right[index]));
+  }
+  if (typeof left === "object") {
+    const leftRecord = left as Record<string, unknown>;
+    const rightRecord = right as Record<string, unknown>;
+    const keys = Object.keys(leftRecord);
+    return keys.length === Object.keys(rightRecord).length
+      && keys.every(key => hasOwn(rightRecord, key) && deepEqual(leftRecord[key], rightRecord[key]));
+  }
+  return false;
+}
+
+function fail(code: JsonPatchErrorCode, message: string, operation: unknown, index: number, path?: string): never {
+  throw new JsonPatchError(message, code, index, operation, path);
+}
+
+function segmentsFor(operation: unknown, field: "path" | "from", index: number): string[] {
+  if (!operation || typeof operation !== "object" || typeof (operation as Record<string, unknown>)[field] !== "string") {
+    fail("MISSING_MEMBER", `operation requires a string '${field}' member`, operation, index);
+  }
+  const value = (operation as Record<string, string>)[field];
+  try {
+    return parseJsonPointer(value);
+  } catch (error) {
+    fail("INVALID_POINTER", error instanceof Error ? error.message : "Invalid JSON Pointer", operation, index, value);
+  }
+}
+
+function arrayIndex(segment: string, length: number, allowEnd: boolean, operation: unknown, operationIndex: number, path: string): number {
+  if (!/^(0|[1-9]\d*)$/.test(segment)) {
+    fail("INVALID_ARRAY_INDEX", `array index '${segment}' must be an unsigned base-10 integer without leading zeros`, operation, operationIndex, path);
+  }
+  const index = Number(segment);
+  if (!Number.isSafeInteger(index) || index > length || (!allowEnd && index === length)) {
+    fail("INVALID_ARRAY_INDEX", `array index '${segment}' is outside the allowed range`, operation, operationIndex, path);
+  }
+  return index;
+}
+
+function locate(document: unknown, segments: string[], operation: unknown, operationIndex: number, fullPath: string): unknown {
+  let current = document;
+  for (const segment of segments) {
+    if (Array.isArray(current)) {
+      if (segment === "-") fail("INVALID_ARRAY_INDEX", "'-' is only valid as the final segment of an add operation", operation, operationIndex, fullPath);
+      current = current[arrayIndex(segment, current.length, false, operation, operationIndex, fullPath)];
+    } else if (current !== null && typeof current === "object") {
+      if (!hasOwn(current, segment)) fail("PATH_NOT_FOUND", `path member '${segment}' does not exist`, operation, operationIndex, fullPath);
+      current = (current as Record<string, unknown>)[segment];
+    } else {
+      fail("PATH_NOT_FOUND", `cannot traverse through a non-container at '${segment}'`, operation, operationIndex, fullPath);
+    }
+  }
+  return current;
+}
+
+function parentOf(document: unknown, segments: string[], operation: unknown, operationIndex: number, fullPath: string): { parent: unknown; key: string } {
+  if (segments.length === 0) fail("PATH_NOT_FOUND", "the document root has no parent", operation, operationIndex, fullPath);
+  return {
+    parent: locate(document, segments.slice(0, -1), operation, operationIndex, fullPath),
+    key: segments[segments.length - 1],
+  };
+}
+
+function read(document: unknown, segments: string[], operation: unknown, operationIndex: number, fullPath: string): unknown {
+  return locate(document, segments, operation, operationIndex, fullPath);
+}
+
+function add(document: unknown, segments: string[], value: unknown, operation: unknown, operationIndex: number): unknown {
+  if (segments.length === 0) return cloneJson(value);
+  const fullPath = pointer(segments);
+  const { parent, key } = parentOf(document, segments, operation, operationIndex, fullPath);
+  const copied = cloneJson(value);
+  if (Array.isArray(parent)) {
+    const index = key === "-" ? parent.length : arrayIndex(key, parent.length, true, operation, operationIndex, fullPath);
+    parent.splice(index, 0, copied);
+  } else if (parent !== null && typeof parent === "object") {
+    Object.defineProperty(parent, key, { value: copied, writable: true, enumerable: true, configurable: true });
+  } else {
+    fail("PATH_NOT_FOUND", "add target parent is not an object or array", operation, operationIndex, fullPath);
+  }
+  return document;
+}
+
+function remove(document: unknown, segments: string[], operation: unknown, operationIndex: number): unknown {
+  if (segments.length === 0) return undefined;
+  const fullPath = pointer(segments);
+  const { parent, key } = parentOf(document, segments, operation, operationIndex, fullPath);
+  if (Array.isArray(parent)) {
+    if (key === "-") fail("INVALID_ARRAY_INDEX", "'-' is not valid for remove", operation, operationIndex, fullPath);
+    parent.splice(arrayIndex(key, parent.length, false, operation, operationIndex, fullPath), 1);
+  } else if (parent !== null && typeof parent === "object") {
+    if (!hasOwn(parent, key)) fail("PATH_NOT_FOUND", `remove target '${key}' does not exist`, operation, operationIndex, fullPath);
+    delete (parent as Record<string, unknown>)[key];
+  } else {
+    fail("PATH_NOT_FOUND", "remove target parent is not an object or array", operation, operationIndex, fullPath);
+  }
+  return document;
+}
+
+function replace(document: unknown, segments: string[], value: unknown, operation: unknown, operationIndex: number): unknown {
+  if (segments.length === 0) return cloneJson(value);
+  const fullPath = pointer(segments);
+  const { parent, key } = parentOf(document, segments, operation, operationIndex, fullPath);
+  const copied = cloneJson(value);
+  if (Array.isArray(parent)) {
+    if (key === "-") fail("INVALID_ARRAY_INDEX", "'-' is not valid for replace", operation, operationIndex, fullPath);
+    parent[arrayIndex(key, parent.length, false, operation, operationIndex, fullPath)] = copied;
+  } else if (parent !== null && typeof parent === "object") {
+    if (!hasOwn(parent, key)) fail("PATH_NOT_FOUND", `replace target '${key}' does not exist`, operation, operationIndex, fullPath);
+    Object.defineProperty(parent, key, { value: copied, writable: true, enumerable: true, configurable: true });
+  } else {
+    fail("PATH_NOT_FOUND", "replace target parent is not an object or array", operation, operationIndex, fullPath);
+  }
+  return document;
+}
+
+function isProperPrefix(from: string[], path: string[]): boolean {
+  return from.length < path.length && from.every((segment, index) => path[index] === segment);
+}
+
+function applySingle(document: unknown, operation: unknown, index: number): unknown {
+  if (!operation || typeof operation !== "object" || typeof (operation as Record<string, unknown>).op !== "string") {
+    fail("INVALID_OPERATION", "patch operation must be an object with an 'op' member", operation, index);
+  }
+  const candidate = operation as Record<string, unknown>;
+  if (!["add", "remove", "replace", "move", "copy", "test"].includes(candidate.op as string)) {
+    fail("INVALID_OPERATION", `unsupported operation '${candidate.op}'`, operation, index, typeof candidate.path === "string" ? candidate.path : undefined);
+  }
+  const path = segmentsFor(operation, "path", index);
+  switch (candidate.op) {
+    case "add":
+      if (!("value" in candidate)) fail("MISSING_MEMBER", "add requires a 'value' member", operation, index, candidate.path as string);
+      return add(document, path, candidate.value, operation, index);
+    case "remove": return remove(document, path, operation, index);
+    case "replace":
+      if (!("value" in candidate)) fail("MISSING_MEMBER", "replace requires a 'value' member", operation, index, candidate.path as string);
+      return replace(document, path, candidate.value, operation, index);
+    case "copy": {
+      const from = segmentsFor(operation, "from", index);
+      return add(document, path, read(document, from, operation, index, candidate.from as string), operation, index);
+    }
+    case "move": {
+      const from = segmentsFor(operation, "from", index);
+      if (isProperPrefix(from, path)) fail("MOVE_INTO_DESCENDANT", "move destination cannot be a descendant of its source", operation, index, candidate.path as string);
+      const moved = cloneJson(read(document, from, operation, index, candidate.from as string));
+      if (deepEqual(from, path)) return document;
+      const withoutSource = remove(document, from, operation, index);
+      return add(withoutSource, path, moved, operation, index);
+    }
+    case "test":
+      if (!("value" in candidate)) fail("MISSING_MEMBER", "test requires a 'value' member", operation, index, candidate.path as string);
+      if (!deepEqual(read(document, path, operation, index, candidate.path as string), candidate.value)) {
+        fail("TEST_FAILED", "test operation value does not match the target", operation, index, candidate.path as string);
+      }
+      return document;
+    default: fail("INVALID_OPERATION", `unsupported operation '${candidate.op}'`, operation, index, candidate.path as string | undefined);
+  }
+}
+
+/** Apply operations atomically from the caller's perspective and stop on the first failure. */
+export function applyJsonPatch(document: unknown, patches: readonly JsonPatch[]): unknown {
+  let result = cloneJson(document);
+  for (let index = 0; index < patches.length; index += 1) result = applySingle(result, patches[index], index);
+  return result;
+}
+
+export function tryApplyJsonPatch(document: unknown, patches: readonly JsonPatch[]): JsonPatchApplicationResult {
+  try {
+    return { success: true, value: applyJsonPatch(document, patches), appliedOperations: patches.length };
+  } catch (error) {
+    if (error instanceof JsonPatchError) return { success: false, error, appliedOperations: error.operationIndex };
+    throw error;
+  }
+}
+
+/** Compare JSON values and generate an RFC 6902 patch that transforms left into right. */
+export function compareJsonObjects(left: unknown, right: unknown): JsonDiffResult {
   const differences: DiffEntry[] = [];
   const patches: JsonPatch[] = [];
-
-  // Normalize inputs
-  const normalized1 = normalizeForComparison(obj1);
-  const normalized2 = normalizeForComparison(obj2);
-
-  // Perform deep comparison
-  compareRecursive(normalized1, normalized2, "", differences, patches);
-
-  // Calculate summary
+  compareRecursive(left, right, [], differences, patches);
   const summary: DiffSummary = {
     totalChanges: differences.length,
-    added: differences.filter((d) => d.type === "added").length,
-    removed: differences.filter((d) => d.type === "removed").length,
-    modified: differences.filter((d) => d.type === "modified").length,
-    moved: differences.filter((d) => d.type === "moved").length,
-    unchanged: 0, // Will be calculated separately if needed
+    added: differences.filter(entry => entry.type === "added").length,
+    removed: differences.filter(entry => entry.type === "removed").length,
+    modified: differences.filter(entry => entry.type === "modified").length,
+    moved: differences.filter(entry => entry.type === "moved").length,
+    unchanged: 0,
   };
-
-  return {
-    differences,
-    summary,
-    patches,
-  };
+  return { differences, summary, patches };
 }
 
-/**
- * Recursive comparison function
- */
-function compareRecursive(
-  obj1: unknown,
-  obj2: unknown,
-  path: string,
-  differences: DiffEntry[],
-  patches: JsonPatch[]
-): void {
-  // Handle null values
-  if (obj1 === null && obj2 === null) return;
-  if (obj1 === null) {
-    differences.push({
-      path,
-      type: "added",
-      newValue: obj2,
-    });
-    patches.push({
-      op: "add",
-      path: convertToJsonPointer(path),
-      value: obj2,
-    });
-    return;
-  }
-  if (obj2 === null) {
-    differences.push({
-      path,
-      type: "removed",
-      oldValue: obj1,
-    });
-    patches.push({
-      op: "remove",
-      path: convertToJsonPointer(path),
-    });
-    return;
-  }
-
-  // Handle primitive values
-  if (!isObject(obj1) || !isObject(obj2)) {
-    if (obj1 !== obj2) {
-      differences.push({
-        path,
-        type: "modified",
-        oldValue: obj1,
-        newValue: obj2,
-      });
-      patches.push({
-        op: "replace",
-        path: convertToJsonPointer(path),
-        value: obj2,
-      });
+function compareRecursive(left: unknown, right: unknown, segments: string[], differences: DiffEntry[], patches: JsonPatch[]): void {
+  if (deepEqual(left, right)) return;
+  if (Array.isArray(left) && Array.isArray(right)) {
+    const shared = Math.min(left.length, right.length);
+    for (let index = 0; index < shared; index += 1) compareRecursive(left[index], right[index], [...segments, String(index)], differences, patches);
+    for (let index = left.length - 1; index >= right.length; index -= 1) {
+      const path = pointer([...segments, String(index)]);
+      differences.push({ path, type: "removed", oldValue: left[index] });
+      patches.push({ op: "remove", path });
+    }
+    for (let index = shared; index < right.length; index += 1) {
+      const path = pointer([...segments, String(index)]);
+      differences.push({ path, type: "added", newValue: right[index] });
+      patches.push({ op: "add", path: pointer([...segments, "-"]), value: cloneJson(right[index]) });
     }
     return;
   }
-
-  // Handle arrays
-  if (Array.isArray(obj1) && Array.isArray(obj2)) {
-    compareArrays(obj1, obj2, path, differences, patches);
+  if (isRecord(left) && isRecord(right)) {
+    for (const key of Object.keys(left)) {
+      if (!hasOwn(right, key)) {
+        const path = pointer([...segments, key]);
+        differences.push({ path, type: "removed", oldValue: left[key] });
+        patches.push({ op: "remove", path });
+      }
+    }
+    for (const key of Object.keys(right)) {
+      const child = [...segments, key];
+      if (!hasOwn(left, key)) {
+        const path = pointer(child);
+        differences.push({ path, type: "added", newValue: right[key] });
+        patches.push({ op: "add", path, value: cloneJson(right[key]) });
+      } else {
+        compareRecursive(left[key], right[key], child, differences, patches);
+      }
+    }
     return;
   }
-
-  // Handle mixed array/object
-  if (Array.isArray(obj1) !== Array.isArray(obj2)) {
-    differences.push({
-      path,
-      type: "modified",
-      oldValue: obj1,
-      newValue: obj2,
-    });
-    patches.push({
-      op: "replace",
-      path: convertToJsonPointer(path),
-      value: obj2,
-    });
-    return;
-  }
-
-  // Handle objects
-  compareObjects(
-    obj1 as Record<string, unknown>,
-    obj2 as Record<string, unknown>,
-    path,
-    differences,
-    patches
-  );
+  const path = pointer(segments);
+  differences.push({ path, type: "modified", oldValue: left, newValue: right });
+  patches.push({ op: "replace", path, value: cloneJson(right) });
 }
 
-/**
- * Compare two arrays
- */
-function compareArrays(
-  arr1: unknown[],
-  arr2: unknown[],
-  path: string,
-  differences: DiffEntry[],
-  patches: JsonPatch[]
-): void {
-  const maxLength = Math.max(arr1.length, arr2.length);
-
-  // Simple index-based comparison (could be enhanced with LCS algorithm)
-  for (let i = 0; i < maxLength; i++) {
-    const itemPath = path ? `${path}[${i}]` : `[${i}]`;
-
-    if (i >= arr1.length) {
-      // Item added
-      differences.push({
-        path: itemPath,
-        type: "added",
-        newValue: arr2[i],
-      });
-      patches.push({
-        op: "add",
-        path: convertToJsonPointer(itemPath),
-        value: arr2[i],
-      });
-    } else if (i >= arr2.length) {
-      // Item removed
-      differences.push({
-        path: itemPath,
-        type: "removed",
-        oldValue: arr1[i],
-      });
-      patches.push({
-        op: "remove",
-        path: convertToJsonPointer(itemPath),
-      });
-    } else {
-      // Compare items
-      compareRecursive(arr1[i], arr2[i], itemPath, differences, patches);
-    }
-  }
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-/**
- * Compare two objects
- */
-function compareObjects(
-  obj1: Record<string, unknown>,
-  obj2: Record<string, unknown>,
-  path: string,
-  differences: DiffEntry[],
-  patches: JsonPatch[]
-): void {
-  const allKeys = new Set([...Object.keys(obj1), ...Object.keys(obj2)]);
-
-  for (const key of allKeys) {
-    const keyPath = path ? `${path}.${key}` : key;
-
-    if (!(key in obj1)) {
-      // Property added
-      differences.push({
-        path: keyPath,
-        type: "added",
-        newValue: obj2[key],
-      });
-      patches.push({
-        op: "add",
-        path: convertToJsonPointer(keyPath),
-        value: obj2[key],
-      });
-    } else if (!(key in obj2)) {
-      // Property removed
-      differences.push({
-        path: keyPath,
-        type: "removed",
-        oldValue: obj1[key],
-      });
-      patches.push({
-        op: "remove",
-        path: convertToJsonPointer(keyPath),
-      });
-    } else {
-      // Compare values
-      compareRecursive(obj1[key], obj2[key], keyPath, differences, patches);
-    }
-  }
-}
-
-/**
- * Convert path to JSON Pointer format
- */
-function convertToJsonPointer(path: string): string {
-  if (!path) return "";
-
-  return (
-    "/" +
-    path
-      .replace(/\./g, "/")
-      .replace(/\[(\d+)\]/g, "/$1")
-      .replace(/\[([^\]]+)\]/g, "/$1")
-  );
-}
-
-/**
- * Check if value is an object
- */
-function isObject(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object";
-}
-
-/**
- * Normalize values for comparison
- */
-function normalizeForComparison(value: unknown): unknown {
-  if (typeof value === "string") {
-    try {
-      return JSON.parse(value);
-    } catch {
-      return value;
-    }
-  }
-  return value;
-}
-
-/**
- * Apply JSON patch to an object
- */
-export function applyJsonPatch(obj: unknown, patches: JsonPatch[]): unknown {
-  let result = JSON.parse(JSON.stringify(obj)); // Deep clone
-
-  for (const patch of patches) {
-    try {
-      result = applySinglePatch(result, patch);
-    } catch (error) {
-      console.warn("Failed to apply patch:", patch, error);
-    }
-  }
-
-  return result;
-}
-
-/**
- * Apply a single patch operation
- */
-function applySinglePatch(obj: unknown, patch: JsonPatch): unknown {
-  const path = parseJsonPointer(patch.path);
-
-  switch (patch.op) {
-    case "add":
-      return addValue(obj, path, patch.value);
-    case "remove":
-      return removeValue(obj, path);
-    case "replace":
-      return replaceValue(obj, path, patch.value);
-    default:
-      console.warn("Unsupported patch operation:", patch.op);
-      return obj;
-  }
-}
-
-/**
- * Parse JSON Pointer path
- */
-function parseJsonPointer(pointer: string): string[] {
-  if (!pointer || pointer === "/") return [];
-
-  return pointer
-    .slice(1) // Remove leading /
-    .split("/")
-    .map((segment) => segment.replace(/~1/g, "/").replace(/~0/g, "~"));
-}
-
-/**
- * Add value at path
- */
-function addValue(obj: unknown, path: string[], value: unknown): unknown {
-  if (path.length === 0) return value;
-
-  const result = JSON.parse(JSON.stringify(obj));
-  let current = result;
-
-  for (let i = 0; i < path.length - 1; i++) {
-    const segment = path[i];
-
-    if (Array.isArray(current)) {
-      const index = parseInt(segment, 10);
-      current = current[index];
-    } else if (current && typeof current === "object") {
-      current = (current as Record<string, unknown>)[segment];
-    } else {
-      throw new Error(`Cannot traverse path at segment: ${segment}`);
-    }
-  }
-
-  const lastSegment = path[path.length - 1];
-
-  if (Array.isArray(current)) {
-    const index = parseInt(lastSegment, 10);
-    current.splice(index, 0, value);
-  } else if (current && typeof current === "object") {
-    (current as Record<string, unknown>)[lastSegment] = value;
-  } else {
-    throw new Error(`Cannot add value at path: ${path.join("/")}`);
-  }
-
-  return result;
-}
-
-/**
- * Remove value at path
- */
-function removeValue(obj: unknown, path: string[]): unknown {
-  if (path.length === 0) return undefined;
-
-  const result = JSON.parse(JSON.stringify(obj));
-  let current = result;
-
-  for (let i = 0; i < path.length - 1; i++) {
-    const segment = path[i];
-
-    if (Array.isArray(current)) {
-      const index = parseInt(segment, 10);
-      current = current[index];
-    } else if (current && typeof current === "object") {
-      current = (current as Record<string, unknown>)[segment];
-    } else {
-      throw new Error(`Cannot traverse path at segment: ${segment}`);
-    }
-  }
-
-  const lastSegment = path[path.length - 1];
-
-  if (Array.isArray(current)) {
-    const index = parseInt(lastSegment, 10);
-    current.splice(index, 1);
-  } else if (current && typeof current === "object") {
-    delete (current as Record<string, unknown>)[lastSegment];
-  } else {
-    throw new Error(`Cannot remove value at path: ${path.join("/")}`);
-  }
-
-  return result;
-}
-
-/**
- * Replace value at path
- */
-function replaceValue(obj: unknown, path: string[], value: unknown): unknown {
-  if (path.length === 0) return value;
-
-  const result = JSON.parse(JSON.stringify(obj));
-  let current = result;
-
-  for (let i = 0; i < path.length - 1; i++) {
-    const segment = path[i];
-
-    if (Array.isArray(current)) {
-      const index = parseInt(segment, 10);
-      current = current[index];
-    } else if (current && typeof current === "object") {
-      current = (current as Record<string, unknown>)[segment];
-    } else {
-      throw new Error(`Cannot traverse path at segment: ${segment}`);
-    }
-  }
-
-  const lastSegment = path[path.length - 1];
-
-  if (Array.isArray(current)) {
-    const index = parseInt(lastSegment, 10);
-    current[index] = value;
-  } else if (current && typeof current === "object") {
-    (current as Record<string, unknown>)[lastSegment] = value;
-  } else {
-    throw new Error(`Cannot replace value at path: ${path.join("/")}`);
-  }
-
-  return result;
-}
-
-/**
- * Generate readable diff summary
- */
 export function generateDiffSummary(result: JsonDiffResult): string {
   const { summary } = result;
-
-  if (summary.totalChanges === 0) {
-    return "No differences found";
-  }
-
-  const parts: string[] = [];
-
-  if (summary.added > 0) {
-    parts.push(`${summary.added} added`);
-  }
-
-  if (summary.removed > 0) {
-    parts.push(`${summary.removed} removed`);
-  }
-
-  if (summary.modified > 0) {
-    parts.push(`${summary.modified} modified`);
-  }
-
-  if (summary.moved > 0) {
-    parts.push(`${summary.moved} moved`);
-  }
-
+  if (summary.totalChanges === 0) return "No differences found";
+  const parts = [
+    summary.added > 0 ? `${summary.added} added` : "",
+    summary.removed > 0 ? `${summary.removed} removed` : "",
+    summary.modified > 0 ? `${summary.modified} modified` : "",
+    summary.moved > 0 ? `${summary.moved} moved` : "",
+  ].filter(Boolean);
   return `${summary.totalChanges} total changes: ${parts.join(", ")}`;
 }

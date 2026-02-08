@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GitCompare, Code } from "lucide-react";
 import { JsonDiffViewer, JsonStatsDisplay } from "./components";
@@ -16,30 +16,25 @@ interface JsonDiffTabProps {
 }
 
 export function JsonDiffTab({ input }: JsonDiffTabProps) {
-  const [parsedData, setParsedData] = useState<unknown>(null);
-  const [stats, setStats] = useState<JsonStats | null>(null);
-  const [isValid, setIsValid] = useState(false);
-
-  useEffect(() => {
+  const { parsedData, stats, isValid } = useMemo<{
+    parsedData: unknown;
+    stats: JsonStats | null;
+    isValid: boolean;
+  }>(() => {
     if (!input.trim()) {
-      setParsedData(null);
-      setStats(null);
-      setIsValid(false);
-      return;
+      return { parsedData: null, stats: null, isValid: false };
     }
 
     const validation = validateJson(input);
-    setIsValid(validation.isValid);
-
-    if (validation.isValid) {
-      try {
-        const parsed = JSON.parse(input);
-        setParsedData(parsed);
-
-        // Calculate basic stats
-        const size = JSON.stringify(parsed).length;
-        const lines = JSON.stringify(parsed, null, 2).split("\n").length;
-        setStats({
+    if (!validation.isValid) return { parsedData: null, stats: null, isValid: false };
+    try {
+      const parsed = JSON.parse(input);
+      const size = JSON.stringify(parsed).length;
+      const lines = JSON.stringify(parsed, null, 2).split("\n").length;
+      return {
+        parsedData: parsed,
+        isValid: true,
+        stats: {
           size,
           lines,
           objects: 0,
@@ -49,14 +44,10 @@ export function JsonDiffTab({ input }: JsonDiffTabProps) {
           booleans: 0,
           nulls: 0,
           depth: 0,
-        });
-      } catch {
-        setParsedData(null);
-        setStats(null);
-      }
-    } else {
-      setParsedData(null);
-      setStats(null);
+        },
+      };
+    } catch {
+      return { parsedData: null, stats: null, isValid: false };
     }
   }, [input]);
 
@@ -113,8 +104,8 @@ export function JsonDiffTab({ input }: JsonDiffTabProps) {
         <CardContent>
           <p className="text-sm text-muted-foreground">
             Compare your JSON data with another JSON object to see differences.
-            The tool will show additions, removals, modifications, and generate
-            JSON patches.
+            The tool shows additions, removals, and modifications, then generates
+            and verifies an applicable RFC 6902 JSON Patch.
           </p>
         </CardContent>
       </Card>
@@ -151,7 +142,7 @@ export function JsonDiffTab({ input }: JsonDiffTabProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-purple-100 border border-purple-200 rounded"></div>
-                  <span>Moved - Relocated properties</span>
+                  <span>Moved - Shown when supplied by patch operations</span>
                 </div>
               </div>
             </CardContent>
@@ -164,7 +155,7 @@ export function JsonDiffTab({ input }: JsonDiffTabProps) {
             </CardHeader>
             <CardContent>
               <p className="text-xs text-muted-foreground mb-2">
-                JSON Patch operations follow RFC 6902 standard:
+                JSON Patch operations follow RFC 6902 with RFC 6901 pointers:
               </p>
               <div className="text-xs space-y-1">
                 <div>
@@ -207,6 +198,7 @@ export function JsonDiffTab({ input }: JsonDiffTabProps) {
                 <li>• Download complete diff reports</li>
                 <li>• Arrays are compared by index</li>
                 <li>• Deep nested changes are detected</li>
+                <li>• Generated patches are applied once to verify the result</li>
               </ul>
             </CardContent>
           </Card>

@@ -39,7 +39,11 @@ import {
   FileText,
 } from "lucide-react";
 import { toast } from "sonner";
-import { parseCSV, getDelimiterDisplayName } from "@/lib/processors/csv";
+import {
+  getDelimiterDisplayName,
+  parseCSV,
+  serializeCSV,
+} from "@/lib/processors/csv";
 import { parseJSON } from "@/lib/utils/json-parser";
 
 export const metadata = {
@@ -84,6 +88,7 @@ export default function DataExplorer() {
   const [textData, setTextData] = useState("");
   const [hasNestedData, setHasNestedData] = useState(false);
   const [detectedDelimiter, setDetectedDelimiter] = useState(",");
+  const [parseIssueCount, setParseIssueCount] = useState(0);
 
   const detectColumnType = (values: unknown[]): ColumnStats["type"] => {
     const nonNullValues = values.filter(
@@ -96,16 +101,26 @@ export default function DataExplorer() {
     let dateCount = 0;
 
     for (const value of nonNullValues) {
-      const strValue = String(value).trim();
+      const rawValue = String(value);
+      const strValue = rawValue.trim();
 
-      if (!isNaN(Number(strValue)) && strValue !== "") {
+      if (
+        rawValue === strValue &&
+        /^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?$/.test(strValue) &&
+        Number.isFinite(Number(strValue))
+      ) {
         numberCount++;
       } else if (
         strValue.toLowerCase() === "true" ||
         strValue.toLowerCase() === "false"
       ) {
         booleanCount++;
-      } else if (!isNaN(Date.parse(strValue))) {
+      } else if (
+        /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/.test(
+          strValue
+        ) &&
+        Number.isFinite(Date.parse(strValue))
+      ) {
         dateCount++;
       }
     }
@@ -169,6 +184,7 @@ export default function DataExplorer() {
     let parsedData: DataRow[] = [];
     let delimiter = ",";
     let hasNested = false;
+    let csvIssueCount = 0;
 
     // Better auto-detection logic
     if (
@@ -178,12 +194,17 @@ export default function DataExplorer() {
         !text.trim().startsWith("{"))
     ) {
       try {
-        const result = parseCSV(text);
+        const result = parseCSV(text, { convertValues: false });
         parsedData = result.data as DataRow[];
         delimiter = result.delimiter;
+        csvIssueCount = result.issues.length;
         setDetectedDelimiter(delimiter);
-      } catch {
-        toast.error("Error parsing CSV data");
+      } catch (error) {
+        toast.error(
+          `Error parsing CSV data: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
+        );
         return;
       }
     } else if (
@@ -195,33 +216,39 @@ export default function DataExplorer() {
         const result = parseJSON(text, { maxDepth: 20 });
         parsedData = result.data as DataRow[];
         hasNested = result.hasNestedData;
-        setHasNestedData(hasNested);
-
-        // Debug logging
-        console.log("Data Explorer - Parsed JSON result:", result);
-        console.log("Data Explorer - Sample row:", result.data[0]);
-        console.log("Data Explorer - Headers:", result.headers);
       } catch (error) {
-        console.error("Data Explorer - JSON parsing error:", error);
-        toast.error("Error parsing JSON data");
+        toast.error(
+          `Error parsing JSON data: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
+        );
         return;
       }
     } else if (format === "tsv") {
       try {
-        const result = parseCSV(text, { delimiter: "\t" });
+        const result = parseCSV(text, {
+          delimiter: "\t",
+          convertValues: false,
+        });
         parsedData = result.data as DataRow[];
         delimiter = "\t";
+        csvIssueCount = result.issues.length;
         setDetectedDelimiter(delimiter);
-      } catch {
-        toast.error("Error parsing TSV data");
+      } catch (error) {
+        toast.error(
+          `Error parsing TSV data: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
+        );
         return;
       }
     } else {
       // Default to CSV
       try {
-        const result = parseCSV(text);
+        const result = parseCSV(text, { convertValues: false });
         parsedData = result.data as DataRow[];
         delimiter = result.delimiter;
+        csvIssueCount = result.issues.length;
         setDetectedDelimiter(delimiter);
       } catch {
         toast.error("Error parsing data");
@@ -235,6 +262,8 @@ export default function DataExplorer() {
     }
 
     setData(parsedData);
+    setHasNestedData(hasNested);
+    setParseIssueCount(csvIssueCount);
     const newStats = calculateStats(parsedData);
     setStats(newStats);
 
@@ -334,6 +363,7 @@ Charlie Wilson,32,Phoenix,72000,false`;
     setColumnFilters([]);
     setHasNestedData(false);
     setDetectedDelimiter(",");
+    setParseIssueCount(0);
     toast.success("Data cleared");
   };
 
@@ -344,37 +374,25 @@ Charlie Wilson,32,Phoenix,72000,false`;
     }
 
     const headers = Object.keys(data[0]);
-    const csvContent = [
-      headers.join(detectedDelimiter),
-      ...data.map((row) =>
-        headers
-          .map((header) => {
-            const value = row[header];
-            const stringValue = String(
-              value === null || value === undefined ? "" : value
-            );
-
-            // Escape and quote if necessary
-            if (
-              stringValue.includes(detectedDelimiter) ||
-              stringValue.includes('"') ||
-              stringValue.includes("\n")
-            ) {
-              return `"${stringValue.replace(/"/g, '""')}"`;
-            }
-            return stringValue;
-          })
-          .join(detectedDelimiter)
-      ),
-    ].join("\n");
+    const csvContent = serializeCSV(data, headers, {
+      delimiter: detectedDelimiter,
+      safeSpreadsheet: true,
+    });
 
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = fileName || "data-export.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    a.download = fileName
+      ? `${fileName.replace(/\.(?:csv|tsv|json|txt)$/i, "")}-export.csv`
+      : "data-export.csv";
+    document.body.appendChild(a);
+    try {
+      a.click();
+    } finally {
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
     toast.success("Data exported successfully");
   };
 
@@ -513,6 +531,15 @@ Charlie Wilson,32,Phoenix,72000,false`;
                 >
                   📝 {getDelimiterDisplayName(detectedDelimiter)}
                 </Badge>
+                {parseIssueCount > 0 && (
+                  <Badge
+                    variant="outline"
+                    className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300"
+                  >
+                    ⚠️ {parseIssueCount} row
+                    {parseIssueCount === 1 ? "" : "s"} with unequal columns
+                  </Badge>
+                )}
               </div>
               <Button onClick={downloadCSV} className="flex items-center gap-2">
                 <Download className="h-4 w-4" />

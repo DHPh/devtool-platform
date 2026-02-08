@@ -30,6 +30,7 @@ import {
 import { ResponsiveTextArea } from "@/components/layout";
 import {
   compareJsonObjects,
+  applyJsonPatch,
   generateDiffSummary,
   type JsonDiffResult,
   type DiffEntry,
@@ -44,9 +45,10 @@ export function JsonDiffViewer({ data, className }: JsonDiffViewerProps) {
   const [compareData, setCompareData] = useState("");
   const [diffResult, setDiffResult] = useState<JsonDiffResult | null>(null);
   const [isComparing, setIsComparing] = useState(false);
+  const [patchStatus, setPatchStatus] = useState<"verified" | "failed" | null>(null);
 
   const performComparison = () => {
-    if (!data) {
+    if (data === undefined) {
       toast.error("No original JSON data to compare");
       return;
     }
@@ -62,12 +64,15 @@ export function JsonDiffViewer({ data, className }: JsonDiffViewerProps) {
       const parsedCompareData = JSON.parse(compareData);
       const result = compareJsonObjects(data, parsedCompareData);
       setDiffResult(result);
+      const applied = applyJsonPatch(data, result.patches);
+      setPatchStatus(compareJsonObjects(applied, parsedCompareData).differences.length === 0 ? "verified" : "failed");
 
       const summary = generateDiffSummary(result);
       toast.success(summary);
-    } catch {
-      toast.error("Invalid JSON format in comparison data");
+    } catch (error) {
+      toast.error(error instanceof SyntaxError ? "Comparison data is not valid JSON" : "Unable to generate an applicable JSON Patch");
       setDiffResult(null);
+      setPatchStatus(null);
     } finally {
       setIsComparing(false);
     }
@@ -87,12 +92,12 @@ export function JsonDiffViewer({ data, className }: JsonDiffViewerProps) {
               ? `${JSON.stringify(diff.oldValue)} → ${JSON.stringify(
                   diff.newValue
                 )}`
-              : `${JSON.stringify(diff.oldValue || diff.newValue)}`
+              : `${JSON.stringify(diff.type === "removed" ? diff.oldValue : diff.newValue)}`
           }`
       )
       .join("\n\n");
 
-    navigator.clipboard.writeText(diffText);
+    void navigator.clipboard.writeText(diffText);
     toast.success("Diff copied to clipboard");
   };
 
@@ -102,7 +107,7 @@ export function JsonDiffViewer({ data, className }: JsonDiffViewerProps) {
       return;
     }
 
-    navigator.clipboard.writeText(JSON.stringify(diffResult.patches, null, 2));
+    void navigator.clipboard.writeText(JSON.stringify(diffResult.patches, null, 2));
     toast.success("JSON patches copied to clipboard");
   };
 
@@ -201,6 +206,7 @@ export function JsonDiffViewer({ data, className }: JsonDiffViewerProps) {
         <CardTitle className="text-lg flex items-center gap-2">
           <GitCompare className="h-5 w-5" />
           <span>JSON Diff Viewer</span>
+          <Badge variant="secondary">RFC 6902</Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -224,7 +230,7 @@ export function JsonDiffViewer({ data, className }: JsonDiffViewerProps) {
         <div className="flex gap-2">
           <Button
             onClick={performComparison}
-            disabled={isComparing || !data || !compareData.trim()}
+            disabled={isComparing || data === undefined || !compareData.trim()}
             className="flex-1"
           >
             {isComparing ? "Comparing..." : "Compare"}
@@ -299,6 +305,19 @@ export function JsonDiffViewer({ data, className }: JsonDiffViewerProps) {
                   ↔{diffResult.summary.moved} moved
                 </Badge>
               )}
+              {patchStatus === "verified" && (
+                <Badge variant="outline">Applicable patch verified</Badge>
+              )}
+              {patchStatus === "failed" && (
+                <Badge variant="destructive">Patch verification failed</Badge>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="font-medium">RFC 6902 patch:</h4>
+              <pre className="text-xs bg-muted p-3 rounded max-h-64 overflow-auto" data-testid="json-patch-output">
+                {JSON.stringify(diffResult.patches, null, 2)}
+              </pre>
             </div>
 
             {/* Differences */}

@@ -1,7 +1,9 @@
-/**
- * JSON Schema Validation Utilities
- * Provides basic JSON Schema validation functionality
- */
+/** JSON Schema Draft 2020-12 validation and inference utilities. */
+
+import Ajv2020, { type AnySchema, type ErrorObject } from "ajv/dist/2020";
+import addFormats from "ajv-formats";
+
+export const JSON_SCHEMA_DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema";
 
 export interface SchemaValidationResult {
   isValid: boolean;
@@ -14,29 +16,57 @@ export interface SchemaError {
   message: string;
   schemaPath: string;
   value: unknown;
+  keyword?: string;
+  params?: Record<string, unknown>;
 }
 
-export interface JsonSchema {
+/**
+ * A JSON Schema can be a boolean or an object. Known 2020-12 keywords are
+ * listed for editor assistance and arbitrary vocabulary keywords are allowed.
+ */
+export type JsonSchema = boolean | JsonSchemaObject;
+
+export interface JsonSchemaObject {
+  [keyword: string]: unknown;
+  $schema?: string;
+  $id?: string;
+  $anchor?: string;
+  $dynamicAnchor?: string;
+  $ref?: string;
+  $dynamicRef?: string;
+  $defs?: Record<string, JsonSchema>;
   type?: string | string[];
   properties?: Record<string, JsonSchema>;
-  items?: JsonSchema | JsonSchema[];
-  required?: string[];
-  minimum?: number;
-  maximum?: number;
-  minLength?: number;
-  maxLength?: number;
-  pattern?: string;
-  enum?: unknown[];
-  format?: string;
+  patternProperties?: Record<string, JsonSchema>;
   additionalProperties?: boolean | JsonSchema;
+  unevaluatedProperties?: boolean | JsonSchema;
+  propertyNames?: JsonSchema;
+  required?: string[];
+  dependentRequired?: Record<string, string[]>;
+  dependentSchemas?: Record<string, JsonSchema>;
+  prefixItems?: JsonSchema[];
+  items?: JsonSchema;
+  contains?: JsonSchema;
+  minContains?: number;
+  maxContains?: number;
+  unevaluatedItems?: boolean | JsonSchema;
   minItems?: number;
   maxItems?: number;
   uniqueItems?: boolean;
+  minimum?: number;
+  maximum?: number;
+  exclusiveMinimum?: number;
+  exclusiveMaximum?: number;
   multipleOf?: number;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  format?: string;
+  enum?: unknown[];
   const?: unknown;
+  allOf?: JsonSchema[];
   anyOf?: JsonSchema[];
   oneOf?: JsonSchema[];
-  allOf?: JsonSchema[];
   not?: JsonSchema;
   if?: JsonSchema;
   then?: JsonSchema;
@@ -45,585 +75,165 @@ export interface JsonSchema {
   description?: string;
   default?: unknown;
   examples?: unknown[];
-  $schema?: string;
-  $id?: string;
-  $ref?: string;
 }
 
-/**
- * Validate JSON data against a schema
- */
-export function validateJsonSchema(
-  data: unknown,
-  schema: JsonSchema
-): SchemaValidationResult {
-  const errors: SchemaError[] = [];
-  const warnings: string[] = [];
+const MAX_SCHEMA_NODES = 10_000;
+const MAX_SCHEMA_DEPTH = 128;
+const MAX_DATA_NODES = 100_000;
+const MAX_DATA_DEPTH = 512;
 
-  validateRecursive(data, schema, "$", "$", errors, warnings);
+function createValidator() {
+  const ajv = new Ajv2020({
+    allErrors: true,
+    strict: false,
+    validateFormats: true,
+    unicodeRegExp: true,
+    allowUnionTypes: true,
+  });
+  addFormats(ajv);
+  return ajv;
+}
 
+function assertSafeSchemaStructure(schema: JsonSchema): void {
+  assertSafeStructure(schema, "Schema", MAX_SCHEMA_NODES, MAX_SCHEMA_DEPTH);
+}
+
+function assertSafeDataStructure(data: unknown): void {
+  assertSafeStructure(data, "Data", MAX_DATA_NODES, MAX_DATA_DEPTH);
+}
+
+function assertSafeStructure(value: unknown, label: string, maxNodes: number, maxDepth: number): void {
+  const pending: Array<{ value: unknown; depth: number }> = [{ value, depth: 0 }];
+  const seen = new WeakSet<object>();
+  let nodes = 0;
+
+  while (pending.length > 0) {
+    const current = pending.pop()!;
+    if (current.depth > maxDepth) {
+      throw new Error(`${label} exceeds the supported nesting depth of ${maxDepth}`);
+    }
+    if (!current.value || typeof current.value !== "object") continue;
+    if (seen.has(current.value)) throw new Error(`${label} must be JSON and cannot contain JavaScript object cycles`);
+    seen.add(current.value);
+    nodes += 1;
+    if (nodes > maxNodes) throw new Error(`${label} exceeds the supported size of ${maxNodes} object and array nodes`);
+    for (const value of Object.values(current.value)) pending.push({ value, depth: current.depth + 1 });
+  }
+}
+
+function pointerSegments(pointer: string): string[] {
+  if (!pointer) return [];
+  return pointer.slice(1).split("/").map(segment => segment.replace(/~1/g, "/").replace(/~0/g, "~"));
+}
+
+function displayPath(pointer: string, error?: ErrorObject): string {
+  const segments = pointerSegments(pointer);
+  const property = error?.keyword === "required"
+    ? String(error.params.missingProperty)
+    : error?.keyword === "additionalProperties" || error?.keyword === "unevaluatedProperties"
+      ? String(error.params.additionalProperty ?? error.params.unevaluatedProperty)
+      : null;
+  if (property) segments.push(property);
+  return segments.reduce((path, segment) => /^\d+$/.test(segment)
+    ? `${path}[${segment}]`
+    : `${path}.${segment}`, "$"
+  );
+}
+
+function valueAtPointer(data: unknown, pointer: string): unknown {
+  return pointerSegments(pointer).reduce<unknown>((current, segment) => {
+    if (current === null || typeof current !== "object") return undefined;
+    return (current as Record<string, unknown>)[segment];
+  }, data);
+}
+
+function mapAjvError(error: ErrorObject, data: unknown): SchemaError {
   return {
-    isValid: errors.length === 0,
-    errors,
-    warnings,
+    path: displayPath(error.instancePath, error),
+    message: error.message ?? `Failed ${error.keyword} validation`,
+    schemaPath: error.schemaPath,
+    value: valueAtPointer(data, error.instancePath),
+    keyword: error.keyword,
+    params: error.params,
   };
 }
 
-/**
- * Recursive validation function
- */
-function validateRecursive(
-  data: unknown,
-  schema: JsonSchema,
-  dataPath: string,
-  schemaPath: string,
-  errors: SchemaError[],
-  warnings: string[]
-): void {
-  // Handle schema references (basic implementation)
-  if (schema.$ref) {
-    warnings.push(`Schema reference ${schema.$ref} not resolved`);
-    return;
+/** Validate JSON-compatible data using the JSON Schema Draft 2020-12 dialect. */
+export function validateJsonSchema(data: unknown, schema: JsonSchema): SchemaValidationResult {
+  try {
+    assertSafeSchemaStructure(schema);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "The schema could not be inspected";
+    return {
+      isValid: false,
+      errors: [{ path: "$", message: `Invalid Draft 2020-12 schema: ${message}`, schemaPath: "$", value: schema, keyword: "schema" }],
+      warnings: [],
+    };
   }
 
-  // Handle composite schemas
-  if (schema.allOf) {
-    schema.allOf.forEach((subSchema, index) => {
-      validateRecursive(
-        data,
-        subSchema,
-        dataPath,
-        `${schemaPath}/allOf/${index}`,
-        errors,
-        warnings
-      );
-    });
-    return;
+  try {
+    assertSafeDataStructure(data);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "The data could not be inspected";
+    return {
+      isValid: false,
+      errors: [{ path: "$", message, schemaPath: "$", value: undefined, keyword: "data" }],
+      warnings: [],
+    };
   }
 
-  if (schema.anyOf) {
-    const tempErrors: SchemaError[] = [];
-    let validCount = 0;
-
-    schema.anyOf.forEach((subSchema, index) => {
-      const subErrors: SchemaError[] = [];
-      validateRecursive(
-        data,
-        subSchema,
-        dataPath,
-        `${schemaPath}/anyOf/${index}`,
-        subErrors,
-        warnings
-      );
-      if (subErrors.length === 0) {
-        validCount++;
-      } else {
-        tempErrors.push(...subErrors);
-      }
-    });
-
-    if (validCount === 0) {
-      errors.push(...tempErrors);
-    }
-    return;
-  }
-
-  if (schema.oneOf) {
-    const tempErrors: SchemaError[] = [];
-    let validCount = 0;
-
-    schema.oneOf.forEach((subSchema, index) => {
-      const subErrors: SchemaError[] = [];
-      validateRecursive(
-        data,
-        subSchema,
-        dataPath,
-        `${schemaPath}/oneOf/${index}`,
-        subErrors,
-        warnings
-      );
-      if (subErrors.length === 0) {
-        validCount++;
-      } else {
-        tempErrors.push(...tempErrors);
-      }
-    });
-
-    if (validCount !== 1) {
-      if (validCount === 0) {
-        errors.push({
-          path: dataPath,
-          message: "Data does not match any of the oneOf schemas",
-          schemaPath,
-          value: data,
-        });
-      } else {
-        errors.push({
-          path: dataPath,
-          message: `Data matches ${validCount} of the oneOf schemas, but should match exactly one`,
-          schemaPath,
-          value: data,
-        });
-      }
-    }
-    return;
-  }
-
-  if (schema.not) {
-    const notErrors: SchemaError[] = [];
-    validateRecursive(
-      data,
-      schema.not,
-      dataPath,
-      `${schemaPath}/not`,
-      notErrors,
-      warnings
-    );
-    if (notErrors.length === 0) {
-      errors.push({
-        path: dataPath,
-        message: "Data matches the not schema, but it should not",
-        schemaPath,
-        value: data,
-      });
-    }
-    return;
-  }
-
-  // Handle const
-  if ("const" in schema) {
-    if (!deepEqual(data, schema.const)) {
-      errors.push({
-        path: dataPath,
-        message: `Expected const value ${JSON.stringify(schema.const)}`,
-        schemaPath: `${schemaPath}/const`,
-        value: data,
-      });
-    }
-    return;
-  }
-
-  // Handle enum
-  if (schema.enum) {
-    if (!schema.enum.some((enumValue) => deepEqual(data, enumValue))) {
-      errors.push({
-        path: dataPath,
-        message: `Value must be one of: ${schema.enum
-          .map((v) => JSON.stringify(v))
-          .join(", ")}`,
-        schemaPath: `${schemaPath}/enum`,
-        value: data,
-      });
-    }
-  }
-
-  // Type validation
-  if (schema.type) {
-    const types = Array.isArray(schema.type) ? schema.type : [schema.type];
-    const dataType = getJsonType(data);
-
-    if (!types.includes(dataType)) {
-      errors.push({
-        path: dataPath,
-        message: `Expected type ${types.join(" or ")}, got ${dataType}`,
-        schemaPath: `${schemaPath}/type`,
-        value: data,
-      });
-      return; // Don't continue validation if type is wrong
-    }
-  }
-
-  // Type-specific validations
-  switch (getJsonType(data)) {
-    case "string":
-      validateString(data as string, schema, dataPath, schemaPath, errors);
-      break;
-    case "number":
-    case "integer":
-      validateNumber(data as number, schema, dataPath, schemaPath, errors);
-      break;
-    case "array":
-      validateArray(
-        data as unknown[],
-        schema,
-        dataPath,
-        schemaPath,
-        errors,
-        warnings
-      );
-      break;
-    case "object":
-      validateObject(
-        data as Record<string, unknown>,
-        schema,
-        dataPath,
-        schemaPath,
-        errors,
-        warnings
-      );
-      break;
+  try {
+    const validate = createValidator().compile(schema as AnySchema);
+    const isValid = validate(data) === true;
+    return {
+      isValid,
+      errors: (validate.errors ?? []).map(error => mapAjvError(error, data)),
+      warnings: [],
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "The schema could not be compiled";
+    return {
+      isValid: false,
+      errors: [{ path: "$", message: `Invalid Draft 2020-12 schema: ${message}`, schemaPath: "$", value: schema, keyword: "schema" }],
+      warnings: [],
+    };
   }
 }
 
-/**
- * Validate string values
- */
-function validateString(
-  value: string,
-  schema: JsonSchema,
-  dataPath: string,
-  schemaPath: string,
-  errors: SchemaError[]
-): void {
-  if (typeof schema.minLength === "number" && value.length < schema.minLength) {
-    errors.push({
-      path: dataPath,
-      message: `String length ${value.length} is less than minimum ${schema.minLength}`,
-      schemaPath: `${schemaPath}/minLength`,
-      value,
-    });
-  }
-
-  if (typeof schema.maxLength === "number" && value.length > schema.maxLength) {
-    errors.push({
-      path: dataPath,
-      message: `String length ${value.length} is greater than maximum ${schema.maxLength}`,
-      schemaPath: `${schemaPath}/maxLength`,
-      value,
-    });
-  }
-
-  if (schema.pattern) {
-    try {
-      const regex = new RegExp(schema.pattern);
-      if (!regex.test(value)) {
-        errors.push({
-          path: dataPath,
-          message: `String does not match pattern ${schema.pattern}`,
-          schemaPath: `${schemaPath}/pattern`,
-          value,
-        });
-      }
-    } catch {
-      errors.push({
-        path: dataPath,
-        message: `Invalid regex pattern in schema: ${schema.pattern}`,
-        schemaPath: `${schemaPath}/pattern`,
-        value,
-      });
-    }
-  }
-
-  if (schema.format) {
-    validateStringFormat(value, schema.format, dataPath, schemaPath, errors);
-  }
+/** Generate a conservative Draft 2020-12 schema from one JSON value. */
+export function generateSchemaFromData(data: unknown): JsonSchemaObject {
+  const schema = inferSchema(data);
+  return { $schema: JSON_SCHEMA_DRAFT_2020_12, ...schema };
 }
 
-/**
- * Validate number values
- */
-function validateNumber(
-  value: number,
-  schema: JsonSchema,
-  dataPath: string,
-  schemaPath: string,
-  errors: SchemaError[]
-): void {
-  if (typeof schema.minimum === "number" && value < schema.minimum) {
-    errors.push({
-      path: dataPath,
-      message: `Value ${value} is less than minimum ${schema.minimum}`,
-      schemaPath: `${schemaPath}/minimum`,
-      value,
-    });
+function inferSchema(data: unknown): JsonSchemaObject {
+  if (data === null) return { type: "null" };
+  if (Array.isArray(data)) {
+    if (data.length === 0) return { type: "array" };
+    const candidates = data.map(inferSchema);
+    const serialized = new Map(candidates.map(candidate => [JSON.stringify(candidate), candidate]));
+    const schemas = [...serialized.values()];
+    return { type: "array", items: schemas.length === 1 ? schemas[0] : { anyOf: schemas } };
   }
-
-  if (typeof schema.maximum === "number" && value > schema.maximum) {
-    errors.push({
-      path: dataPath,
-      message: `Value ${value} is greater than maximum ${schema.maximum}`,
-      schemaPath: `${schemaPath}/maximum`,
-      value,
-    });
+  if (typeof data === "object") {
+    const entries = Object.entries(data as Record<string, unknown>);
+    return {
+      type: "object",
+      properties: Object.fromEntries(entries.map(([key, value]) => [key, inferSchema(value)])),
+      required: entries.map(([key]) => key),
+      additionalProperties: false,
+    };
   }
-
-  if (typeof schema.multipleOf === "number") {
-    if (value % schema.multipleOf !== 0) {
-      errors.push({
-        path: dataPath,
-        message: `Value ${value} is not a multiple of ${schema.multipleOf}`,
-        schemaPath: `${schemaPath}/multipleOf`,
-        value,
-      });
-    }
+  if (typeof data === "string") {
+    const schema: JsonSchemaObject = { type: "string" };
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data)) schema.format = "email";
+    else if (/^https?:\/\//.test(data)) schema.format = "uri";
+    else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(data)) schema.format = "date-time";
+    else if (/^\d{4}-\d{2}-\d{2}$/.test(data)) schema.format = "date";
+    else if (/^[\da-f]{8}-[\da-f]{4}-[1-8][\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i.test(data)) schema.format = "uuid";
+    return schema;
   }
-}
-
-/**
- * Validate array values
- */
-function validateArray(
-  value: unknown[],
-  schema: JsonSchema,
-  dataPath: string,
-  schemaPath: string,
-  errors: SchemaError[],
-  warnings: string[]
-): void {
-  if (typeof schema.minItems === "number" && value.length < schema.minItems) {
-    errors.push({
-      path: dataPath,
-      message: `Array length ${value.length} is less than minimum ${schema.minItems}`,
-      schemaPath: `${schemaPath}/minItems`,
-      value,
-    });
-  }
-
-  if (typeof schema.maxItems === "number" && value.length > schema.maxItems) {
-    errors.push({
-      path: dataPath,
-      message: `Array length ${value.length} is greater than maximum ${schema.maxItems}`,
-      schemaPath: `${schemaPath}/maxItems`,
-      value,
-    });
-  }
-
-  if (schema.uniqueItems) {
-    const seen = new Set();
-    value.forEach((item, index) => {
-      const itemStr = JSON.stringify(item);
-      if (seen.has(itemStr)) {
-        errors.push({
-          path: `${dataPath}[${index}]`,
-          message: "Array items must be unique",
-          schemaPath: `${schemaPath}/uniqueItems`,
-          value: item,
-        });
-      }
-      seen.add(itemStr);
-    });
-  }
-
-  // Validate items
-  if (schema.items) {
-    if (Array.isArray(schema.items)) {
-      // Tuple validation
-      schema.items.forEach((itemSchema, index) => {
-        if (index < value.length) {
-          validateRecursive(
-            value[index],
-            itemSchema,
-            `${dataPath}[${index}]`,
-            `${schemaPath}/items/${index}`,
-            errors,
-            warnings
-          );
-        }
-      });
-    } else {
-      // All items same schema
-      value.forEach((item, index) => {
-        validateRecursive(
-          item,
-          schema.items as JsonSchema,
-          `${dataPath}[${index}]`,
-          `${schemaPath}/items`,
-          errors,
-          warnings
-        );
-      });
-    }
-  }
-}
-
-/**
- * Validate object values
- */
-function validateObject(
-  value: Record<string, unknown>,
-  schema: JsonSchema,
-  dataPath: string,
-  schemaPath: string,
-  errors: SchemaError[],
-  warnings: string[]
-): void {
-  // Required properties
-  if (schema.required) {
-    schema.required.forEach((requiredProp) => {
-      if (!(requiredProp in value)) {
-        errors.push({
-          path: dataPath,
-          message: `Missing required property '${requiredProp}'`,
-          schemaPath: `${schemaPath}/required`,
-          value,
-        });
-      }
-    });
-  }
-
-  // Validate properties
-  if (schema.properties) {
-    Object.entries(value).forEach(([key, val]) => {
-      if (key in schema.properties!) {
-        validateRecursive(
-          val,
-          schema.properties![key],
-          `${dataPath}.${key}`,
-          `${schemaPath}/properties/${key}`,
-          errors,
-          warnings
-        );
-      } else if (schema.additionalProperties === false) {
-        errors.push({
-          path: `${dataPath}.${key}`,
-          message: "Additional property not allowed",
-          schemaPath: `${schemaPath}/additionalProperties`,
-          value: val,
-        });
-      } else if (typeof schema.additionalProperties === "object") {
-        validateRecursive(
-          val,
-          schema.additionalProperties,
-          `${dataPath}.${key}`,
-          `${schemaPath}/additionalProperties`,
-          errors,
-          warnings
-        );
-      }
-    });
-  }
-}
-
-/**
- * Validate string formats
- */
-function validateStringFormat(
-  value: string,
-  format: string,
-  dataPath: string,
-  schemaPath: string,
-  errors: SchemaError[]
-): void {
-  const formatValidators: Record<string, RegExp> = {
-    email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-    uri: /^https?:\/\/.+/,
-    "date-time":
-      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?([+-]\d{2}:\d{2}|Z)$/,
-    date: /^\d{4}-\d{2}-\d{2}$/,
-    time: /^\d{2}:\d{2}:\d{2}$/,
-    ipv4: /^(\d{1,3}\.){3}\d{1,3}$/,
-    ipv6: /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/,
-    uuid: /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/i,
-  };
-
-  const validator = formatValidators[format];
-  if (validator && !validator.test(value)) {
-    errors.push({
-      path: dataPath,
-      message: `String does not match format '${format}'`,
-      schemaPath: `${schemaPath}/format`,
-      value,
-    });
-  } else if (!validator) {
-    errors.push({
-      path: dataPath,
-      message: `Unknown format '${format}'`,
-      schemaPath: `${schemaPath}/format`,
-      value,
-    });
-  }
-}
-
-/**
- * Get JSON Schema type for a value
- */
-function getJsonType(value: unknown): string {
-  if (value === null) return "null";
-  if (Array.isArray(value)) return "array";
-  if (typeof value === "number") {
-    return Number.isInteger(value) ? "integer" : "number";
-  }
-  return typeof value;
-}
-
-/**
- * Deep equality check
- */
-function deepEqual(a: unknown, b: unknown): boolean {
-  if (a === b) return true;
-  if (a === null || b === null) return false;
-  if (typeof a !== typeof b) return false;
-
-  if (Array.isArray(a) && Array.isArray(b)) {
-    if (a.length !== b.length) return false;
-    return a.every((item, index) => deepEqual(item, b[index]));
-  }
-
-  if (typeof a === "object" && typeof b === "object") {
-    const keysA = Object.keys(a as Record<string, unknown>);
-    const keysB = Object.keys(b as Record<string, unknown>);
-    if (keysA.length !== keysB.length) return false;
-    return keysA.every((key) =>
-      deepEqual(
-        (a as Record<string, unknown>)[key],
-        (b as Record<string, unknown>)[key]
-      )
-    );
-  }
-
-  return false;
-}
-
-/**
- * Generate basic schema from JSON data
- */
-export function generateSchemaFromData(data: unknown): JsonSchema {
-  const schema: JsonSchema = {};
-
-  if (data === null) {
-    schema.type = "null";
-  } else if (Array.isArray(data)) {
-    schema.type = "array";
-    if (data.length > 0) {
-      // Try to infer item schema from first item
-      schema.items = generateSchemaFromData(data[0]);
-    }
-    schema.minItems = 0;
-  } else if (typeof data === "object") {
-    schema.type = "object";
-    schema.properties = {};
-    schema.required = [];
-
-    Object.entries(data as Record<string, unknown>).forEach(([key, value]) => {
-      schema.properties![key] = generateSchemaFromData(value);
-      schema.required!.push(key);
-    });
-
-    schema.additionalProperties = false;
-  } else if (typeof data === "string") {
-    schema.type = "string";
-
-    // Try to detect common formats
-    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data)) {
-      schema.format = "email";
-    } else if (/^https?:\/\/.+/.test(data)) {
-      schema.format = "uri";
-    } else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(data)) {
-      schema.format = "date-time";
-    } else if (/^\d{4}-\d{2}-\d{2}$/.test(data)) {
-      schema.format = "date";
-    } else if (
-      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/i.test(
-        data
-      )
-    ) {
-      schema.format = "uuid";
-    }
-  } else if (typeof data === "number") {
-    schema.type = Number.isInteger(data) ? "integer" : "number";
-  } else if (typeof data === "boolean") {
-    schema.type = "boolean";
-  }
-
-  return schema;
+  if (typeof data === "number") return { type: Number.isInteger(data) ? "integer" : "number" };
+  if (typeof data === "boolean") return { type: "boolean" };
+  return {};
 }

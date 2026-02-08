@@ -22,6 +22,7 @@ import { ResponsiveTextArea } from "@/components/layout";
 import {
   validateJsonSchema,
   generateSchemaFromData,
+  JSON_SCHEMA_DRAFT_2020_12,
   type JsonSchema,
   type SchemaValidationResult,
 } from "@/lib/utils/json";
@@ -41,7 +42,7 @@ export function JsonSchemaValidator({
   const [isValidating, setIsValidating] = useState(false);
 
   const validateAgainstSchema = () => {
-    if (!data) {
+    if (data === undefined) {
       toast.error("No JSON data to validate");
       return;
     }
@@ -63,8 +64,8 @@ export function JsonSchemaValidator({
       } else {
         toast.error(`Validation failed with ${result.errors.length} errors`);
       }
-    } catch {
-      toast.error("Invalid JSON schema format");
+    } catch (error) {
+      toast.error(error instanceof SyntaxError ? "Schema is not valid JSON" : "Unable to read schema");
       setValidationResult(null);
     } finally {
       setIsValidating(false);
@@ -72,7 +73,7 @@ export function JsonSchemaValidator({
   };
 
   const generateSchema = () => {
-    if (!data) {
+    if (data === undefined) {
       toast.error("No JSON data to generate schema from");
       return;
     }
@@ -97,6 +98,7 @@ export function JsonSchemaValidator({
 
   const loadSampleSchema = () => {
     const sampleSchema = {
+      $schema: JSON_SCHEMA_DRAFT_2020_12,
       type: "object",
       properties: {
         name: {
@@ -118,6 +120,7 @@ export function JsonSchemaValidator({
         },
         tags: {
           type: "array",
+          prefixItems: [{ const: "profile" }],
           items: {
             type: "string",
           },
@@ -137,13 +140,14 @@ export function JsonSchemaValidator({
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <span>Schema Validator</span>
+          <Badge variant="secondary">Draft 2020-12</Badge>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger>
                 <AlertTriangle className="h-4 w-4 text-muted-foreground" />
               </TooltipTrigger>
               <TooltipContent>
-                <p>Validate your JSON data against a JSON Schema</p>
+                <p>Draft 2020-12 validation with local references and standard formats</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -196,7 +200,7 @@ export function JsonSchemaValidator({
         <div className="flex gap-2">
           <Button
             onClick={validateAgainstSchema}
-            disabled={isValidating || !data || !schema.trim()}
+            disabled={isValidating || data === undefined || !schema.trim()}
             className="flex-1"
           >
             {isValidating ? "Validating..." : "Validate"}
@@ -251,6 +255,10 @@ export function JsonSchemaValidator({
                             </code>
                           </div>
                           <div className="text-red-600">{error.message}</div>
+                          <div className="text-xs text-red-600 font-mono break-all">
+                            {error.keyword && <span>{error.keyword} · </span>}
+                            schema {error.schemaPath}
+                          </div>
                           {error.value !== undefined && (
                             <div className="text-sm text-red-600">
                               Value:{" "}
@@ -292,6 +300,9 @@ export function JsonSchemaValidator({
             )}
           </div>
         )}
+        <p className="text-xs text-muted-foreground">
+          Uses JSON Schema Draft 2020-12. Local <code>$ref</code>/<code>$dynamicRef</code> are supported; remote schema fetching is intentionally disabled.
+        </p>
       </CardContent>
     </Card>
   );

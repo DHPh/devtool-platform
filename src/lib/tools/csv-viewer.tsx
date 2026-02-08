@@ -26,7 +26,11 @@ import {
   Table,
 } from "lucide-react";
 import { toast } from "sonner";
-import { parseCSV, getDelimiterDisplayName } from "@/lib/processors/csv";
+import {
+  getDelimiterDisplayName,
+  parseCSV,
+  serializeCSV,
+} from "@/lib/processors/csv";
 
 export const metadata = {
   id: "csv-viewer",
@@ -50,6 +54,7 @@ export default function CSVViewer() {
   const [globalFilter, setGlobalFilter] = useState("");
   const [fileName, setFileName] = useState("");
   const [detectedDelimiter, setDetectedDelimiter] = useState(",");
+  const [parseIssueCount, setParseIssueCount] = useState(0);
   const [textInput, setTextInput] = useState("");
 
   const createColumns = (data: CSVRow[]): ColumnDef<CSVRow>[] => {
@@ -89,7 +94,7 @@ export default function CSVViewer() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!file.name.endsWith(".csv")) {
+    if (!file.name.toLowerCase().endsWith(".csv")) {
       toast.error("Please select a CSV file");
       return;
     }
@@ -101,10 +106,12 @@ export default function CSVViewer() {
         const result = parseCSV(text, {
           hasHeader: true,
           skipEmptyLines: true,
+          convertValues: false,
         });
         setData(result.data as CSVRow[]);
         setColumns(createColumns(result.data as CSVRow[]));
         setDetectedDelimiter(result.delimiter);
+        setParseIssueCount(result.issues.length);
         setFileName(file.name);
         toast.success(`Loaded ${result.rowCount} rows from ${file.name}`);
       } catch (error) {
@@ -122,6 +129,7 @@ export default function CSVViewer() {
       let result = parseCSV(text, {
         hasHeader: true,
         skipEmptyLines: true,
+        convertValues: false,
       });
 
       // If we get too many columns (indicating possible unquoted commas), try other approaches
@@ -132,6 +140,7 @@ export default function CSVViewer() {
             delimiter: ";",
             hasHeader: true,
             skipEmptyLines: true,
+            convertValues: false,
           });
           if (
             semicolonResult.headers.length < result.headers.length &&
@@ -149,6 +158,7 @@ export default function CSVViewer() {
             delimiter: "\t",
             hasHeader: true,
             skipEmptyLines: true,
+            convertValues: false,
           });
           if (
             tabResult.headers.length < result.headers.length &&
@@ -164,6 +174,7 @@ export default function CSVViewer() {
       setData(result.data as CSVRow[]);
       setColumns(createColumns(result.data as CSVRow[]));
       setDetectedDelimiter(result.delimiter);
+      setParseIssueCount(result.issues.length);
       setFileName("Manual Input");
       toast.success(
         `Loaded ${result.rowCount} rows with ${result.headers.length} columns`
@@ -208,40 +219,32 @@ export default function CSVViewer() {
     if (data.length === 0) return;
 
     const headers = Object.keys(data[0]);
-    const csvContent = [
-      headers.join(detectedDelimiter),
-      ...data.map((row) =>
-        headers
-          .map((header) => {
-            const value = row[header];
-            const stringValue = String(value);
-            // Escape quotes and wrap in quotes if contains delimiter or quotes
-            if (
-              stringValue.includes(detectedDelimiter) ||
-              stringValue.includes('"') ||
-              stringValue.includes("\n")
-            ) {
-              return `"${stringValue.replace(/"/g, '""')}"`;
-            }
-            return stringValue;
-          })
-          .join(detectedDelimiter)
-      ),
-    ].join("\n");
+    const csvContent = serializeCSV(data, headers, {
+      delimiter: detectedDelimiter,
+      safeSpreadsheet: true,
+    });
 
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = fileName.replace(".csv", "_processed.csv") || "data.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    a.download =
+      fileName && fileName !== "Manual Input"
+        ? `${fileName.replace(/\.csv$/i, "")}_processed.csv`
+        : "data.csv";
+    document.body.appendChild(a);
+    try {
+      a.click();
+    } finally {
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
     toast.success("Data exported!");
   };
 
   const loadSampleData = () => {
     const sampleCSV = `SIC Code,Description
-1110,Growing of cereals (except rice), leguminous crops and oil seeds
+1110,"Growing of cereals (except rice), leguminous crops and oil seeds"
 1120,Growing of rice
 1130,Growing of vegetables and melons, roots and tubers
 1140,Growing of sugar cane
@@ -270,6 +273,7 @@ export default function CSVViewer() {
     setColumns([]);
     setFileName("");
     setDetectedDelimiter(",");
+    setParseIssueCount(0);
     setGlobalFilter("");
     setColumnFilters([]);
     setSorting([]);
@@ -364,6 +368,15 @@ export default function CSVViewer() {
                   className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300"
                 >
                   ⚠️ Many columns detected
+                </Badge>
+              )}
+              {parseIssueCount > 0 && (
+                <Badge
+                  variant="outline"
+                  className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300"
+                >
+                  ⚠️ {parseIssueCount} row{parseIssueCount === 1 ? "" : "s"}{" "}
+                  with unequal columns
                 </Badge>
               )}
               {fileName && <Badge variant="secondary">{fileName}</Badge>}

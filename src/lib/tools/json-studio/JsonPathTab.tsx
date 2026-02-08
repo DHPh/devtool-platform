@@ -111,9 +111,10 @@ export function JsonPathTab({ input }: JsonPathTabProps) {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Explore your JSON data using JSONPath expressions. Click on sample
-            paths or enter custom queries to navigate through your data
-            structure.
+            Explore JSON with RFC 9535 child, wildcard, descendant, union,
+            index, and slice selectors. Filters support existence tests,
+            literals, singular child queries, comparisons, !, &amp;&amp;, ||, and
+            parentheses; JSONPath functions are not supported.
           </p>
         </CardContent>
       </Card>
@@ -165,6 +166,22 @@ export function JsonPathTab({ input }: JsonPathTabProps) {
                   </span>
                 </div>
                 <div>
+                  <code className="bg-muted px-1 py-0.5 rounded">
+                    $[&apos;a&apos;,&apos;b&apos;]
+                  </code>
+                  <span className="ml-2 text-muted-foreground">
+                    Selector union
+                  </span>
+                </div>
+                <div>
+                  <code className="bg-muted px-1 py-0.5 rounded">
+                    $[-1], $[::2]
+                  </code>
+                  <span className="ml-2 text-muted-foreground">
+                    Negative index and slice
+                  </span>
+                </div>
+                <div>
                   <code className="bg-muted px-1 py-0.5 rounded">$..*</code>
                   <span className="ml-2 text-muted-foreground">
                     Recursive descent
@@ -175,7 +192,7 @@ export function JsonPathTab({ input }: JsonPathTabProps) {
                     $[?(@.prop)]
                   </code>
                   <span className="ml-2 text-muted-foreground">
-                    Filter expression
+                    Basic filter expression
                   </span>
                 </div>
               </div>
@@ -192,6 +209,8 @@ export function JsonPathTab({ input }: JsonPathTabProps) {
                 <li>• Use the sample paths to get started</li>
                 <li>• Copy paths or values with the copy buttons</li>
                 <li>• Wildcards (*) match any property/index</li>
+                <li>• Result paths use normalized bracket notation</li>
+                <li>• Filter functions are not currently supported</li>
                 <li>• Results show value types and execution time</li>
               </ul>
             </CardContent>

@@ -40,7 +40,7 @@ export function JsonPathExplorer({ data, className }: JsonPathExplorerProps) {
 
   const executeQuery = useCallback(
     (queryToExecute: string = query) => {
-      if (!data) {
+      if (data === undefined) {
         setError("No JSON data to query");
         return;
       }
@@ -65,7 +65,7 @@ export function JsonPathExplorer({ data, className }: JsonPathExplorerProps) {
   );
 
   useEffect(() => {
-    if (data) {
+    if (data !== undefined) {
       const samples = generateSamplePaths(data);
       setSamplePaths(samples.slice(0, 10)); // Limit to 10 samples
       executeQuery("$"); // Execute default query
@@ -131,6 +131,7 @@ export function JsonPathExplorer({ data, className }: JsonPathExplorerProps) {
         {/* Query Input */}
         <form onSubmit={handleQuerySubmit} className="flex gap-2">
           <Input
+            aria-label="JSONPath expression"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Enter JSONPath query (e.g., $.store.book[0].title)"
