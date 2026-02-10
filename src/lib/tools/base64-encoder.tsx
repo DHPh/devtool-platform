@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { type ChangeEvent, useState } from "react";
 import { ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -12,14 +12,26 @@ import {
   ModeTabs,
 } from "@/components/layout";
 import {
+  decodeBase64Bytes,
   decodeBase64 as decodeBase64Text,
+  encodeBase64Bytes,
   encodeBase64 as encodeBase64Text,
+  type Base64DecodeMode,
+  type Base64Variant,
 } from "@/lib/processors/base64";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export const metadata = {
   id: "base64-encoder",
   name: "Base64 Encoder/Decoder",
-  description: "Convert text to Base64 and back with ease",
+  description: "Encode text or binary files as Base64/Base64url and decode in strict or forgiving mode",
   category: "Encoding",
   tags: ["base64", "encoder", "decoder", "encode", "decode"],
   path: "/tools/base64-encoder",
@@ -30,12 +42,17 @@ export default function Base64Encoder() {
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
   const [mode, setMode] = useState<"encode" | "decode">("encode");
+  const [variant, setVariant] = useState<Base64Variant>("standard");
+  const [decodeMode, setDecodeMode] = useState<Base64DecodeMode>("strict");
+  const [decodedBytes, setDecodedBytes] = useState<Uint8Array | null>(null);
+  const [binaryFileName, setBinaryFileName] = useState("");
 
   const encodeBase64 = () => {
     try {
-      const encoded = encodeBase64Text(input);
+      const encoded = encodeBase64Text(input, { variant });
       setOutput(encoded);
-      toast.success("Text encoded to Base64!");
+      setDecodedBytes(null);
+      toast.success(`Text encoded to ${variant === "url" ? "Base64url" : "Base64"}!`);
     } catch {
       toast.error("Failed to encode text");
     }
@@ -43,9 +60,16 @@ export default function Base64Encoder() {
 
   const decodeBase64 = () => {
     try {
-      const decoded = decodeBase64Text(input);
-      setOutput(decoded);
-      toast.success("Base64 decoded to text!");
+      const options = { variant, mode: decodeMode } as const;
+      const bytes = decodeBase64Bytes(input, options);
+      setDecodedBytes(bytes);
+      try {
+        setOutput(decodeBase64Text(input, options));
+        toast.success("Encoded data decoded as UTF-8 text!");
+      } catch {
+        setOutput(`Binary data decoded (${bytes.length} bytes). Use “Download decoded bytes” to save it.`);
+        toast.success("Binary data decoded successfully");
+      }
     } catch {
       toast.error("Invalid Base64 string");
     }
@@ -72,6 +96,8 @@ export default function Base64Encoder() {
   const clearAll = () => {
     setInput("");
     setOutput("");
+    setDecodedBytes(null);
+    setBinaryFileName("");
   };
 
   const loadSample = () => {
@@ -86,19 +112,52 @@ export default function Base64Encoder() {
     setInput(output);
     setOutput("");
     setMode(mode === "encode" ? "decode" : "encode");
+    setDecodedBytes(null);
+  };
+
+  const encodeBinaryFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      setOutput(encodeBase64Bytes(bytes, { variant }));
+      setBinaryFileName(file.name);
+      setDecodedBytes(null);
+      toast.success(`Encoded ${file.name} (${bytes.length} bytes) locally`);
+    } catch {
+      toast.error("Failed to encode the selected file");
+    } finally {
+      event.target.value = "";
+    }
+  };
+
+  const downloadDecodedBytes = () => {
+    if (!decodedBytes) return;
+    const url = URL.createObjectURL(new Blob([decodedBytes.slice().buffer]));
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "decoded.bin";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
   };
 
   return (
     <div className="space-y-6">
       <ToolHeader
         title="Base64 Encoder/Decoder"
-        description="Convert text to Base64 and back with ease"
+        description="Encode UTF-8 text or binary files with Base64/Base64url, or decode bytes in strict and forgiving modes"
         icon={ArrowUpDown}
       />
 
       <ModeTabs
         value={mode}
-        onValueChange={(value) => setMode(value as "encode" | "decode")}
+        onValueChange={(value) => {
+          setMode(value as "encode" | "decode");
+          setOutput("");
+          setDecodedBytes(null);
+        }}
         options={[
           {
             value: "encode",
@@ -112,6 +171,37 @@ export default function Base64Encoder() {
           },
         ]}
       />
+
+      <div className="grid gap-4 rounded-lg border p-4 md:grid-cols-3">
+        <div className="space-y-2">
+          <Label>Alphabet</Label>
+          <Select value={variant} onValueChange={(value) => setVariant(value as Base64Variant)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="standard">Base64 (+, /, padded)</SelectItem>
+              <SelectItem value="url">Base64url (-, _, unpadded)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {mode === "decode" ? (
+          <div className="space-y-2">
+            <Label>Decode mode</Label>
+            <Select value={decodeMode} onValueChange={(value) => setDecodeMode(value as Base64DecodeMode)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="strict">Strict canonical</SelectItem>
+                <SelectItem value="forgiving">Forgiving whitespace/padding</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        ) : (
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="base64-binary-file">Binary file input</Label>
+            <input id="base64-binary-file" type="file" onChange={encodeBinaryFile} className="block w-full text-sm" />
+            {binaryFileName && <p className="text-xs text-muted-foreground">Encoded locally: {binaryFileName}</p>}
+          </div>
+        )}
+      </div>
 
       <QuickActions
         actions={[
@@ -140,6 +230,14 @@ export default function Base64Encoder() {
             onClick: clearAll,
             variant: "outline" as const,
           },
+          ...(mode === "decode" && decodedBytes
+            ? [{
+                id: "download-bytes",
+                label: "Download decoded bytes",
+                onClick: downloadDecodedBytes,
+                variant: "outline" as const,
+              }]
+            : []),
         ]}
       />
 
@@ -215,7 +313,7 @@ export default function Base64Encoder() {
             </ul>
           </div>
           <p className="text-xs bg-muted p-2 rounded">
-            <strong>Note:</strong> Base64 encoding increases the size of data by approximately 33%.
+            <strong>Note:</strong> Base64url changes the alphabet for URLs and commonly omits padding. Strict mode requires canonical input; forgiving mode accepts ASCII whitespace and missing padding. Base64 is encoding, not encryption.
           </p>
         </div>
       </ResultCard>

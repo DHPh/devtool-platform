@@ -17,114 +17,28 @@ import {
   CopyableResult,
   ValidationStatus,
 } from "@/components/layout";
+import {
+  validateEmailSyntax,
+  type EmailSyntaxResult,
+} from "@/lib/processors/email";
 
 export const metadata = {
   id: "email-validator",
   name: "Email Validator",
-  description: "Validate email addresses and check formatting",
+  description: "Check common email address syntax and normalize internationalized domains",
   category: "Validators",
   tags: ["email", "validator", "validation"],
   path: "/tools/email-validator",
   icon: "📧",
 };
 
-interface EmailValidation {
-  email: string;
-  isValid: boolean;
-  errors: string[];
-  warnings: string[];
-}
-
 export default function EmailValidator() {
   const [singleEmail, setSingleEmail] = useState("");
   const [bulkEmails, setBulkEmails] = useState("");
-  const [singleResult, setSingleResult] = useState<EmailValidation | null>(
+  const [singleResult, setSingleResult] = useState<EmailSyntaxResult | null>(
     null
   );
-  const [bulkResults, setBulkResults] = useState<EmailValidation[]>([]);
-
-  const validateEmail = (email: string): EmailValidation => {
-    const errors: string[] = [];
-    const warnings: string[] = [];
-
-    // Basic format check
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      errors.push("Invalid email format");
-    }
-
-    // Check for spaces
-    if (email.includes(" ")) {
-      errors.push("Email cannot contain spaces");
-    }
-
-    // Check for multiple @ symbols
-    const atCount = (email.match(/@/g) || []).length;
-    if (atCount !== 1) {
-      errors.push("Email must contain exactly one @ symbol");
-    }
-
-    // Check local part (before @)
-    const [localPart, domain] = email.split("@");
-    if (localPart) {
-      if (localPart.length === 0) {
-        errors.push("Local part cannot be empty");
-      }
-      if (localPart.length > 64) {
-        errors.push("Local part cannot exceed 64 characters");
-      }
-      if (localPart.startsWith(".") || localPart.endsWith(".")) {
-        errors.push("Local part cannot start or end with a dot");
-      }
-      if (localPart.includes("..")) {
-        errors.push("Local part cannot contain consecutive dots");
-      }
-      if (!/^[a-zA-Z0-9._%+-]+$/.test(localPart)) {
-        warnings.push("Local part contains unusual characters");
-      }
-    }
-
-    // Check domain part (after @)
-    if (domain) {
-      if (domain.length === 0) {
-        errors.push("Domain cannot be empty");
-      }
-      if (domain.length > 253) {
-        errors.push("Domain cannot exceed 253 characters");
-      }
-      if (!domain.includes(".")) {
-        errors.push("Domain must contain at least one dot");
-      }
-      if (domain.startsWith(".") || domain.endsWith(".")) {
-        errors.push("Domain cannot start or end with a dot");
-      }
-      if (domain.includes("..")) {
-        errors.push("Domain cannot contain consecutive dots");
-      }
-
-      // Check TLD
-      const tldParts = domain.split(".");
-      const tld = tldParts[tldParts.length - 1];
-      if (tld.length < 2) {
-        errors.push("Top-level domain must be at least 2 characters");
-      }
-      if (!/^[a-zA-Z]+$/.test(tld)) {
-        errors.push("Top-level domain can only contain letters");
-      }
-    }
-
-    // Check total length
-    if (email.length > 254) {
-      errors.push("Email cannot exceed 254 characters");
-    }
-
-    return {
-      email,
-      isValid: errors.length === 0,
-      errors,
-      warnings,
-    };
-  };
+  const [bulkResults, setBulkResults] = useState<EmailSyntaxResult[]>([]);
 
   const validateSingleEmail = () => {
     if (!singleEmail.trim()) {
@@ -132,7 +46,7 @@ export default function EmailValidator() {
       return;
     }
 
-    const result = validateEmail(singleEmail.trim());
+    const result = validateEmailSyntax(singleEmail);
     setSingleResult(result);
   };
 
@@ -147,7 +61,7 @@ export default function EmailValidator() {
       .map((email) => email.trim())
       .filter((email) => email.length > 0);
 
-    const results = emails.map(validateEmail);
+    const results = emails.map(validateEmailSyntax);
     setBulkResults(results);
   };
 
@@ -177,7 +91,7 @@ export default function EmailValidator() {
       {/* Tool Header */}
       <ToolHeader
         title="Email Validator"
-        description="Validate email addresses and check for common formatting issues"
+        description="Check common mailbox syntax and normalize IDN domains; deliverability is not checked"
         icon={Mail}
         badge={{ text: "New", variant: "secondary" }}
         actions={[
@@ -224,13 +138,21 @@ export default function EmailValidator() {
             <ResultCard
               title="Validation Result"
               status={singleResult.isValid ? "success" : "error"}
-              result={singleResult.email}
-              onCopy={() => navigator.clipboard.writeText(singleResult.email)}
+              result={singleResult.normalizedEmail ?? singleResult.email}
+              onCopy={() => navigator.clipboard.writeText(singleResult.normalizedEmail ?? singleResult.email)}
               copyLabel="Copy Email"
             >
               <div className="space-y-3">
                 <div className="p-3 bg-muted rounded-md">
                   <code className="text-sm font-mono">{singleResult.email}</code>
+                  {singleResult.normalizedEmail && singleResult.normalizedEmail !== singleResult.email && (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Normalized: <code>{singleResult.normalizedEmail}</code>
+                    </p>
+                  )}
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Scope: syntax only. DNS, SMTP, mailbox existence, and deliverability are not checked.
+                  </p>
                 </div>
                 
                 <ValidationStatus

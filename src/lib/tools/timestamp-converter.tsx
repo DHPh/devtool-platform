@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Clock } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,161 +13,141 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Clock } from "lucide-react";
-import { toast } from "sonner";
+import { CopyableResult, QuickActions, ResultCard, ToolHeader } from "@/components/layout";
 import {
-  ToolHeader,
-  QuickActions,
-  ResultCard,
-  CopyableResult,
-} from "@/components/layout";
-import { dateToTimestamp, timestampToIso } from "@/lib/processors";
+  currentUnixTimestamp,
+  dateTimeInputToUnix,
+  formatIsoInstant,
+  type UnixTimestampUnit,
+  unixToDateTime,
+} from "@/lib/processors";
 
 export const metadata = {
   id: "timestamp-converter",
   name: "Timestamp Converter",
-  description: "Convert between Unix timestamps and human-readable dates",
+  description:
+    "Convert exact Unix timestamps and strict RFC 3339 or timezone-local date-times",
   category: "Utilities",
-  tags: ["timestamp", "date", "time", "unix", "converter"],
+  tags: ["timestamp", "date", "time", "unix", "rfc3339", "iana", "dst"],
   path: "/tools/timestamp-converter",
   icon: "🕐",
 };
 
+const COMMON_TIMESTAMPS = [
+  { name: "Unix Epoch", value: "0", description: "1970-01-01T00:00:00Z" },
+  { name: "Y2K", value: "946684800", description: "2000-01-01T00:00:00Z" },
+  { name: "32-bit limit", value: "2147483647", description: "2038-01-19T03:14:07Z" },
+];
+
+const DATE_EXAMPLES = [
+  "2024-01-15T10:30:00Z",
+  "2024-01-15T10:30:00+07:00",
+  "2024-01-15 10:30:00",
+  "2024-01-15 10:30:00.123456789",
+];
+
 export default function TimestampConverter() {
   const [timestamp, setTimestamp] = useState("");
-  const [humanDate, setHumanDate] = useState("");
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [unit, setUnit] = useState<"seconds" | "milliseconds">("seconds");
-  const [timezone, setTimezone] = useState("UTC");
-  const [isClient, setIsClient] = useState(false);
+  const [dateInput, setDateInput] = useState("");
+  const [dateResult, setDateResult] = useState("");
+  const [conversionMessage, setConversionMessage] = useState("");
+  const [unit, setUnit] = useState<UnixTimestampUnit>("seconds");
+  const [timeZone, setTimeZone] = useState("UTC");
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
-  // Set client-side flag to prevent hydration mismatch
   useEffect(() => {
-    setIsClient(true);
+    const update = () => setCurrentTime(new Date());
+    update();
+    const timer = window.setInterval(update, 1000);
+    return () => window.clearInterval(timer);
   }, []);
 
-  // Update current time every second
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const convertToHuman = () => {
+  const convertToDate = () => {
     try {
-      const num = parseFloat(timestamp);
-      if (isNaN(num)) {
-        toast.error("Invalid timestamp");
-        return;
-      }
-
-      if (timezone === "UTC") {
-        setHumanDate(timestampToIso(num, unit).replace("T", " ").replace("Z", " UTC"));
-      } else {
-        const date = new Date(unit === "seconds" ? num * 1000 : num);
-        setHumanDate(date.toLocaleString());
-      }
-      toast.success("Timestamp converted!");
-    } catch {
-      toast.error("Invalid timestamp format");
+      const result = unixToDateTime(timestamp, unit, timeZone);
+      setDateResult(result.timeZone === "UTC" ? result.iso : `${result.zoned}\nUTC: ${result.iso}`);
+      setConversionMessage("");
+      toast.success("Timestamp converted");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Invalid timestamp";
+      setDateResult("");
+      setConversionMessage(message);
+      toast.error(message);
     }
   };
 
   const convertToTimestamp = () => {
     try {
-      const ts = dateToTimestamp(humanDate, unit);
-      setTimestamp(ts.toString());
-      toast.success("Date converted to timestamp!");
-    } catch {
-      toast.error("Invalid date format");
+      const { resolution, values } = dateTimeInputToUnix(dateInput, unit, timeZone);
+      if (resolution.status === "invalid") {
+        setTimestamp("");
+        setConversionMessage(resolution.message ?? "The local time does not exist");
+        toast.error(resolution.message ?? "Invalid local time");
+        return;
+      }
+      if (resolution.status === "ambiguous") {
+        const candidates = values.join(" or ");
+        setTimestamp("");
+        setConversionMessage(
+          `${resolution.message ?? "The local time is ambiguous"}. Possible ${unit}: ${candidates}`,
+        );
+        toast.error("Ambiguous local time; both candidates are shown");
+        return;
+      }
+      setTimestamp(values[0]);
+      setConversionMessage(
+        resolution.explicitOffset
+          ? "The RFC 3339 offset in the input determined the instant."
+          : `Interpreted as a wall time in ${resolution.timeZone}.`,
+      );
+      toast.success("Date-time converted");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Invalid date-time";
+      setTimestamp("");
+      setConversionMessage(message);
+      toast.error(message);
     }
   };
 
   const useCurrentTime = () => {
-    const now = new Date();
-    const ts = unit === "seconds" ? Math.floor(now.getTime() / 1000) : now.getTime();
-    setTimestamp(ts.toString());
-
-    if (timezone === "UTC") {
-      setHumanDate(now.toISOString().replace("T", " ").replace("Z", " UTC"));
-    } else {
-      setHumanDate(now.toLocaleString());
+    const value = currentUnixTimestamp(unit);
+    setTimestamp(value);
+    try {
+      setDateResult(unixToDateTime(value, unit, timeZone).zoned);
+      setConversionMessage("");
+    } catch (error) {
+      setConversionMessage(error instanceof Error ? error.message : "Invalid timezone");
     }
   };
 
-  const formatExamples = [
-    "2024-01-15 10:30:00",
-    "2024-01-15T10:30:00Z", 
-    "January 15, 2024 10:30 AM",
-    "01/15/2024 10:30:00",
-  ];
-
-  const commonTimestamps = [
-    { name: "Unix Epoch", value: "0", description: "January 1, 1970 00:00:00 UTC" },
-    { name: "Y2K", value: "946684800", description: "January 1, 2000 00:00:00 UTC" },
-    { name: "Unix 32-bit overflow", value: "2147483647", description: "January 19, 2038 03:14:07 UTC" },
-  ];
-
-  const quickActions = [
-    { label: "Current Time", onClick: useCurrentTime },
-    { label: "Unix Epoch", onClick: () => setTimestamp("0") },
-    { label: "Y2K", onClick: () => setTimestamp("946684800") },
-    { label: "2038 Overflow", onClick: () => setTimestamp("2147483647") },
-  ];
+  const currentIso = currentTime
+    ? formatIsoInstant(BigInt(currentTime.getTime()) * BigInt(1_000_000))
+    : "Loading…";
 
   return (
     <div className="space-y-6">
       <ToolHeader
         title="Timestamp Converter"
-        description="Convert between Unix timestamps and human-readable dates"
+        description="Convert exact Unix seconds, milliseconds, microseconds, or nanoseconds using strict date-time syntax"
         icon={Clock}
       />
 
       <QuickActions
-        actions={quickActions.map((action, index) => ({
-          id: `quick-${index}`,
-          label: action.label,
-          onClick: action.onClick,
-        }))}
+        actions={[
+          { id: "current", label: "Current Time", onClick: useCurrentTime },
+          { id: "epoch", label: "Unix Epoch", onClick: () => setTimestamp("0") },
+          { id: "y2k", label: "Y2K", onClick: () => setTimestamp("946684800") },
+          { id: "2038", label: "2038 Limit", onClick: () => setTimestamp("2147483647") },
+        ]}
       />
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Current Time & Settings */}
+      <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-4">
-          <ResultCard
-            title="Current Time"
-            description="Live time display with current timestamp"
-            status="info"
-          >
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Local Time:</span>
-                  <span className="font-mono">
-                    {isClient ? currentTime.toLocaleString() : "Loading..."}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">UTC Time:</span>
-                  <span className="font-mono">
-                    {isClient 
-                      ? currentTime.toISOString().replace("T", " ").replace("Z", " UTC")
-                      : "Loading..."
-                    }
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Unix ({unit}):</span>
-                  <span className="font-mono">
-                    {isClient 
-                      ? (unit === "seconds"
-                          ? Math.floor(currentTime.getTime() / 1000)
-                          : currentTime.getTime())
-                      : "Loading..."
-                    }
-                  </span>
-                </div>
+          <ResultCard title="Current Time" description="Browser clock in UTC" status="info">
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">RFC 3339:</span>
+                <span className="break-all text-right font-mono">{currentIso}</span>
               </div>
               <Button onClick={useCurrentTime} className="w-full" size="sm">
                 Use Current Time
@@ -173,168 +155,121 @@ export default function TimestampConverter() {
             </div>
           </ResultCard>
 
-          <ResultCard
-            title="Settings"
-            description="Configure conversion options"
-            status="info"
-          >
-            <div className="grid grid-cols-2 gap-4">
+          <ResultCard title="Settings" description="Exact unit and output timezone" status="info">
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-sm">Timestamp Unit</Label>
-                <Select
-                  value={unit}
-                  onValueChange={(value) => setUnit(value as "seconds" | "milliseconds")}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                <Label htmlFor="timestamp-unit">Timestamp unit</Label>
+                <Select value={unit} onValueChange={(value) => setUnit(value as UnixTimestampUnit)}>
+                  <SelectTrigger id="timestamp-unit"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="seconds">Seconds (Unix)</SelectItem>
-                    <SelectItem value="milliseconds">Milliseconds (JS)</SelectItem>
+                    <SelectItem value="seconds">Seconds</SelectItem>
+                    <SelectItem value="milliseconds">Milliseconds</SelectItem>
+                    <SelectItem value="microseconds">Microseconds</SelectItem>
+                    <SelectItem value="nanoseconds">Nanoseconds</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-sm">Timezone</Label>
-                <Select value={timezone} onValueChange={setTimezone}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="UTC">UTC</SelectItem>
-                    <SelectItem value="local">Local Time</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="timestamp-zone">Timezone</Label>
+                <Input
+                  id="timestamp-zone"
+                  value={timeZone}
+                  onChange={(event) => setTimeZone(event.target.value)}
+                  placeholder="UTC, local, or Europe/Paris"
+                  className="font-mono"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter UTC, local, or an IANA name such as America/New_York.
+                </p>
               </div>
             </div>
           </ResultCard>
         </div>
 
-        {/* Conversion Tools */}
         <div className="space-y-4">
           <ResultCard
-            title="Timestamp → Human Date"
-            description="Convert Unix timestamp to readable date"
-            status={humanDate ? "success" : "info"}
+            title="Timestamp → Date-time"
+            description="Decimal input is parsed exactly without floating-point conversion"
+            status={dateResult ? "success" : "info"}
           >
             <div className="space-y-4">
               <div className="flex gap-2">
                 <Input
+                  aria-label="Unix timestamp"
                   value={timestamp}
-                  onChange={(e) => setTimestamp(e.target.value)}
-                  placeholder={`Enter timestamp in ${unit}...`}
+                  onChange={(event) => setTimestamp(event.target.value)}
+                  placeholder={`Enter ${unit}…`}
                   className="font-mono"
                 />
-                <Button onClick={convertToHuman} disabled={!timestamp} size="sm">
-                  Convert
-                </Button>
+                <Button onClick={convertToDate} disabled={!timestamp.trim()} size="sm">Convert</Button>
               </div>
-
-              {humanDate && (
-                <CopyableResult
-                  value={humanDate}
-                  fontFamily="mono"
-                  rows={2}
-                />
-              )}
-
-              <div className="space-y-2">
-                <Label className="text-sm">Common Timestamps</Label>
-                <div className="space-y-1">
-                  {commonTimestamps.map((item) => (
-                    <div
-                      key={item.name}
-                      className="flex items-center justify-between p-2 border rounded cursor-pointer hover:bg-accent text-xs"
-                      onClick={() => setTimestamp(item.value)}
-                    >
-                      <div>
-                        <div className="font-medium">{item.name}</div>
-                        <div className="text-muted-foreground">{item.description}</div>
-                      </div>
-                      <code className="text-xs">{item.value}</code>
-                    </div>
-                  ))}
-                </div>
+              {dateResult && <CopyableResult value={dateResult} fontFamily="mono" rows={2} />}
+              <div className="space-y-1">
+                <Label>Common timestamps (seconds)</Label>
+                {COMMON_TIMESTAMPS.map((item) => (
+                  <button
+                    type="button"
+                    key={item.name}
+                    className="flex w-full items-center justify-between rounded border p-2 text-left text-xs hover:bg-accent"
+                    onClick={() => { setUnit("seconds"); setTimestamp(item.value); }}
+                  >
+                    <span><strong>{item.name}</strong><br /><span className="text-muted-foreground">{item.description}</span></span>
+                    <code>{item.value}</code>
+                  </button>
+                ))}
               </div>
             </div>
           </ResultCard>
 
           <ResultCard
-            title="Human Date → Timestamp"
-            description="Convert readable date to Unix timestamp"
-            status={timestamp ? "success" : "info"}
+            title="Date-time → Timestamp"
+            description="Use RFC 3339 with an offset, or an offset-less wall time in the selected timezone"
+            status={conversionMessage ? "info" : "success"}
           >
             <div className="space-y-4">
               <div className="flex gap-2">
                 <Input
-                  value={humanDate}
-                  onChange={(e) => setHumanDate(e.target.value)}
-                  placeholder="Enter date (e.g., 2024-01-15 10:30:00)..."
+                  aria-label="Date-time"
+                  value={dateInput}
+                  onChange={(event) => setDateInput(event.target.value)}
+                  placeholder="2024-01-15T10:30:00Z"
                   className="font-mono"
                 />
-                <Button onClick={convertToTimestamp} disabled={!humanDate} size="sm">
-                  Convert
-                </Button>
+                <Button onClick={convertToTimestamp} disabled={!dateInput.trim()} size="sm">Convert</Button>
               </div>
-
-              {timestamp && (
-                <CopyableResult
-                  value={timestamp}
-                  fontFamily="mono"
-                  rows={1}
-                />
+              {conversionMessage && (
+                <p role="status" className="rounded border p-3 text-xs text-muted-foreground">
+                  {conversionMessage}
+                </p>
               )}
-
-              <div className="space-y-2">
-                <Label className="text-sm">Format Examples</Label>
-                <div className="grid grid-cols-1 gap-1">
-                  {formatExamples.map((format, index) => (
-                    <div
-                      key={index}
-                      className="p-2 border rounded cursor-pointer hover:bg-accent text-xs font-mono"
-                      onClick={() => setHumanDate(format)}
-                    >
-                      {format}
-                    </div>
-                  ))}
-                </div>
+              <div className="grid gap-1">
+                <Label>Strict accepted formats</Label>
+                {DATE_EXAMPLES.map((example) => (
+                  <button
+                    type="button"
+                    key={example}
+                    className="rounded border p-2 text-left font-mono text-xs hover:bg-accent"
+                    onClick={() => setDateInput(example)}
+                  >{example}</button>
+                ))}
               </div>
             </div>
           </ResultCard>
         </div>
       </div>
 
-      {/* Information */}
-      <ResultCard
-        title="About Unix Timestamps"
-        description="Learn about Unix timestamp format and usage"
-        status="info"
-      >
-        <div className="space-y-4 text-sm text-muted-foreground">
+      <ResultCard title="Parsing and timezone behavior" description="No locale-dependent date parsing" status="info">
+        <div className="space-y-2 text-sm text-muted-foreground">
           <p>
-            Unix timestamps represent the number of seconds (or milliseconds) since January 1, 1970, 00:00:00 UTC. 
-            They are widely used in programming and databases for storing and comparing dates.
+            RFC 3339 inputs must include <code>T</code> and either <code>Z</code> or an explicit
+            numeric offset. Offset-less inputs use <code>YYYY-MM-DD HH:mm:ss</code> and the selected
+            UTC, local, or IANA timezone.
           </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h4 className="font-medium text-foreground mb-2">Advantages</h4>
-              <ul className="space-y-1 text-xs">
-                <li>• Language and timezone independent</li>
-                <li>• Easy to compare and sort</li>
-                <li>• Compact storage format</li>
-                <li>• No ambiguity in representation</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-medium text-foreground mb-2">Common Units</h4>
-              <ul className="space-y-1 text-xs">
-                <li>• <strong>Seconds:</strong> Standard Unix timestamp</li>
-                <li>• <strong>Milliseconds:</strong> JavaScript Date.now()</li>
-                <li>• <strong>Microseconds:</strong> High precision timing</li>
-              </ul>
-            </div>
-          </div>
+          <p>
+            Local times skipped by a DST transition are rejected. Times repeated during a DST
+            transition are reported with both possible timestamps rather than silently guessed.
+            Precision is preserved up to nanoseconds; the current browser clock is millisecond-based.
+          </p>
         </div>
       </ResultCard>
     </div>

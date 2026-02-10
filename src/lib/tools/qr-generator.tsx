@@ -1,59 +1,94 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Download, Copy, QrCode } from "lucide-react";
 import { toast } from "sonner";
+import { ToolHeader, QuickActions, ResultCard } from "@/components/layout";
 import {
-  ToolHeader,
-  QuickActions,
-  ResultCard,
-} from "@/components/layout";
-import { buildQrCodeUrl } from "@/lib/processors";
+  createQrCodeModel,
+  qrSvgDataUrl,
+  renderQrCodePng,
+  renderQrCodeSvg,
+  validateQrOutputSize,
+  type QrCodeModel,
+  type QrErrorCorrectionLevel,
+} from "@/lib/processors";
 
 export const metadata = {
   id: "qr-generator",
   name: "QR Code Generator",
-  description: "Generate QR images using a third-party service",
+  description: "Generate QR codes locally in your browser",
   category: "Utilities",
-  tags: ["qr", "code", "generator", "url"],
+  tags: ["qr", "code", "generator", "local", "png", "svg"],
   path: "/tools/qr-generator",
   icon: "📱",
 };
 
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 export default function QrGenerator() {
   const [text, setText] = useState("https://example.com");
   const [size, setSize] = useState("200");
-  const [errorLevel, setErrorLevel] = useState("M");
+  const [errorLevel, setErrorLevel] = useState<QrErrorCorrectionLevel>("M");
+  const [isRenderingPng, setIsRenderingPng] = useState(false);
 
-  const getQrUrl = () => {
-    return buildQrCodeUrl(text, Number(size), errorLevel);
-  };
-
-  const downloadQr = () => {
-    const link = document.createElement("a");
-    link.href = getQrUrl();
-    link.download = "qr-code.png";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success("QR code downloaded!");
-  };
-
-  const copyQrUrl = async () => {
+  const generated = useMemo<{ model: QrCodeModel; svg: string } | { error: string }>(() => {
     try {
-      await navigator.clipboard.writeText(getQrUrl());
-      toast.success("QR code URL copied to clipboard!");
+      const model = createQrCodeModel(text, errorLevel);
+      return { model, svg: renderQrCodeSvg(model) };
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : "Unable to generate this QR code." };
+    }
+  }, [text, errorLevel]);
+
+  const pngSizeError = useMemo(() => {
+    if (!("model" in generated)) return null;
+    try {
+      validateQrOutputSize(generated.model, Number(size));
+      return null;
+    } catch (error) {
+      return error instanceof Error ? error.message : "Invalid PNG size.";
+    }
+  }, [generated, size]);
+
+  const downloadPng = async () => {
+    if (!("model" in generated) || pngSizeError) return;
+    setIsRenderingPng(true);
+    try {
+      downloadBlob(await renderQrCodePng(generated.model, Number(size)), "qr-code.png");
+      toast.success("PNG generated locally and downloaded.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to render PNG.");
+    } finally {
+      setIsRenderingPng(false);
+    }
+  };
+
+  const downloadSvg = () => {
+    if (!("svg" in generated)) return;
+    downloadBlob(new Blob([generated.svg], { type: "image/svg+xml;charset=utf-8" }), "qr-code.svg");
+    toast.success("SVG generated locally and downloaded.");
+  };
+
+  const copySvg = async () => {
+    if (!("svg" in generated)) return;
+    try {
+      await navigator.clipboard.writeText(generated.svg);
+      toast.success("SVG markup copied.");
     } catch {
-      toast.error("Failed to copy URL");
+      toast.error("Unable to copy SVG markup.");
     }
   };
 
@@ -66,169 +101,88 @@ export default function QrGenerator() {
     { name: "Plain Text", value: "Hello, World!" },
   ];
 
+  const model = "model" in generated ? generated.model : null;
+
   return (
     <div className="space-y-6">
-      <ToolHeader
-        title="QR Code Generator"
-        description="Generate QR images through api.qrserver.com"
-        icon={QrCode}
-      />
+      <ToolHeader title="QR Code Generator" description="Generate QR codes entirely in your browser—your content never leaves this device" icon={QrCode} />
 
-      <QuickActions
-        actions={examples.map((example, index) => ({
-          id: `example-${index}`,
-          label: example.name,
-          onClick: () => setText(example.value),
-        }))}
-      />
+      <QuickActions actions={examples.map((example, index) => ({ id: `example-${index}`, label: example.name, onClick: () => setText(example.value) }))} />
 
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Settings Panel */}
         <div className="space-y-4">
-          <ResultCard
-            title="QR Code Settings"
-            description="Configure your QR code generation options"
-            status="info"
-          >
+          <ResultCard title="QR Code Settings" description="Configure locally generated QR output" status="info">
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Text or URL</label>
-                <Textarea
-                  placeholder="Enter text, URL, email, or any data..."
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  maxLength={2000}
-                  rows={4}
-                  className="resize-none"
-                />
+                <label htmlFor="qr-content" className="text-sm font-medium">Text or URL</label>
+                <Textarea id="qr-content" placeholder="Enter text, URL, email, or any data..." value={text} onChange={event => setText(event.target.value)} maxLength={10_000} rows={4} className="resize-none" />
                 <p className="text-xs text-muted-foreground">
-                  {text.length}/2000 characters
+                  {text.length} characters · {new TextEncoder().encode(text).length} UTF-8 bytes
                 </p>
-                <p className="text-xs text-amber-700 dark:text-amber-300">
-                  Privacy notice: your entered content is sent to
-                  api.qrserver.com to create the image. Do not enter secrets.
+                <p className="text-xs text-green-700 dark:text-green-300">
+                  Privacy: encoding, preview, and downloads happen locally. No QR content is transmitted over the network.
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Size (pixels)</label>
+                  <label className="text-sm font-medium">PNG size</label>
                   <Select value={size} onValueChange={setSize}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="100">100x100</SelectItem>
-                      <SelectItem value="150">150x150</SelectItem>
-                      <SelectItem value="200">200x200</SelectItem>
-                      <SelectItem value="300">300x300</SelectItem>
-                      <SelectItem value="400">400x400</SelectItem>
-                      <SelectItem value="500">500x500</SelectItem>
+                      {[100, 150, 200, 300, 400, 500].map(value => <SelectItem key={value} value={String(value)}>{value}×{value}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
-
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Error Correction</label>
-                  <Select value={errorLevel} onValueChange={setErrorLevel}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+                  <label className="text-sm font-medium">Error correction</label>
+                  <Select value={errorLevel} onValueChange={value => setErrorLevel(value as QrErrorCorrectionLevel)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="L">Low (7%)</SelectItem>
-                      <SelectItem value="M">Medium (15%)</SelectItem>
-                      <SelectItem value="Q">Quartile (25%)</SelectItem>
-                      <SelectItem value="H">High (30%)</SelectItem>
+                      <SelectItem value="L">Low (about 7%)</SelectItem>
+                      <SelectItem value="M">Medium (about 15%)</SelectItem>
+                      <SelectItem value="Q">Quartile (about 25%)</SelectItem>
+                      <SelectItem value="H">High (about 30%)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              <div className="flex gap-2 pt-2">
-                <Button
-                  onClick={downloadQr}
-                  disabled={!text.trim()}
-                  className="flex-1"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download PNG
+              {"error" in generated && <p role="alert" className="text-sm text-red-600">{generated.error}</p>}
+              {pngSizeError && <p role="alert" className="text-sm text-amber-700">PNG: {pngSizeError}</p>}
+
+              <div className="grid sm:grid-cols-3 gap-2 pt-2">
+                <Button onClick={() => void downloadPng()} disabled={!model || Boolean(pngSizeError) || isRenderingPng}>
+                  <Download className="h-4 w-4 mr-2" />{isRenderingPng ? "Rendering…" : "PNG"}
                 </Button>
-                <Button
-                  onClick={copyQrUrl}
-                  disabled={!text.trim()}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy URL
-                </Button>
+                <Button onClick={downloadSvg} disabled={!model} variant="outline"><Download className="h-4 w-4 mr-2" />SVG</Button>
+                <Button onClick={() => void copySvg()} disabled={!model} variant="outline"><Copy className="h-4 w-4 mr-2" />Copy SVG</Button>
               </div>
             </div>
           </ResultCard>
 
-          {/* Information Panel */}
-          <ResultCard
-            title="QR Code Information"
-            description="Details about your generated QR code"
-            status="info"
-          >
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium">Data Length:</span>
-                  <p className="text-muted-foreground">{text.length} characters</p>
-                </div>
-                <div>
-                  <span className="font-medium">Size:</span>
-                  <p className="text-muted-foreground">{size}x{size} pixels</p>
-                </div>
-                <div>
-                  <span className="font-medium">Error Correction:</span>
-                  <p className="text-muted-foreground">{errorLevel} Level</p>
-                </div>
-                <div>
-                  <span className="font-medium">Format:</span>
-                  <p className="text-muted-foreground">PNG Image</p>
-                </div>
-              </div>
-
-              <div className="text-sm text-muted-foreground space-y-2">
-                <p><strong>Tips:</strong></p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>Higher error correction allows reading even if partially damaged</li>
-                  <li>For URLs, include http:// or https://</li>
-                  <li>Test with a mobile device before public use</li>
-                  <li>Larger sizes are better for printing or distant scanning</li>
-                </ul>
-              </div>
+          <ResultCard title="QR Code Information" description="Details from the local QR encoder" status="info">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div><span className="font-medium">UTF-8 data:</span><p className="text-muted-foreground">{model?.byteLength ?? 0} bytes</p></div>
+              <div><span className="font-medium">QR version:</span><p className="text-muted-foreground">{model?.version ?? "—"}</p></div>
+              <div><span className="font-medium">Modules:</span><p className="text-muted-foreground">{model ? `${model.moduleCount}×${model.moduleCount}` : "—"}</p></div>
+              <div><span className="font-medium">Error correction:</span><p className="text-muted-foreground">Level {errorLevel}</p></div>
+              <div><span className="font-medium">Downloads:</span><p className="text-muted-foreground">PNG and SVG</p></div>
+              <div><span className="font-medium">Processing:</span><p className="text-muted-foreground">Client only</p></div>
             </div>
           </ResultCard>
         </div>
 
-        {/* QR Code Preview */}
-        <div>
-          <ResultCard
-            title="QR Code Preview"
-            description="Scan with your mobile device to test"
-            status={text.trim() ? "success" : "info"}
-          >
-            <div className="flex justify-center p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg min-h-[200px] items-center">
-              {text.trim() ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={getQrUrl()}
-                  alt="QR Code"
-                  className="max-w-full h-auto"
-                  style={{ maxHeight: "400px" }}
-                />
-              ) : (
-                <div className="text-center text-muted-foreground">
-                  Enter text to generate QR code
-                </div>
-              )}
-            </div>
-          </ResultCard>
-        </div>
+        <ResultCard title="QR Code Preview" description="Local SVG preview; scan to verify before publishing" status={model ? "success" : "info"}>
+          <div className="flex justify-center p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg min-h-[200px] items-center">
+            {model && "svg" in generated ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={qrSvgDataUrl(generated.svg)} alt="Locally generated QR code" width={Math.min(Number(size), 400)} height={Math.min(Number(size), 400)} className="max-w-full h-auto" data-testid="local-qr-preview" />
+            ) : (
+              <div className="text-center text-muted-foreground">Enter content that fits the selected error-correction level.</div>
+            )}
+          </div>
+        </ResultCard>
       </div>
     </div>
   );
