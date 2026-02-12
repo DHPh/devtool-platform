@@ -10,6 +10,7 @@ import {
   CopyableResult,
   ResponsiveTextArea,
   ModeTabs,
+  ValidationMessages,
 } from "@/components/layout";
 import {
   Select,
@@ -19,11 +20,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import {
+  FormatterSyntaxError,
+  formatCssSource,
+  minifyCssSource,
+} from "@/lib/processors";
 
 export const metadata = {
   id: "css-formatter",
   name: "CSS Formatter",
-  description: "Format and beautify CSS code with proper indentation",
+  description: "Format or conservatively minify CSS with a syntax-aware parser",
   category: "Text & Format",
   tags: ["css", "formatter", "beautify", "minify"],
   path: "/tools/css-formatter",
@@ -38,58 +44,34 @@ export default function CssFormatter() {
   const [mode, setMode] = useState<"format" | "minify">("format");
   const [indentSize, setIndentSize] = useState("2");
   const [indentType, setIndentType] = useState("spaces");
+  const [errors, setErrors] = useState<string[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const formatCss = () => {
+  const processCss = async () => {
     if (!input.trim()) {
       setOutput("");
+      setErrors([]);
       return;
     }
 
+    setIsProcessing(true);
     try {
-      let formatted = input;
-
-      if (mode === "format") {
-        const indent =
-          indentType === "spaces" ? " ".repeat(parseInt(indentSize)) : "\t";
-
-        // Remove extra whitespace and format
-        formatted = formatted
-          .replace(/\s*{\s*/g, " {\n")
-          .replace(/;\s*/g, ";\n")
-          .replace(/\s*}\s*/g, "\n}\n")
-          .replace(/,\s*/g, ",\n")
-          .replace(/\n\s*\n/g, "\n")
-          .trim();
-
-        // Add proper indentation
-        const lines = formatted.split("\n");
-        let level = 0;
-        formatted = lines
-          .map((line) => {
-            const trimmed = line.trim();
-            if (trimmed.includes("}")) level--;
-            const indented = trimmed ? indent.repeat(level) + trimmed : "";
-            if (trimmed.includes("{")) level++;
-            return indented;
+      const result = mode === "format"
+        ? await formatCssSource(input, {
+            indentSize: Number(indentSize),
+            useTabs: indentType === "tabs",
           })
-          .join("\n");
-      } else {
-        // Minify CSS
-        formatted = formatted
-          .replace(/\/\*[\s\S]*?\*\//g, "") // Remove comments
-          .replace(/\s*{\s*/g, "{")
-          .replace(/;\s*/g, ";")
-          .replace(/\s*}\s*/g, "}")
-          .replace(/,\s*/g, ",")
-          .replace(/:\s*/g, ":")
-          .replace(/\s+/g, " ")
-          .trim();
-      }
-
-      setOutput(formatted);
-    } catch {
-      toast.error("Error processing CSS");
-      setOutput("Error: Invalid CSS");
+        : minifyCssSource(input);
+      setOutput(result);
+      setErrors([]);
+      toast.success(mode === "format" ? "CSS parsed and formatted locally." : "CSS parsed and minified locally.");
+    } catch (error) {
+      const message = error instanceof FormatterSyntaxError ? error.message : "Unable to process CSS.";
+      setOutput("");
+      setErrors([message]);
+      toast.error(message);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -167,8 +149,8 @@ export default function CssFormatter() {
         actions={[
           {
             id: "format",
-            label: mode === "format" ? "Format CSS" : "Minify CSS",
-            onClick: formatCss,
+            label: isProcessing ? "Processing…" : mode === "format" ? "Format CSS" : "Minify CSS",
+            onClick: () => void processCss(),
             variant: "default" as const,
           },
           {
@@ -269,35 +251,37 @@ export default function CssFormatter() {
         </div>
       </div>
 
+      {errors.length > 0 && <ValidationMessages errors={errors} warnings={[]} />}
+
       {/* Information */}
       <ResultCard
-        title="About CSS Formatting"
+        title="Parser-backed behavior"
         status="info"
-        description="Learn about CSS formatting and optimization"
+        description="Formatting and minification operate on a CSS syntax tree rather than regular expressions"
       >
         <div className="space-y-4 text-sm text-muted-foreground">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <p className="font-medium mb-2">Format Benefits</p>
               <ul className="list-disc pl-4 space-y-1">
-                <li>Improved code readability</li>
-                <li>Consistent indentation</li>
-                <li>Better debugging experience</li>
-                <li>Easier maintenance</li>
+                <li>Preserves comments, strings, and custom properties</li>
+                <li>Handles at-rules and nested rules</li>
+                <li>Reports parser errors with source locations</li>
+                <li>Uses configurable spaces or tabs</li>
               </ul>
             </div>
             <div>
               <p className="font-medium mb-2">Minify Benefits</p>
               <ul className="list-disc pl-4 space-y-1">
-                <li>Reduced file size</li>
-                <li>Faster page load times</li>
-                <li>Lower bandwidth usage</li>
-                <li>Production optimization</li>
+                <li>Compacts parser-owned whitespace</li>
+                <li>Preserves comments and declaration values</li>
+                <li>Does not perform unsafe semantic rewrites</li>
+                <li>Runs entirely in your browser</li>
               </ul>
             </div>
           </div>
           <p className="text-xs bg-muted p-2 rounded">
-            <strong>Tip:</strong> Use formatted CSS during development and minified CSS for production.
+            <strong>Note:</strong> Conservative minification preserves comments by design and does not replace a production optimizer.
           </p>
         </div>
       </ResultCard>
