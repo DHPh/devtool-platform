@@ -40,6 +40,10 @@ import {
   getHeadersByCategory,
   type HttpHeaderInfo,
 } from "@/lib/utils/network/http-headers";
+import {
+  makeHttpRequest,
+  type HttpMethodType,
+} from "@/lib/utils/network/api-client";
 
 interface HeaderEntry {
   key: string;
@@ -196,8 +200,6 @@ export function UnifiedHttpTester() {
     }
 
     setIsLoading(true);
-    const startTime = performance.now();
-
     try {
       // Prepare headers
       const requestHeaders: Record<string, string> = {};
@@ -207,68 +209,53 @@ export function UnifiedHttpTester() {
           requestHeaders[h.key] = h.value;
         });
 
-      // Prepare request options
-      const requestOptions: RequestInit = {
-        method,
+      const result = await makeHttpRequest({
+        url,
+        method: method as HttpMethodType,
         headers: requestHeaders,
-      };
-
-      // Add body for methods that support it
-      if (["POST", "PUT", "PATCH"].includes(method) && body) {
-        requestOptions.body = body;
-      }
-
-      // Make request
-      const response = await fetch(url, requestOptions);
-      const endTime = performance.now();
-
-      // Get response headers
-      const responseHeaders: Record<string, string> = {};
-      response.headers.forEach((value, key) => {
-        responseHeaders[key] = value;
+        body: ["POST", "PUT", "PATCH"].includes(method) && body ? body : undefined,
       });
 
-      // Get response data
-      const contentType = response.headers.get("content-type") || "";
-      let responseData: unknown;
-      const responseText = await response.text();
-
-      try {
-        if (contentType.includes("application/json")) {
-          responseData = JSON.parse(responseText);
-        } else {
-          responseData = responseText;
-        }
-      } catch {
-        responseData = responseText;
+      if (!result.response) {
+        const error = new Error(result.errorDetails || result.error || "Request failed");
+        if (result.error === "Request timeout") error.name = "AbortError";
+        if (result.error === "Network error") error.name = "TypeError";
+        throw error;
       }
 
-      // Calculate response size
-      const responseSize = new Blob([responseText]).size;
+      const responseResult = result.response;
+      const contentType = responseResult.headers["content-type"] || "";
+      let responseData: unknown = responseResult.data;
+      if (contentType.includes("application/json")) {
+        try {
+          responseData = JSON.parse(responseResult.data);
+        } catch {
+          // Preserve invalid JSON as the response text.
+        }
+      }
 
       const httpResponse: HttpResponse = {
-        status: response.status,
-        statusText: response.statusText,
-        headers: responseHeaders,
+        status: responseResult.status,
+        statusText: responseResult.statusText,
+        headers: responseResult.headers,
         data: responseData,
-        responseTime: Math.round(endTime - startTime),
-        size: responseSize,
+        responseTime: responseResult.responseTime,
+        size: responseResult.size,
         url,
         method,
       };
 
       // Add error info if not successful
-      if (!response.ok) {
-        const errorInfo = categorizeError(null, response.status);
-        httpResponse.error = `${response.status} ${response.statusText}`;
-        httpResponse.errorDetails = errorInfo.details;
+      if (!result.success) {
+        const errorInfo = categorizeError(null, responseResult.status);
+        httpResponse.error = `${responseResult.status} ${responseResult.statusText}`;
+        httpResponse.errorDetails = result.errorDetails || errorInfo.details;
         httpResponse.errorCategory = errorInfo.category;
       }
 
       setResponse(httpResponse);
       toast.success(`Request completed in ${httpResponse.responseTime}ms`);
     } catch (error) {
-      const endTime = performance.now();
       const errorInfo = categorizeError(error);
 
       const errorResponse: HttpResponse = {
@@ -276,7 +263,7 @@ export function UnifiedHttpTester() {
         statusText: "Network Error",
         headers: {},
         data: null,
-        responseTime: Math.round(endTime - startTime),
+        responseTime: 0,
         size: 0,
         url,
         method,

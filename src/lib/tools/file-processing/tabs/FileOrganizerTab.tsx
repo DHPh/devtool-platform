@@ -32,6 +32,7 @@ import {
   Tag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { categorizeFile as categorizeFileName } from "@/lib/processors/file-core";
 
 interface OrganizedFile {
   id: string;
@@ -168,17 +169,7 @@ export default function FileOrganizerTab() {
   };
 
   const categorizeFile = (file: File): string => {
-    const extension = file.name.split(".").pop()?.toLowerCase() || "";
-
-    if (FILE_CATEGORIES.images.extensions.includes(extension)) return "images";
-    if (FILE_CATEGORIES.documents.extensions.includes(extension))
-      return "documents";
-    if (FILE_CATEGORIES.audio.extensions.includes(extension)) return "audio";
-    if (FILE_CATEGORIES.video.extensions.includes(extension)) return "video";
-    if (FILE_CATEGORIES.archives.extensions.includes(extension))
-      return "archives";
-
-    return "other";
+    return categorizeFileName(file.name);
   };
 
   const generateTags = (file: File): string[] => {

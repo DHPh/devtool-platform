@@ -36,6 +36,7 @@ import {
   SettingsPanel,
   FormField,
 } from "@/components/layout";
+import { calculateWheelSegments, getWheelWinner } from "@/lib/processors/ui-primitives";
 
 export const metadata = {
   id: "random-wheel",
@@ -181,36 +182,13 @@ export default function RandomWheel() {
 
   // Calculate wheel segments starting from top
   const calculateSegments = () => {
-    const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
-    let currentAngle = 0; // Start from top (12 o'clock)
-
-    return items.map((item) => {
-      const segmentAngle = (item.weight / totalWeight) * 360;
-      const segment = {
-        item,
-        startAngle: currentAngle,
-        endAngle: currentAngle + segmentAngle,
-        segmentAngle,
-      };
-      currentAngle += segmentAngle;
-      return segment;
-    });
+    return calculateWheelSegments(items);
   };
 
   // Determine winner based on pointer position
   const getWinner = (finalRotation: number) => {
-    const segments = calculateSegments();
-    // Normalize rotation and adjust for pointer at top
-    const normalizedRotation = (360 - (finalRotation % 360) + 360) % 360;
-
-    return (
-      segments.find((segment) => {
-        return (
-          normalizedRotation >= segment.startAngle &&
-          normalizedRotation < segment.endAngle
-        );
-      }) || segments[0]
-    );
+    const item = getWheelWinner(items, finalRotation);
+    return item ? calculateSegments().find((segment) => segment.item === item) : undefined;
   };
 
   // Spin the wheel

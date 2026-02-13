@@ -57,10 +57,11 @@ export function groupDuplicateFiles<T extends { hash: string }>(files: readonly 
 }
 
 const CATEGORIES: Record<string, string> = {
-  jpg: "images", jpeg: "images", png: "images", gif: "images", webp: "images",
-  pdf: "documents", doc: "documents", docx: "documents", txt: "documents", csv: "documents",
-  mp3: "audio", wav: "audio", m4a: "audio", mp4: "video", mov: "video", avi: "video",
-  zip: "archives", rar: "archives", "7z": "archives", tar: "archives", gz: "archives",
+  jpg: "images", jpeg: "images", png: "images", gif: "images", bmp: "images", svg: "images", webp: "images", ico: "images",
+  pdf: "documents", doc: "documents", docx: "documents", txt: "documents", rtf: "documents", odt: "documents", pages: "documents",
+  mp3: "audio", wav: "audio", flac: "audio", aac: "audio", ogg: "audio", m4a: "audio",
+  mp4: "video", avi: "video", mkv: "video", mov: "video", wmv: "video", flv: "video", webm: "video",
+  zip: "archives", rar: "archives", "7z": "archives", tar: "archives", gz: "archives", bz2: "archives",
 };
 
 export function categorizeFile(name: string): string {

@@ -19,6 +19,10 @@ import {
   ResultCard,
   CopyableResult,
 } from "@/components/layout";
+import {
+  generateLoremIpsum,
+  type LoremIpsumUnit,
+} from "@/lib/processors/lorem";
 
 export const metadata = {
   id: "lorem-ipsum",
@@ -32,165 +36,12 @@ export const metadata = {
 
 export default function LoremIpsum() {
   const [count, setCount] = useState(3);
-  const [type, setType] = useState("paragraphs");
+  const [type, setType] = useState<LoremIpsumUnit>("paragraphs");
   const [startWithLorem, setStartWithLorem] = useState(true);
   const [generated, setGenerated] = useState("");
 
-  const loremWords = [
-    "lorem",
-    "ipsum",
-    "dolor",
-    "sit",
-    "amet",
-    "consectetur",
-    "adipiscing",
-    "elit",
-    "sed",
-    "do",
-    "eiusmod",
-    "tempor",
-    "incididunt",
-    "ut",
-    "labore",
-    "et",
-    "dolore",
-    "magna",
-    "aliqua",
-    "enim",
-    "ad",
-    "minim",
-    "veniam",
-    "quis",
-    "nostrud",
-    "exercitation",
-    "ullamco",
-    "laboris",
-    "nisi",
-    "aliquip",
-    "ex",
-    "ea",
-    "commodo",
-    "consequat",
-    "duis",
-    "aute",
-    "irure",
-    "in",
-    "reprehenderit",
-    "voluptate",
-    "velit",
-    "esse",
-    "cillum",
-    "fugiat",
-    "nulla",
-    "pariatur",
-    "excepteur",
-    "sint",
-    "occaecat",
-    "cupidatat",
-    "non",
-    "proident",
-    "sunt",
-    "culpa",
-    "qui",
-    "officia",
-    "deserunt",
-    "mollit",
-    "anim",
-    "id",
-    "est",
-    "laborum",
-    "at",
-    "vero",
-    "eos",
-    "accusamus",
-    "accusantium",
-    "doloremque",
-    "laudantium",
-    "totam",
-    "rem",
-    "aperiam",
-    "eaque",
-    "ipsa",
-    "quae",
-    "ab",
-    "illo",
-    "inventore",
-    "veritatis",
-    "et",
-    "quasi",
-    "architecto",
-    "beatae",
-    "vitae",
-    "dicta",
-    "sunt",
-    "explicabo",
-  ];
-
-  const generateWords = (wordCount: number): string => {
-    const words = [];
-    for (let i = 0; i < wordCount; i++) {
-      words.push(loremWords[Math.floor(Math.random() * loremWords.length)]);
-    }
-    return words.join(" ");
-  };
-
-  const generateSentence = (): string => {
-    const length = Math.floor(Math.random() * 10) + 8; // 8-17 words
-    const sentence = generateWords(length);
-    return sentence.charAt(0).toUpperCase() + sentence.slice(1) + ".";
-  };
-
-  const generateParagraph = (): string => {
-    const sentenceCount = Math.floor(Math.random() * 5) + 3; // 3-7 sentences
-    const sentences = [];
-    for (let i = 0; i < sentenceCount; i++) {
-      sentences.push(generateSentence());
-    }
-    return sentences.join(" ");
-  };
-
   const generateLorem = () => {
-    let result = "";
-
-    switch (type) {
-      case "words":
-        if (startWithLorem && count > 2) {
-          result = "Lorem ipsum " + generateWords(count - 2);
-        } else {
-          result = generateWords(count);
-        }
-        break;
-
-      case "sentences":
-        const sentences = [];
-        for (let i = 0; i < count; i++) {
-          if (i === 0 && startWithLorem) {
-            sentences.push(
-              "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
-            );
-          } else {
-            sentences.push(generateSentence());
-          }
-        }
-        result = sentences.join(" ");
-        break;
-
-      case "paragraphs":
-        const paragraphs = [];
-        for (let i = 0; i < count; i++) {
-          if (i === 0 && startWithLorem) {
-            paragraphs.push(
-              "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-            );
-          } else {
-            paragraphs.push(generateParagraph());
-          }
-        }
-        result = paragraphs.join("\n\n");
-        break;
-    }
-
-    setGenerated(result);
+    setGenerated(generateLoremIpsum({ count, unit: type, startWithLorem }));
   };
 
   const copyToClipboard = async () => {
@@ -202,7 +53,7 @@ export default function LoremIpsum() {
     }
   };
 
-  const presets = [
+  const presets: Array<{ name: string; type: LoremIpsumUnit; count: number }> = [
     { name: "1 Paragraph", type: "paragraphs", count: 1 },
     { name: "3 Paragraphs", type: "paragraphs", count: 3 },
     { name: "5 Paragraphs", type: "paragraphs", count: 5 },
@@ -254,7 +105,10 @@ export default function LoremIpsum() {
 
                 <div className="space-y-2">
                   <Label htmlFor="type">Type</Label>
-                  <Select value={type} onValueChange={setType}>
+              <Select
+                value={type}
+                onValueChange={(value: LoremIpsumUnit) => setType(value)}
+              >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>

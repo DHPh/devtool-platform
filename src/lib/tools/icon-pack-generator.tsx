@@ -25,9 +25,11 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import iconPackGeneratorFAQ from "@/lib/faq/icon-pack-generator-faq";
+import { ANDROID_ICON_SPECS, IOS_ICON_SPECS } from "@/lib/processors/ui-primitives";
 
 // Android icon specifications
-const ANDROID_SPECS = {
+const ANDROID_SPECS = ANDROID_ICON_SPECS;
+/*
   adaptive: {
     foreground: { size: 432, name: "ic_launcher_foreground.png" },
     background: { size: 432, name: "ic_launcher_background.png" },
@@ -40,10 +42,11 @@ const ANDROID_SPECS = {
     { density: "xxxhdpi", size: 192, folder: "mipmap-xxxhdpi" },
   ],
   playStore: { size: 512, name: "play_store_icon.png" },
-};
+}; */
 
 // iOS icon specifications
-const IOS_SPECS = [
+const IOS_SPECS = IOS_ICON_SPECS;
+/*
   { name: "Icon-App-20x20@1x.png", size: 20, usage: "iPhone Notification" },
   { name: "Icon-App-20x20@2x.png", size: 40, usage: "iPhone Notification" },
   { name: "Icon-App-20x20@3x.png", size: 60, usage: "iPhone Notification" },
@@ -59,7 +62,7 @@ const IOS_SPECS = [
   { name: "Icon-App-76x76@2x.png", size: 152, usage: "iPad App" },
   { name: "Icon-App-83.5x83.5@2x.png", size: 167, usage: "iPad Pro" },
   { name: "Icon-App-1024x1024@1x.png", size: 1024, usage: "App Store" },
-];
+]; */
 
 interface IconSpecs {
   android: {

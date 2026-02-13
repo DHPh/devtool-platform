@@ -16,38 +16,41 @@ export const TEXT_CASES = [
 export type TextCase = (typeof TEXT_CASES)[number];
 
 const splitWords = (text: string): string[] =>
-  text.replace(/\W+/g, " ").split(/ |\B(?=[A-Z])/);
+  text
+    .replace(/([a-z\d])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
+    .match(/[\p{L}\p{N}]+/gu) ?? [];
+
+const capitalize = (word: string) =>
+  word ? `${word.charAt(0).toUpperCase()}${word.slice(1).toLowerCase()}` : "";
 
 export function convertTextCase(text: string, textCase: TextCase): string {
+  const words = splitWords(text);
   switch (textCase) {
     case "camelCase":
-      return text
-        .replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) =>
-          index === 0 ? word.toLowerCase() : word.toUpperCase()
-        )
-        .replace(/\s+/g, "");
+      return words
+        .map((word, index) => index === 0 ? word.toLowerCase() : capitalize(word))
+        .join("");
     case "PascalCase":
-      return text
-        .replace(/(?:^\w|[A-Z]|\b\w)/g, (word) => word.toUpperCase())
-        .replace(/\s+/g, "");
+      return words.map(capitalize).join("");
     case "snake_case":
-      return splitWords(text).map((word) => word.toLowerCase()).join("_");
+      return words.map((word) => word.toLowerCase()).join("_");
     case "SCREAMING_SNAKE_CASE":
-      return splitWords(text).map((word) => word.toUpperCase()).join("_");
+      return words.map((word) => word.toUpperCase()).join("_");
     case "kebab-case":
-      return splitWords(text).map((word) => word.toLowerCase()).join("-");
+      return words.map((word) => word.toLowerCase()).join("-");
     case "SCREAMING-KEBAB-CASE":
-      return splitWords(text).map((word) => word.toUpperCase()).join("-");
+      return words.map((word) => word.toUpperCase()).join("-");
     case "dot.case":
-      return splitWords(text).map((word) => word.toLowerCase()).join(".");
+      return words.map((word) => word.toLowerCase()).join(".");
     case "path/case":
-      return splitWords(text).map((word) => word.toLowerCase()).join("/");
+      return words.map((word) => word.toLowerCase()).join("/");
     case "Title Case":
-      return text
-        .toLowerCase()
-        .replace(/(?:^|\s)\w/g, (match) => match.toUpperCase());
+      return words.map(capitalize).join(" ");
     case "Sentence case":
-      return text.toLowerCase().replace(/^\w/, (match) => match.toUpperCase());
+      return words.length
+        ? `${capitalize(words[0])}${words.slice(1).map((word) => ` ${word.toLowerCase()}`).join("")}`
+        : "";
     case "UPPERCASE":
       return text.toUpperCase();
     case "lowercase":

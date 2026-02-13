@@ -12,6 +12,10 @@ import {
   CopyableResult,
   ResponsiveTextArea,
 } from "@/components/layout";
+import {
+  formatJson,
+  validateJson as processValidateJson,
+} from "@/lib/processors/json";
 
 export const metadata = {
   id: "json-validator",
@@ -48,27 +52,17 @@ export default function JsonValidator() {
   };
 
   const validateJson = () => {
-    if (!input.trim()) {
-      setResult({
-        isValid: false,
-        error: "Please enter JSON to validate",
-        formatted: "",
-      });
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(input);
-      const formatted = JSON.stringify(parsed, null, 2);
+    const validation = processValidateJson(input);
+    if (validation.isValid) {
       setResult({
         isValid: true,
         error: "",
-        formatted,
+        formatted: formatJson(input).result,
       });
-    } catch (err) {
+    } else {
       setResult({
         isValid: false,
-        error: err instanceof Error ? err.message : "Invalid JSON",
+        error: validation.error ?? "Invalid JSON",
         formatted: "",
       });
     }

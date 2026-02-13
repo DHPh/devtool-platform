@@ -19,6 +19,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { calculateTextDiff } from "@/lib/processors/ui-primitives";
 
 export const metadata = {
   id: "diff-checker",
@@ -67,6 +68,16 @@ export default function DiffChecker() {
       return;
     }
 
+    const result = calculateTextDiff(text1, text2, {
+      level: diffLevel,
+      ignoreWhitespace,
+      ignoreCase,
+    });
+    setDiffResult(result.lines);
+    setStats(result.stats);
+    toast.success("Diff calculated successfully!");
+    return;
+
     const processed1 = preprocessText(text1);
     const processed2 = preprocessText(text2);
 
@@ -103,7 +114,7 @@ export default function DiffChecker() {
         if (line1 === null && line2 !== null) {
           diff.push({
             type: "added",
-            text: line2,
+            text: line2!,
             lineNumber: modifiedLineNum,
           });
           additions++;

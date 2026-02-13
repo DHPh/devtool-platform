@@ -58,14 +58,11 @@ export async function makeHttpRequest(
 ): Promise<ApiTestResult> {
   const startTime = Date.now();
   const timestamp = startTime;
+  const timeout = request.timeout ?? 30000;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(
-      () => controller.abort(),
-      request.timeout || 30000
-    );
-
     const response = await fetch(request.url, {
       method: request.method,
       headers: {
@@ -79,7 +76,6 @@ export async function makeHttpRequest(
       signal: controller.signal,
     });
 
-    clearTimeout(timeoutId);
     const responseTime = Date.now() - startTime;
     const data = await response.text();
 
@@ -117,7 +113,7 @@ export async function makeHttpRequest(
         return {
           request,
           error: "Request timeout",
-          errorDetails: `Request timed out after ${request.timeout || 30000}ms`,
+          errorDetails: `Request timed out after ${timeout}ms`,
           success: false,
           timestamp,
         };
@@ -153,6 +149,8 @@ export async function makeHttpRequest(
       success: false,
       timestamp,
     };
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 

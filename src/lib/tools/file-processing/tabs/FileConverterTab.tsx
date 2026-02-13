@@ -9,10 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  convertTextContent,
+  convertFileContent,
   effectiveFileType,
   getConversionTargets,
-  targetInfo,
   validateConverterFile,
   type ConversionTarget,
 } from "@/lib/processors/file-capabilities";
@@ -32,39 +31,6 @@ function formatFileSize(bytes: number): string {
   const units = ["Bytes", "KB", "MB", "GB"];
   const unit = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
   return `${parseFloat((bytes / 1024 ** unit).toFixed(2))} ${units[unit]}`;
-}
-
-async function convertImage(file: File, mime: string): Promise<Blob> {
-  const sourceUrl = URL.createObjectURL(file);
-  try {
-    const image = new Image();
-    await new Promise<void>((resolve, reject) => {
-      image.onload = () => resolve();
-      image.onerror = () => reject(new Error("The browser could not decode this image."));
-      image.src = sourceUrl;
-    });
-
-    const canvas = document.createElement("canvas");
-    canvas.width = image.naturalWidth;
-    canvas.height = image.naturalHeight;
-    const context = canvas.getContext("2d");
-    if (!context) throw new Error("Canvas conversion is unavailable in this browser.");
-    if (mime === "image/jpeg") {
-      context.fillStyle = "#ffffff";
-      context.fillRect(0, 0, canvas.width, canvas.height);
-    }
-    context.drawImage(image, 0, 0);
-
-    return await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob(
-        (blob) => blob ? resolve(blob) : reject(new Error(`This browser cannot encode ${mime}.`)),
-        mime,
-        0.9,
-      );
-    });
-  } finally {
-    URL.revokeObjectURL(sourceUrl);
-  }
 }
 
 export default function FileConverterTab() {
@@ -106,17 +72,7 @@ export default function FileConverterTab() {
     setFiles((current) => current.map((file) => file.id === fileId ? { ...file, status: "converting", error: undefined } : file));
 
     try {
-      const target = targetInfo(entry.targetFormat);
-      const sourceType = effectiveFileType(entry.file);
-      const allowed = getConversionTargets(entry.file).some((candidate) => candidate.value === entry.targetFormat);
-      if (!allowed) throw new Error("That conversion is not supported for this file.");
-
-      const blob = sourceType.startsWith("image/")
-        ? await convertImage(entry.file, target.mime)
-        : new Blob(
-            [convertTextContent(await entry.file.text(), sourceType, entry.targetFormat as "txt" | "json", entry.file.name)],
-            { type: target.mime },
-          );
+      const blob = await convertFileContent(entry.file, entry.targetFormat);
       const convertedUrl = URL.createObjectURL(blob);
 
       setFiles((current) => current.map((file) => {

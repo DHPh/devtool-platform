@@ -36,6 +36,7 @@ import {
   RotateCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { calculateConstrainedImageSize } from "@/lib/processors/ui-primitives";
 
 interface ResizedImage {
   id: string;
@@ -350,20 +351,15 @@ export default function ImageResizerTab() {
   };
 
   const updateDimensions = (newWidth: number, newHeight: number) => {
-    if (maintainAspectRatio && selectedImage) {
-      const aspectRatio =
-        selectedImage.originalSize.width / selectedImage.originalSize.height;
-      if (newWidth !== width) {
-        setWidth(newWidth);
-        setHeight(Math.round(newWidth / aspectRatio));
-      } else if (newHeight !== height) {
-        setHeight(newHeight);
-        setWidth(Math.round(newHeight * aspectRatio));
-      }
-    } else {
-      setWidth(newWidth);
-      setHeight(newHeight);
-    }
+    if (!selectedImage) return;
+    const dimensions = calculateConstrainedImageSize(
+      selectedImage.originalSize,
+      { width: newWidth, height: newHeight },
+      newWidth !== width ? "width" : "height",
+      maintainAspectRatio,
+    );
+    setWidth(dimensions.width);
+    setHeight(dimensions.height);
   };
 
   const handleCropRatioChange = (ratio: number | null) => {

@@ -1,10 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   FILE_CONVERTER_MAX_BYTES,
   METADATA_VIEWER_MAX_BYTES,
   basicFileMetadata,
+  convertFileContent,
   convertTextContent,
   effectiveFileType,
+  extractFileMetadata,
+  fileCategory,
   getConversionTargets,
   validateConverterFile,
   validateMetadataFile,
@@ -54,6 +57,28 @@ describe("file converter capabilities", () => {
     expect(effectiveFileType(descriptor({ name: "DATA.JSON", type: "" }))).toBe("application/json");
     expect(validateConverterFile(descriptor({ size: FILE_CONVERTER_MAX_BYTES + 1 }))).toMatch(/25 MB/);
     expect(validateConverterFile(descriptor({ size: 0 }))).toMatch(/empty/);
+    expect(validateConverterFile(descriptor({ size: Number.NaN }))).toMatch(/invalid size/);
+  });
+
+  it("executes the same complete text conversion path used by the UI", async () => {
+    const file = descriptor({ name: "note.txt", type: "text/plain", size: 5 });
+    const blob = await convertFileContent(file, "json", {
+      readText: async () => "hello",
+      convertImage: async () => { throw new Error("image adapter must not run"); },
+    });
+
+    expect(blob.type).toBe("application/json");
+    expect(await blob.text()).toContain('"content": "hello"');
+  });
+
+  it("rejects target spoofing before invoking conversion adapters", async () => {
+    const readText = vi.fn(async () => "hello");
+    await expect(convertFileContent(
+      descriptor({ name: "note.txt", type: "text/plain" }),
+      "jpeg",
+      { readText, convertImage: async () => new Blob() },
+    )).rejects.toThrow(/not supported/);
+    expect(readText).not.toHaveBeenCalled();
   });
 });
 
@@ -79,5 +104,32 @@ describe("metadata viewer capabilities", () => {
   it("rejects oversized metadata inputs", () => {
     expect(validateMetadataFile(descriptor({ size: METADATA_VIEWER_MAX_BYTES }))).toBeNull();
     expect(validateMetadataFile(descriptor({ size: METADATA_VIEWER_MAX_BYTES + 1 }))).toMatch(/100 MB/);
+    expect(validateMetadataFile(descriptor({ size: Number.NaN }))).toMatch(/invalid size/);
+    expect(validateMetadataFile(descriptor({ lastModified: Number.NaN }))).toMatch(/last-modified/);
+  });
+
+  it("executes intrinsic metadata extraction through injectable production adapters", async () => {
+    expect(fileCategory("IMAGE/PNG")).toBe("image");
+    const readImage = vi.fn(async () => ({ width: 640, height: 480 }));
+    const metadata = await extractFileMetadata(descriptor(), {
+      readImage,
+      readMedia: async () => { throw new Error("media adapter must not run"); },
+    });
+
+    expect(readImage).toHaveBeenCalledOnce();
+    expect(metadata).toMatchObject({
+      basic: { name: "sample.png", extension: "png" },
+      image: { width: 640, height: 480 },
+    });
+  });
+
+  it("rejects non-finite media results instead of exporting misleading metadata", async () => {
+    await expect(extractFileMetadata(
+      descriptor({ name: "clip.mp4", type: "video/mp4" }),
+      {
+        readImage: async () => ({ width: 0, height: 0 }),
+        readMedia: async () => ({ durationSeconds: Number.NaN, width: 1920, height: 1080 }),
+      },
+    )).rejects.toThrow(/duration is unavailable/);
   });
 });

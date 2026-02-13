@@ -6,29 +6,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { basicFileMetadata, validateMetadataFile } from "@/lib/processors/file-capabilities";
+import {
+  basicFileMetadata,
+  effectiveFileType,
+  extractFileMetadata,
+  fileCategory,
+  validateMetadataFile,
+  type ExtractedFileMetadata,
+} from "@/lib/processors/file-capabilities";
 import { cn } from "@/lib/utils";
-
-interface ExtractedMetadata {
-  basic: ReturnType<typeof basicFileMetadata>;
-  image?: { width: number; height: number };
-  audio?: { durationSeconds: number };
-  video?: { durationSeconds: number; width: number; height: number };
-}
 
 interface MetadataEntry {
   id: string;
   file: File;
-  metadata: ExtractedMetadata;
+  metadata: ExtractedFileMetadata;
   isLoading: boolean;
   error?: string;
-}
-
-function fileCategory(type: string): "image" | "audio" | "video" | "other" {
-  if (type.startsWith("image/")) return "image";
-  if (type.startsWith("audio/")) return "audio";
-  if (type.startsWith("video/")) return "video";
-  return "other";
 }
 
 function categoryIcon(category: ReturnType<typeof fileCategory>) {
@@ -43,61 +36,6 @@ function formatFileSize(bytes: number): string {
   const units = ["Bytes", "KB", "MB", "GB"];
   const unit = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
   return `${parseFloat((bytes / 1024 ** unit).toFixed(2))} ${units[unit]}`;
-}
-
-function mediaMetadata(element: HTMLMediaElement, url: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const timeout = window.setTimeout(() => {
-      cleanup();
-      reject(new Error("Timed out while reading media metadata."));
-    }, 5000);
-    const cleanup = () => {
-      window.clearTimeout(timeout);
-      element.removeEventListener("loadedmetadata", loaded);
-      element.removeEventListener("error", failed);
-    };
-    const loaded = () => { cleanup(); resolve(); };
-    const failed = () => { cleanup(); reject(new Error("The browser could not read this media file.")); };
-    element.addEventListener("loadedmetadata", loaded);
-    element.addEventListener("error", failed);
-    element.src = url;
-  });
-}
-
-async function extractIntrinsicMetadata(file: File): Promise<ExtractedMetadata> {
-  const metadata: ExtractedMetadata = { basic: basicFileMetadata(file) };
-  const category = fileCategory(file.type);
-  if (category === "other") return metadata;
-
-  const url = URL.createObjectURL(file);
-  try {
-    if (category === "image") {
-      const image = new Image();
-      await new Promise<void>((resolve, reject) => {
-        image.onload = () => resolve();
-        image.onerror = () => reject(new Error("The browser could not read this image."));
-        image.src = url;
-      });
-      metadata.image = { width: image.naturalWidth, height: image.naturalHeight };
-    } else if (category === "audio") {
-      const audio = new Audio();
-      await mediaMetadata(audio, url);
-      if (!Number.isFinite(audio.duration)) throw new Error("The media duration is unavailable.");
-      metadata.audio = { durationSeconds: audio.duration };
-      audio.removeAttribute("src");
-      audio.load();
-    } else {
-      const video = document.createElement("video");
-      await mediaMetadata(video, url);
-      if (!Number.isFinite(video.duration)) throw new Error("The media duration is unavailable.");
-      metadata.video = { durationSeconds: video.duration, width: video.videoWidth, height: video.videoHeight };
-      video.removeAttribute("src");
-      video.load();
-    }
-    return metadata;
-  } finally {
-    URL.revokeObjectURL(url);
-  }
 }
 
 function metadataRows(metadata: Record<string, unknown>) {
@@ -133,7 +71,7 @@ export default function MetadataViewerTab() {
 
     for (const entry of entries.filter((file) => file.isLoading)) {
       try {
-        const metadata = await extractIntrinsicMetadata(entry.file);
+        const metadata = await extractFileMetadata(entry.file);
         setFiles((current) => current.map((file) => file.id === entry.id ? { ...file, metadata, isLoading: false } : file));
       } catch (error) {
         setFiles((current) => current.map((file) => file.id === entry.id
@@ -171,7 +109,7 @@ export default function MetadataViewerTab() {
     {files.length > 0 && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card><CardHeader><CardTitle>Files ({files.length})</CardTitle></CardHeader><CardContent><div className="space-y-2 max-h-96 overflow-y-auto">{files.map((entry) => (
         <div key={entry.id} className={cn("flex items-center justify-between p-3 rounded-lg border cursor-pointer", selectedId === entry.id && "bg-primary/5 border-primary/30")} onClick={() => setSelectedId(entry.id)}>
-          <div className="flex items-center gap-3 min-w-0"><div className="text-muted-foreground">{categoryIcon(fileCategory(entry.file.type))}</div><div className="min-w-0"><p className="text-sm font-medium truncate">{entry.file.name}</p><p className="text-xs text-muted-foreground">{formatFileSize(entry.file.size)} • {entry.file.type || "Unknown type"}</p>{entry.isLoading && <p className="text-xs text-blue-600">Reading intrinsic metadata…</p>}{entry.error && <Badge variant="destructive" className="mt-1 text-xs">{entry.error}</Badge>}</div></div>
+          <div className="flex items-center gap-3 min-w-0"><div className="text-muted-foreground">{categoryIcon(fileCategory(effectiveFileType(entry.file)))}</div><div className="min-w-0"><p className="text-sm font-medium truncate">{entry.file.name}</p><p className="text-xs text-muted-foreground">{formatFileSize(entry.file.size)} • {entry.file.type || "Unknown type"}</p>{entry.isLoading && <p className="text-xs text-blue-600">Reading intrinsic metadata…</p>}{entry.error && <Badge variant="destructive" className="mt-1 text-xs">{entry.error}</Badge>}</div></div>
           <div className="flex gap-2">{!entry.isLoading && <Tooltip><TooltipTrigger asChild><Button size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); exportMetadata(entry); }}><Download className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Export verified metadata as JSON</TooltipContent></Tooltip>}<Tooltip><TooltipTrigger asChild><Button size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); removeFile(entry.id); }}><Trash2 className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Remove file</TooltipContent></Tooltip></div>
         </div>
       ))}</div></CardContent></Card>

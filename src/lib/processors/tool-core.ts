@@ -1,4 +1,6 @@
 import { renderMarkdownToSafeHtml } from "@/lib/markdown/markdown-renderer";
+import { validateEmailSyntax } from "./email";
+import { formatCssSource, formatHtmlSource, minifyCssSource } from "./source-formatters";
 
 export interface TextStatistics {
   words: number;
@@ -11,57 +13,16 @@ export interface TextStatistics {
 export function formatHtml(
   input: string,
   indent = "  ",
-): string {
-  const tokens = input.replace(/>\s+</g, "><").split(/(<\/?[^>]*>)/).filter(Boolean);
-  const output: string[] = [];
-  let level = 0;
-
-  for (const token of tokens) {
-    if (!token.startsWith("<")) {
-      if (token.trim()) output.push(token.trim());
-      continue;
-    }
-
-    const closing = token.startsWith("</");
-    const voidElement = /^<(area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr|!doctype)/i.test(token);
-    if (closing) level = Math.max(0, level - 1);
-    output.push(`\n${indent.repeat(level)}${token}`);
-    if (!closing && !voidElement && !token.endsWith("/>")) level += 1;
-  }
-
-  return output.join("").trim().replace(/\n\s*\n/g, "\n");
+): Promise<string> {
+  return formatHtmlSource(input, { indentSize: indent === "\t" ? 2 : indent.length, useTabs: indent === "\t" });
 }
 
-export function formatCss(input: string, indent = "  "): string {
-  let level = 0;
-  return input
-    .replace(/\s*{\s*/g, " {\n")
-    .replace(/;\s*/g, ";\n")
-    .replace(/\s*}\s*/g, "\n}\n")
-    .replace(/,\s*/g, ",\n")
-    .replace(/\n\s*\n/g, "\n")
-    .trim()
-    .split("\n")
-    .map((line) => {
-      const trimmed = line.trim();
-      if (trimmed.includes("}")) level = Math.max(0, level - 1);
-      const result = `${indent.repeat(level)}${trimmed}`;
-      if (trimmed.includes("{")) level += 1;
-      return result;
-    })
-    .join("\n");
+export function formatCss(input: string, indent = "  "): Promise<string> {
+  return formatCssSource(input, { indentSize: indent === "\t" ? 2 : indent.length, useTabs: indent === "\t" });
 }
 
 export function minifyCss(input: string): string {
-  return input
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/\s*{\s*/g, "{")
-    .replace(/;\s*/g, ";")
-    .replace(/\s*}\s*/g, "}")
-    .replace(/,\s*/g, ",")
-    .replace(/:\s*/g, ":")
-    .replace(/\s+/g, " ")
-    .trim();
+  return minifyCssSource(input);
 }
 
 export function markdownToHtml(markdown: string): string {
@@ -113,34 +74,7 @@ export function decodeHtmlEntities(input: string): string {
 }
 
 export function validateEmail(email: string) {
-  const value = email.trim();
-  const valid = /^(?!\.)(?!.*\.\.)[A-Z0-9._%+-]+@[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?(?:\.[A-Z]{2,})+$/i.test(value) && value.length <= 254;
-  return { email: value, isValid: valid };
-}
-
-export function generateUuidV4(randomBytes: Uint8Array): string {
-  if (randomBytes.length !== 16) throw new Error("UUID v4 requires exactly 16 random bytes");
-  const bytes = Uint8Array.from(randomBytes);
-  bytes[6] = (bytes[6] & 0x0f) | 0x40;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-}
-
-export function generateLorem(wordCount: number): string {
-  if (!Number.isInteger(wordCount) || wordCount < 1) throw new Error("Word count must be a positive integer");
-  const words = "lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua".split(" ");
-  return Array.from({ length: wordCount }, (_, index) => words[index % words.length]).join(" ");
-}
-
-export function buildQrCodeUrl(text: string, size = 256, errorLevel = "M"): string {
-  if (!text.trim()) throw new Error("QR content is required");
-  if (text.length > 2_000) throw new Error("QR content must be 2,000 characters or fewer");
-  if (!Number.isInteger(size) || size < 64 || size > 1024) throw new Error("QR size must be between 64 and 1024");
-  const normalizedErrorLevel = errorLevel.toUpperCase();
-  if (!["L", "M", "Q", "H"].includes(normalizedErrorLevel)) throw new Error("Unsupported QR error correction level");
-  const query = new URLSearchParams({ size: `${size}x${size}`, data: text, ecc: normalizedErrorLevel });
-  return `https://api.qrserver.com/v1/create-qr-code/?${query.toString()}`;
+  return validateEmailSyntax(email);
 }
 
 export function timestampToIso(value: number, unit: "seconds" | "milliseconds" = "seconds"): string {
