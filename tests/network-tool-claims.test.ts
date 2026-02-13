@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildQrCodeUrl } from "@/lib/processors";
+import { createQrCodeModel, qrSvgDataUrl, renderQrCodeSvg } from "@/lib/processors";
 import { TOOL_REGISTRY } from "@/lib/registry";
 
 function tool(id: string) {
@@ -29,20 +29,11 @@ describe("network tool execution claims", () => {
     expect(websocket.description).not.toMatch(/messaging|persistent/i);
   });
 
-  it("discloses remote QR processing and validates provider inputs", () => {
+  it("keeps QR processing local and produces an inline artifact", () => {
     const qr = tool("qr-generator");
-    expect(qr.processing).toBe("hybrid");
-    expect(qr.description).toMatch(/third-party.*sent/i);
-
-    const url = new URL(buildQrCodeUrl("hello world", 256, "h"));
-    expect(url.origin).toBe("https://api.qrserver.com");
-    expect(url.searchParams.get("data")).toBe("hello world");
-    expect(url.searchParams.get("ecc")).toBe("H");
-    expect(() => buildQrCodeUrl("secret", 256, "invalid")).toThrow(
-      "Unsupported QR error correction level",
-    );
-    expect(() => buildQrCodeUrl("x".repeat(2_001))).toThrow(
-      "QR content must be 2,000 characters or fewer",
-    );
+    expect(qr.processing).toBe("client");
+    expect(qr.description).toMatch(/locally|browser/i);
+    const model = createQrCodeModel("hello world", "H");
+    expect(qrSvgDataUrl(renderQrCodeSvg(model))).toMatch(/^data:image\/svg\+xml/);
   });
 });

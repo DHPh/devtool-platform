@@ -25,9 +25,9 @@ describe("network tool disclosures", () => {
     expect(screen.getByText(/does not keep a connection open/i)).toBeInTheDocument();
   });
 
-  it("discloses that QR content is sent to an external provider", () => {
+  it("discloses that QR content stays local", () => {
     render(<QrGenerator />);
-    expect(screen.getByText(/your entered content is sent to/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/api\.qrserver\.com/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/no QR content is transmitted/i)).toBeInTheDocument();
+    expect(screen.queryByText(/api\.qrserver\.com/i)).not.toBeInTheDocument();
   });
 });

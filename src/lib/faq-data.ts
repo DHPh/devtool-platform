@@ -98,7 +98,7 @@ export const base64EncoderFAQ = [
   {
     question: "When should I use Base64 encoding?",
     answer:
-      "Use Base64 when you need to: embed binary data in text formats (like images in CSS/HTML), send binary data through text-based protocols, store binary data in JSON or XML, or ensure data integrity during transmission through systems that might modify binary data.",
+      "Use Base64 when you need to embed binary data in text formats (like images in CSS/HTML), send binary data through text-based protocols, or store binary data in JSON or XML. Base64 does not detect corruption or provide integrity protection; use a cryptographic hash or authenticated protocol for that.",
   },
   {
     question: "Does Base64 encoding provide security?",
@@ -118,7 +118,7 @@ export const base64EncoderFAQ = [
   {
     question: "Can I encode files with this tool?",
     answer:
-      "This tool is designed for text input. For encoding files (images, documents, etc.), you would need a file upload feature or use command-line tools like 'base64' on Linux/Mac or PowerShell's [Convert]::ToBase64String() on Windows.",
+      "Yes. Choose a file with the Binary file input and the tool will encode its bytes locally in your browser as Base64 or Base64url. You can also decode Base64 into bytes and download the result.",
   },
   {
     question: "Is URL-safe Base64 different from regular Base64?",
@@ -142,37 +142,65 @@ export const uuidGeneratorFAQ = [
   {
     question: "What's the difference between UUID versions?",
     answer:
-      "UUID v1 uses timestamp and MAC address (not recommended for privacy), UUID v4 is randomly generated (most common), UUID v3/v5 use namespace and name hashing, and UUID v6/v7 are newer time-based versions with improved properties.",
+      "This tool generates RFC 9562 UUIDv4 and UUIDv7. UUIDv4 uses cryptographic random bits and contains no timestamp. UUIDv7 begins with a Unix millisecond timestamp, making generated values naturally time-ordered; it does not embed a MAC address.",
   },
   {
     question: "Are UUIDs really unique?",
     answer:
-      "UUID v4 has a collision probability so low it's practically zero (1 in 2^122). You'd need to generate billions of UUIDs per second for millions of years to have a reasonable chance of collision. For practical purposes, they're unique.",
+      "No finite random identifier can guarantee uniqueness. UUIDv4 has 122 random bits, so collision risk is negligible at ordinary application volumes, but databases should still enforce a unique constraint. UUIDv7 combines its timestamp with a random or monotonic field and should be treated with the same engineering discipline.",
   },
   {
     question: "Can I use UUIDs as database primary keys?",
     answer:
-      "Yes, many developers use UUIDs as primary keys, especially in distributed systems. Benefits include uniqueness across databases and no sequential guessing. Drawbacks include larger storage (16 bytes vs 4-8) and potentially slower indexing compared to integers.",
+      "Yes. UUIDv4 avoids centralized allocation but its random ordering can fragment indexes. UUIDv7 retains distributed generation while improving index locality through its leading timestamp. Both use 16 bytes, and UUIDv7 reveals approximate creation time, so choose based on your storage and privacy requirements.",
   },
   {
     question: "What format should I use for UUIDs?",
     answer:
-      "The standard format is 8-4-4-4-12 hexadecimal digits separated by hyphens (e.g., 550e8400-e29b-41d4-a716-446655440000). Some systems prefer without hyphens, uppercase, or with braces - choose based on your specific requirements.",
+      "The canonical format is 8-4-4-4-12 hexadecimal digits separated by hyphens (for example, 550e8400-e29b-41d4-a716-446655440000). The inspector accepts uppercase or lowercase canonical UUIDs and normalizes them to lowercase; it intentionally rejects braces, URNs, and unhyphenated input.",
   },
   {
     question: "Are these UUIDs cryptographically secure?",
     answer:
-      "UUID v4 uses random or pseudo-random numbers. While suitable for uniqueness, they shouldn't be used for cryptographic purposes where true randomness is critical. For security applications, use dedicated cryptographic random number generators.",
+      "The tool uses your browser's cryptographic random-number generator for UUIDv4 and for UUIDv7's random field. UUID uniqueness does not make an identifier an authentication secret, so use a purpose-built security token when unpredictability is the primary requirement.",
   },
   {
     question: "Can I generate multiple UUIDs at once?",
     answer:
-      "This tool generates one UUID at a time, but you can click 'Generate New UUID' multiple times quickly. Each click creates a new, unique UUID that you can copy individually.",
+      "Yes. You can generate and copy batches of up to 100 UUIDs. UUIDv7 values produced during the same or a backwards-moving millisecond are kept monotonic within the current page session.",
   },
   {
     question: "How do I use UUIDs in my code?",
     answer:
       "Most programming languages have UUID libraries: JavaScript (crypto.randomUUID()), Python (import uuid; uuid.uuid4()), Java (UUID.randomUUID()), C# (Guid.NewGuid()), PHP (uniqid() or random_bytes()), etc.",
+  },
+  {
+    question: "What does the UUID inspector validate?",
+    answer:
+      "It requires the canonical 8-4-4-4-12 hexadecimal form, reports the UUID version and variant, and decodes the embedded Unix millisecond timestamp for RFC-variant UUIDv7 values. Braced, URN, and unhyphenated forms are intentionally rejected.",
+  },
+];
+
+export const timestampConverterFAQ = [
+  {
+    question: "Which date-time formats does the Timestamp Converter accept?",
+    answer:
+      "It accepts strict RFC 3339 instants such as 2024-01-15T10:30:00Z or 2024-01-15T10:30:00+07:00. It also accepts offset-less YYYY-MM-DD HH:mm:ss values, which are interpreted in the selected UTC, local, or IANA timezone. Locale-specific formats are intentionally rejected because their meaning varies by browser and region.",
+  },
+  {
+    question: "Does it preserve microseconds and nanoseconds?",
+    answer:
+      "Yes. Unix values are parsed as decimal text and converted with BigInt arithmetic, preserving precision through nanoseconds without passing through floating-point numbers. The live browser clock itself normally supplies only millisecond precision.",
+  },
+  {
+    question: "What happens during daylight-saving time changes?",
+    answer:
+      "An offset-less local time in a DST gap is reported as nonexistent. A time in a DST overlap is reported as ambiguous with both possible Unix timestamps. The converter does not silently choose one occurrence.",
+  },
+  {
+    question: "What timezone names can I use?",
+    answer:
+      "Use UTC, local, or an IANA timezone supported by your browser, such as America/New_York, Europe/Paris, or Asia/Ho_Chi_Minh. Invalid and unsupported names are rejected.",
   },
 ];
 

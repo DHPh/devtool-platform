@@ -342,37 +342,37 @@ created separately when requested.
 
 #### Milestone 0.6: Modernize Color Studio
 
-- [ ] Introduce the shared CSS Color 4 model and parser.
-- [ ] Add OKLCH, OKLab, Lab, LCH, HWB, Display P3, alpha, and gamut reporting.
-- [ ] Update palettes and gradients to support perceptual interpolation.
+- [x] Introduce the shared CSS Color 4 model and parser.
+- [x] Add OKLCH, OKLab, Lab, LCH, HWB, Display P3, alpha, and gamut reporting.
+- [x] Update palettes and gradients to support perceptual interpolation.
 - [x] Fix accessibility helpers that feed unsupported HSL strings to the
   hex-only parser.
 - [x] Update WCAG labels and luminance math to WCAG 2.2.
-- [ ] Complete all Color Studio acceptance criteria in Section 2.1.
+- [x] Complete all Color Studio acceptance criteria in Section 2.1.
 
 #### Milestone 0.7: Modernize structured-data tools
 
-- [ ] Bring JSON Schema behavior to Draft 2020-12.
-- [ ] Implement RFC 9535 JSONPath or clearly constrain the advertised scope.
-- [ ] Complete all RFC 6902 JSON Patch operations and failure semantics.
-- [ ] Support quoted multiline CSV records and safe spreadsheet export.
+- [x] Bring JSON Schema behavior to Draft 2020-12.
+- [x] Implement RFC 9535 JSONPath or clearly constrain the advertised scope.
+- [x] Complete all RFC 6902 JSON Patch operations and failure semantics.
+- [x] Support quoted multiline CSV records and safe spreadsheet export.
 
 #### Milestone 0.8: Modernize identifiers and converters
 
-- [ ] Add UUIDv7 and remove the custom simplified UUIDv1 implementation.
-- [ ] Generate QR codes locally in the browser.
-- [ ] Add strict timestamp parsing, timezone behavior, and large timestamp
+- [x] Add UUIDv7 and remove the custom simplified UUIDv1 implementation.
+- [x] Generate QR codes locally in the browser.
+- [x] Add strict timestamp parsing, timezone behavior, and large timestamp
   precision.
-- [ ] Add Base64url and clarify email syntax-versus-deliverability results.
-- [ ] Replace regex-only HTML and CSS formatting with syntax-aware processing.
+- [x] Add Base64url and clarify email syntax-versus-deliverability results.
+- [x] Replace regex-only HTML and CSS formatting with syntax-aware processing.
 
 #### Milestone 0.9: Bind tests to production processors
 
-- [ ] Require each functional case to import the processor used by production.
-- [ ] Remove test-only duplicate implementations that can diverge from tools.
-- [ ] Add success, malformed-input, adversarial-input, and standards fixtures
+- [x] Require each functional case to import the processor used by production.
+- [x] Remove test-only duplicate implementations that can diverge from tools.
+- [x] Add success, malformed-input, adversarial-input, and standards fixtures
   appropriate to each modified tool.
-- [ ] Run the complete quality gate before marking Phase 0 complete.
+- [x] Run the complete quality gate before marking Phase 0 complete.
 
 Acceptance criteria:
 
