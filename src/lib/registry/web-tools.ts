@@ -4,7 +4,8 @@ import type { ToolMetadata } from "./types";
 export const WEB_TOOLS = [
   {
     id: "color-studio",
-    kind: "standalone",
+    kind: "studio",
+    studioDirectory: "color-studio",
     processing: "client",
     name: "Color Studio",
     description:
@@ -274,7 +275,8 @@ export const WEB_TOOLS = [
   },
   {
     id: "regex-studio",
-    kind: "standalone",
+    kind: "studio",
+    studioDirectory: "regex-studio",
     processing: "client",
     name: "Regex Studio",
     description:

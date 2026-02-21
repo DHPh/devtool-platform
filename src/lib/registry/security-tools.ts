@@ -4,7 +4,8 @@ import type { ToolMetadata } from "./types";
 export const SECURITY_TOOLS = [
   {
     id: "password-studio",
-    kind: "standalone",
+    kind: "studio",
+    studioDirectory: "password-studio",
     processing: "hybrid",
     name: "Password Studio",
     description:

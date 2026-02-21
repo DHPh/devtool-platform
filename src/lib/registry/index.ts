@@ -104,11 +104,19 @@ export const TOOL_REGISTRY: ToolMetadata[] = TOOL_ORDER.map((id) => {
   return tool;
 });
 
-export const TOOL_COUNT = TOOL_REGISTRY.length;
+export const REGISTRY_ENTRY_COUNT = TOOL_REGISTRY.length;
+export const EXECUTABLE_TOOL_COUNT = TOOL_REGISTRY.filter(
+  (tool) => tool.kind !== "studio",
+).length;
+
+// Backward-compatible public count. Studio containers are navigation, not tools.
+export const TOOL_COUNT = EXECUTABLE_TOOL_COUNT;
 export type {
   ProcessingMode,
   StandaloneToolDefinition,
   StandaloneToolMetadata,
+  StudioDefinition,
+  StudioMetadata,
   StudioSubToolMetadata,
   Tool,
   ToolComponentLoader,

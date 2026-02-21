@@ -19,7 +19,8 @@ export const DATA_TOOLS = [
   },
   {
     id: "json-studio",
-    kind: "standalone",
+    kind: "studio",
+    studioDirectory: "json-studio",
     processing: "client",
     name: "JSON Studio",
     description:

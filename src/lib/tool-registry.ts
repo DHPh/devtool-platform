@@ -1,9 +1,16 @@
 import type { ToolType } from "./tool-classification";
-import { TOOL_COUNT, TOOL_REGISTRY } from "./registry";
+import {
+  EXECUTABLE_TOOL_COUNT,
+  REGISTRY_ENTRY_COUNT,
+  TOOL_COUNT,
+  TOOL_REGISTRY,
+} from "./registry";
 import type {
   ProcessingMode,
   StandaloneToolDefinition,
   StandaloneToolMetadata,
+  StudioDefinition,
+  StudioMetadata,
   StudioSubToolMetadata,
   Tool,
   ToolComponentLoader,
@@ -11,11 +18,18 @@ import type {
   ToolMetadata,
 } from "./registry";
 
-export { TOOL_COUNT, TOOL_REGISTRY };
+export {
+  EXECUTABLE_TOOL_COUNT,
+  REGISTRY_ENTRY_COUNT,
+  TOOL_COUNT,
+  TOOL_REGISTRY,
+};
 export type {
   ProcessingMode,
   StandaloneToolDefinition,
   StandaloneToolMetadata,
+  StudioDefinition,
+  StudioMetadata,
   StudioSubToolMetadata,
   Tool,
   ToolComponentLoader,
@@ -26,6 +40,16 @@ export type {
 // Helper functions
 export function getToolById(id: string): ToolMetadata | undefined {
   return TOOL_REGISTRY.find((tool) => tool.id === id);
+}
+
+export function isStudioTool(tool: ToolMetadata): tool is StudioMetadata {
+  return tool.kind === "studio";
+}
+
+export function isExecutableTool(
+  tool: ToolMetadata,
+): tool is StandaloneToolMetadata | StudioSubToolMetadata {
+  return tool.kind !== "studio";
 }
 
 export function getStudioSubTool(
@@ -136,6 +160,7 @@ export function getToolStatistics() {
 
   return {
     totalTools,
+    registryEntries: REGISTRY_ENTRY_COUNT,
     featuredTools,
     categoryCounts,
     typeCounts,

@@ -22,6 +22,15 @@ export interface StandaloneToolMetadata extends ToolMetadataBase {
   processing: ProcessingMode;
   parent?: never;
   tab?: never;
+  studioDirectory?: never;
+}
+
+export interface StudioMetadata extends ToolMetadataBase {
+  kind: "studio";
+  processing: ProcessingMode;
+  studioDirectory: string;
+  parent?: never;
+  tab?: never;
 }
 
 export interface StudioSubToolMetadata extends ToolMetadataBase {
@@ -31,7 +40,10 @@ export interface StudioSubToolMetadata extends ToolMetadataBase {
   tab: string;
 }
 
-export type ToolMetadata = StandaloneToolMetadata | StudioSubToolMetadata;
+export type ToolMetadata =
+  | StandaloneToolMetadata
+  | StudioMetadata
+  | StudioSubToolMetadata;
 
 export type ToolComponentLoader = () => Promise<{
   default: ComponentType;
@@ -41,7 +53,14 @@ export interface StandaloneToolDefinition extends StandaloneToolMetadata {
   loadComponent: ToolComponentLoader;
 }
 
-export type ToolDefinition = StandaloneToolDefinition | StudioSubToolMetadata;
+export interface StudioDefinition extends StudioMetadata {
+  loadComponent: ToolComponentLoader;
+}
+
+export type ToolDefinition =
+  | StandaloneToolDefinition
+  | StudioDefinition
+  | StudioSubToolMetadata;
 
 // Backward-compatible public name for consumers of the original contract.
 export type Tool = ToolDefinition;

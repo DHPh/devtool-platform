@@ -4,7 +4,8 @@ import type { ToolMetadata } from "./types";
 export const NETWORK_TOOLS = [
   {
     id: "network-studio",
-    kind: "standalone",
+    kind: "studio",
+    studioDirectory: "network-studio",
     processing: "hybrid",
     name: "Network Studio",
     description:

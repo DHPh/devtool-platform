@@ -44,7 +44,7 @@ describe("tool catalog paths", () => {
       const slug = url.pathname.replace("/tools/", "");
 
       expect(standaloneIds.has(slug)).toBe(true);
-      if (tool.kind === "standalone") {
+      if (tool.kind !== "studio-subtool") {
         expect(tool.id).toBe(slug);
         expect(url.search).toBe("");
       } else {

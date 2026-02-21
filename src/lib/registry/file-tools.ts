@@ -4,7 +4,8 @@ import type { ToolMetadata } from "./types";
 export const FILE_TOOLS = [
   {
     id: "file-processing-studio",
-    kind: "standalone",
+    kind: "studio",
+    studioDirectory: "file-processing",
     processing: "client",
     name: "File Processing Studio",
     description:

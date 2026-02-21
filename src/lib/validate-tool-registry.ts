@@ -3,6 +3,7 @@ import type { ToolMetadata } from "@/lib/tool-registry";
 
 const TOOL_URL_BASE = "https://devtool-platform.invalid";
 const PROCESSING_MODES = new Set(["client", "server", "hybrid"]);
+const SAFE_DIRECTORY = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 
 export function validateToolRegistry(
   tools: readonly ToolMetadata[],
@@ -52,9 +53,17 @@ export function validateToolRegistry(
   }
 
   for (const tool of tools) {
-    if (tool.kind === "standalone") {
+    if (tool.kind !== "studio-subtool") {
       if (!mappedComponents.has(tool.id)) {
-        errors.push(`[${tool.id}] component: no standalone component mapping`);
+        errors.push(`[${tool.id}] component: no route component mapping`);
+      }
+      if (
+        tool.kind === "studio" &&
+        !SAFE_DIRECTORY.test(tool.studioDirectory)
+      ) {
+        errors.push(
+          `[${tool.id}] studioDirectory: must be a safe kebab-case directory`,
+        );
       }
       continue;
     }
@@ -65,9 +74,9 @@ export function validateToolRegistry(
       continue;
     }
 
-    if (parent.kind !== "standalone") {
+    if (parent.kind !== "studio") {
       errors.push(
-        `[${tool.id}] parent: "${tool.parent}" is not a standalone studio`,
+        `[${tool.id}] parent: "${tool.parent}" is not a studio container`,
       );
     }
 

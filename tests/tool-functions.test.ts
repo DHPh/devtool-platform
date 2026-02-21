@@ -3,6 +3,7 @@ import { PDFDocument } from "pdf-lib";
 import { inspectZip } from "@/lib/processors/archive-core";
 import JSZip from "jszip";
 import { TOOL_REGISTRY } from "@/lib/registry";
+import { isExecutableTool } from "@/lib/tool-registry";
 import {
   createQrCodeModel,
   calculateConstrainedImageSize,
@@ -244,11 +245,8 @@ const cases: FunctionalCase[] = [
 ];
 
 describe("tool function contracts (Node.js)", () => {
-  const studioContainerIds = new Set(
-    TOOL_REGISTRY.filter((tool) => tool.kind === "studio-subtool").map((tool) => tool.parent),
-  );
   const executableToolIds = TOOL_REGISTRY
-    .filter((tool) => !studioContainerIds.has(tool.id))
+    .filter(isExecutableTool)
     .map((tool) => tool.id)
     .sort();
 
