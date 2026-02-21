@@ -6,6 +6,7 @@ import { TOOL_REGISTRY as DOMAIN_TOOL_REGISTRY } from "@/lib/registry";
 import {
   TOOL_REGISTRY,
   type StandaloneToolMetadata,
+  type StudioMetadata,
   type StudioSubToolMetadata,
   type ToolMetadata,
 } from "@/lib/tool-registry";
@@ -14,6 +15,7 @@ import {
   validateToolRegistry,
 } from "@/lib/validate-tool-registry";
 import { getStudioTabMetadata } from "@/lib/tool-registry";
+import { STUDIO_MANIFESTS } from "@/lib/studio-manifests";
 
 function tool(
   overrides: Partial<StandaloneToolMetadata> = {},
@@ -28,6 +30,22 @@ function tool(
     type: "utility",
     tags: ["example"],
     path: "/tools/example-tool",
+    ...overrides,
+  };
+}
+
+function studio(overrides: Partial<StudioMetadata> = {}): StudioMetadata {
+  return {
+    id: "example-studio",
+    kind: "studio",
+    processing: "client",
+    name: "Example Studio",
+    description: "Example",
+    category: "utilities",
+    type: "utility",
+    tags: ["example"],
+    path: "/tools/example-studio",
+    studioDirectory: "example-studio",
     ...overrides,
   };
 }
@@ -74,7 +92,7 @@ describe("tool registry validation", () => {
   it("uses the discriminated contract for every production tool", () => {
     for (const entry of TOOL_REGISTRY) {
       expect(["client", "server", "hybrid"]).toContain(entry.processing);
-      if (entry.kind === "standalone") {
+      if (entry.kind !== "studio-subtool") {
         expect(entry.parent).toBeUndefined();
         expect(entry.tab).toBeUndefined();
       } else {
@@ -94,6 +112,39 @@ describe("tool registry validation", () => {
     expect(tab.label).toBe("DNS Lookup");
     expect(tab.processing).toBe("server");
   });
+
+  it("defines one complete typed manifest for every studio container", () => {
+    const studioIds = TOOL_REGISTRY.filter((tool) => tool.kind === "studio")
+      .map((tool) => tool.id)
+      .sort();
+
+    expect(STUDIO_MANIFESTS.map((manifest) => manifest.id).sort()).toEqual(
+      studioIds,
+    );
+    for (const manifest of STUDIO_MANIFESTS) {
+      expect(manifest.tabs.length).toBeGreaterThan(0);
+      expect(manifest.defaultTab).toBe(manifest.tabs[0].id);
+      expect(
+        manifest.tabs.every(
+          (tab) =>
+            tab.metadata.parent === manifest.id &&
+            typeof tab.loadComponent === "function",
+        ),
+      ).toBe(true);
+    }
+  });
+
+  it("loads every component declared by a studio manifest", async () => {
+    const modules = await Promise.all(
+      STUDIO_MANIFESTS.flatMap((manifest) =>
+        manifest.tabs.map((tab) => tab.loadComponent()),
+      ),
+    );
+
+    for (const loaded of modules) {
+      expect(["function", "object"]).toContain(typeof loaded.default);
+    }
+  }, 15_000);
 
   it("reports duplicate IDs and paths with the affected tool", () => {
     const errors = validateToolRegistry(
@@ -120,10 +171,7 @@ describe("tool registry validation", () => {
   });
 
   it("reports missing parents and invalid studio paths", () => {
-    const parent = tool({
-      id: "example-studio",
-      path: "/tools/example-studio",
-    });
+    const parent = studio();
     const missingParent = subTool({
       id: "orphan",
       parent: "missing-studio",
@@ -169,7 +217,7 @@ describe("tool registry validation", () => {
     const errors = validateToolRegistry([tool()], ["unknown-component"]);
 
     expect(errors).toContain(
-      "[example-tool] component: no standalone component mapping",
+      "[example-tool] component: no route component mapping",
     );
     expect(errors).toContain(
       "[unknown-component] component: mapping has no registry entry",

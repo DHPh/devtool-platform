@@ -6,22 +6,12 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  FileCode,
-  Search,
-  Shield,
-  GitCompare,
-  Download,
-} from "lucide-react";
+import { FileCode, Download } from "lucide-react";
 import { ResponsiveTextArea, FileUploadZone } from "@/components/layout";
-import { JsonFormatterTab } from "./JsonFormatterTab";
-import { JsonPathTab } from "./JsonPathTab";
-import { JsonSchemaTab } from "./JsonSchemaTab";
-import { JsonDiffTab } from "./JsonDiffTab";
+import { StudioTabs } from "@/components/studio-tabs";
 import { validateJson } from "@/lib/utils/json";
+import { JSON_STUDIO_MANIFEST } from "./manifest";
 
 interface JsonStudioProps {
   defaultTab?: string;
@@ -32,22 +22,9 @@ function JsonStudioContent({
   defaultTab = "formatter",
   className,
 }: JsonStudioProps) {
-  const searchParams = useSearchParams();
   const [input, setInput] = useState("");
-  const [activeTab, setActiveTab] = useState(defaultTab);
   const [isValid, setIsValid] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Handle URL tab parameter
-  useEffect(() => {
-    const tabParam = searchParams.get("tab");
-    if (
-      tabParam &&
-      ["formatter", "path", "schema", "diff"].includes(tabParam)
-    ) {
-      setActiveTab(tabParam);
-    }
-  }, [searchParams]);
 
   // Validate JSON on input change
   useEffect(() => {
@@ -197,42 +174,13 @@ function JsonStudioContent({
       </Card>
 
       {/* Tools Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-4 w-full">
-          <TabsTrigger value="formatter" className="flex items-center gap-2">
-            <FileCode className="h-4 w-4" />
-            Format
-          </TabsTrigger>
-          <TabsTrigger value="path" className="flex items-center gap-2">
-            <Search className="h-4 w-4" />
-            Path
-          </TabsTrigger>
-          <TabsTrigger value="schema" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            Schema
-          </TabsTrigger>
-          <TabsTrigger value="diff" className="flex items-center gap-2">
-            <GitCompare className="h-4 w-4" />
-            Diff
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="formatter">
-          <JsonFormatterTab input={input} onInputChange={setInput} />
-        </TabsContent>
-
-        <TabsContent value="path">
-          <JsonPathTab input={input} />
-        </TabsContent>
-
-        <TabsContent value="schema">
-          <JsonSchemaTab input={input} />
-        </TabsContent>
-
-        <TabsContent value="diff">
-          <JsonDiffTab input={input} />
-        </TabsContent>
-      </Tabs>
+      <StudioTabs
+        manifest={JSON_STUDIO_MANIFEST}
+        componentProps={{ input, onInputChange: setInput }}
+        defaultTab={defaultTab}
+        listClassName="grid w-full grid-cols-4"
+        contentClassName="mt-2"
+      />
     </div>
   );
 }
