@@ -1,22 +1,26 @@
 # 100+ Executable Tools Plan
 
-Status: Proposed  
-Created: 2026-01-24  
+Status: In progress
+
+Created: 2026-01-24
+
+Updated: 2026-02-19
+
 Target: 105 executable tools
 
-> **START HERE — Current active phase: Phase 0, Existing Tool Remediation.**
+> **CURRENT PHASE — Phase 2, Quick Browser Tools.**
 >
-> Do not add new tools until Phase 0 is complete. The first implementation
-> milestone is **0.1: eliminate the Markdown Preview and Regex Tester HTML
-> injection paths**. New-tool delivery begins in Phase 2.
+> Phase 0 remediation and Phase 1 expansion infrastructure are complete.
+> New-tool delivery starts with the Encoding and Serialization Studio in
+> Phase 2.
 
 ## Roadmap at a glance
 
 | Phase | Purpose | Executable-tool target | Status |
 | --- | --- | ---: | --- |
-| **Phase 0** | **Fix existing security, correctness, standards, privacy, and capability gaps** | **57** | **Start here** |
-| Phase 1 | Make studios and processors easier to scaffold and register | 57 | Not started |
-| Phase 2 | Deliver 16 quick browser tools | 73 | Blocked by Phases 0–1 |
+| Phase 0 | Fix existing security, correctness, standards, privacy, and capability gaps | 57 | Complete |
+| Phase 1 | Make studios and processors easier to scaffold and register | 57 | Complete |
+| **Phase 2** | **Deliver 16 quick browser tools** | **73** | **Current phase** |
 | Phase 3 | Deliver 16 developer and data tools | 89 | Blocked by Phase 2 |
 | Phase 4 | Deliver 8 advanced browser tools | 97 | Blocked by Phase 3 |
 | Phase 5 | Deliver 8 serverless website diagnostics | 105 | Blocked by Phase 4 |
@@ -383,25 +387,25 @@ Acceptance criteria:
   descriptions.
 - The full quality-gate command set passes before new studios are introduced.
 
-### Phase 1: Expansion Infrastructure
+### Phase 1: Expansion Infrastructure — COMPLETE
 
 Goal: make adding six new studios and 48 sub-tools routine rather than bespoke.
 
-- Extend the scaffold command to discover supported studios from registry data
+- [x] Extend the scaffold command to discover supported studios from registry data
   instead of a fixed list of six parents.
-- Define a typed studio manifest containing tabs, labels, icons, and component
+- [x] Define a typed studio manifest containing tabs, labels, icons, and component
   loaders.
-- Add processing-engine conventions under `src/lib/processors/`.
-- Keep the functional test coverage guard mandatory for every executable tool.
-- Derive both `registryEntryCount` and `executableToolCount` from the registry.
-- Use the executable count for the public 100+ claim.
+- [x] Add processing-engine conventions under `src/lib/processors/`.
+- [x] Keep the functional test coverage guard mandatory for every executable tool.
+- [x] Derive both `registryEntryCount` and `executableToolCount` from the registry.
+- [x] Use the executable count for the public 100+ claim.
 
 Acceptance criteria:
 
-- A new studio and its tabs can be scaffolded without editing several unrelated
+- [x] A new studio and its tabs can be scaffolded without editing several unrelated
   maps manually.
-- Registry validation distinguishes studio containers from executable entries.
-- CI fails when an executable entry has no functional result test.
+- [x] Registry validation distinguishes studio containers from executable entries.
+- [x] CI fails when an executable entry has no functional result test.
 
 ### Phase 2: Quick Browser Tools
 
