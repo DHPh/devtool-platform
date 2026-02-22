@@ -50,8 +50,9 @@ beforeEach(() => {
     "src/lib/registry/network-tools.ts",
     registry(`  {
     id: "network-studio",
-    kind: "standalone",
+    kind: "studio",
     path: "/tools/network-studio",
+    studioDirectory: "network-studio",
   },
 `),
   );
@@ -75,6 +76,19 @@ beforeEach(() => {
     `export const TOOL_COMPONENT_LOADERS = {
   "network-studio": () => import("@/lib/tools/network-studio"),
 } satisfies Record<ToolComponentId, ToolComponentLoader>;
+`,
+  );
+  write(
+    "src/lib/tools/network-studio/manifest.ts",
+    `export const manifest = [
+    // create-tool:tabs
+];
+`,
+  );
+  write(
+    "src/lib/studio-manifests.ts",
+    `export const STUDIO_MANIFESTS = [
+] as const;
 `,
   );
 });
@@ -122,7 +136,59 @@ describe("create-tool command", () => {
     expect(second.stderr).toContain("Tool ID already exists");
   });
 
-  it("creates a studio tab scaffold and reports its layout follow-up", () => {
+  it("scaffolds a new studio and wires its first tab without manual maps", () => {
+    const studioResult = run(
+      "encoding-studio",
+      "--kind",
+      "studio",
+      "--domain",
+      "web",
+    );
+
+    expect(studioResult.status, studioResult.stderr).toBe(0);
+    expect(
+      existsSync(
+        resolve(
+          fixtureRoot,
+          "src/lib/tools/encoding-studio/EncodingStudio.tsx",
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      readFileSync(
+        resolve(fixtureRoot, "src/lib/registry/web-tools.ts"),
+        "utf8",
+      ),
+    ).toContain('studioDirectory: "encoding-studio"');
+    expect(
+      existsSync(resolve(fixtureRoot, "src/lib/processors/encoding-studio.ts")),
+    ).toBe(false);
+    expect(
+      readFileSync(resolve(fixtureRoot, "src/lib/studio-manifests.ts"), "utf8"),
+    ).toContain("ENCODING_STUDIO_MANIFEST");
+
+    const tabResult = run(
+      "yaml-formatter",
+      "--kind",
+      "studio-subtool",
+      "--parent",
+      "encoding-studio",
+      "--domain",
+      "web",
+      "--tab",
+      "yaml",
+    );
+
+    expect(tabResult.status, tabResult.stderr).toBe(0);
+    expect(
+      readFileSync(
+        resolve(fixtureRoot, "src/lib/tools/encoding-studio/manifest.ts"),
+        "utf8",
+      ),
+    ).toContain('import("./tabs/YamlFormatterTab")');
+  });
+
+  it("creates and wires a studio tab from registry-discovered metadata", () => {
     const result = run(
       "request-timeline",
       "--kind",
@@ -138,9 +204,7 @@ describe("create-tool command", () => {
     );
 
     expect(result.status, result.stderr).toBe(0);
-    expect(result.stdout).toContain(
-      "Export and render RequestTimelineTab in the network-studio studio layout",
-    );
+    expect(result.stdout).not.toContain("studio layout");
     expect(
       existsSync(
         resolve(
@@ -159,6 +223,12 @@ describe("create-tool command", () => {
     );
     expect(readFileSync(resolve(fixtureRoot, "src/lib/tool-component-ids.ts"), "utf8"))
       .not.toContain("request-timeline");
+    expect(
+      readFileSync(
+        resolve(fixtureRoot, "src/lib/tools/network-studio/manifest.ts"),
+        "utf8",
+      ),
+    ).toContain('import("./tabs/RequestTimelineTab")');
   });
 
   it("rejects unsafe IDs, unknown options, and existing files without writes", () => {

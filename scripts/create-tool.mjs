@@ -14,15 +14,6 @@ const DOMAINS = {
   file: "file-tools.ts",
 };
 
-const STUDIO_DIRECTORIES = {
-  "color-studio": "color-studio",
-  "file-processing-studio": "file-processing",
-  "json-studio": "json-studio",
-  "network-studio": "network-studio",
-  "password-studio": "password-studio",
-  "regex-studio": "regex-studio",
-};
-
 const CATEGORIES = {
   "text-processing": "TEXT_PROCESSING",
   "data-conversion": "DATA_CONVERSION",
@@ -61,7 +52,7 @@ function usage() {
   return `Usage: npm run create-tool -- <tool-id> [options]
 
 Options:
-  --kind <standalone|studio-subtool>  Tool kind (default: standalone)
+  --kind <standalone|studio|studio-subtool> Tool kind (default: standalone)
   --domain <${Object.keys(DOMAINS).join("|")}>  Registry domain (default: web)
   --name <display name>               Display name (default: derived from ID)
   --description <text>                Registry description
@@ -70,6 +61,7 @@ Options:
   --processing <client|server|hybrid> Processing mode (default: client)
   --tags <tag-one,tag-two>             Comma-separated tags
   --parent <studio-id>                 Required for studio sub-tools
+  --studio-directory <directory>       Studio source directory (default: tool ID)
   --tab <tab-id>                       Studio tab ID (default: tool ID)
   --dry-run                            Validate and print files without writing
   --help                               Show this help`;
@@ -80,7 +72,7 @@ function parseArguments(argv) {
   const positional = [];
   const allowedOptions = new Set([
     "kind", "domain", "name", "description", "category", "type",
-    "processing", "tags", "parent", "tab", "help", "dry-run",
+    "processing", "tags", "parent", "studio-directory", "tab", "help", "dry-run",
   ]);
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
@@ -125,6 +117,10 @@ function pascalCase(id) {
   return titleCase(id).replaceAll(" ", "");
 }
 
+function constantCase(id) {
+  return id.replaceAll("-", "_").toUpperCase();
+}
+
 function quote(value) {
   return JSON.stringify(value);
 }
@@ -149,7 +145,14 @@ function discoverRegistryEntries(root) {
       const block = match[1];
       const field = (name) => block.match(new RegExp(`^    ${name}: "([^"]+)"`, "m"))?.[1];
       const id = field("id");
-      if (id) entries.push({ id, kind: field("kind"), path: field("path") });
+      if (id) {
+        entries.push({
+          id,
+          kind: field("kind"),
+          path: field("path"),
+          studioDirectory: field("studioDirectory"),
+        });
+      }
     }
   }
   return entries;
@@ -195,6 +198,36 @@ export function process${componentName}(input: string): string {
 `;
 }
 
+function studioComponentTemplate(componentName, manifestName) {
+  return `"use client";
+
+import { StudioTabs } from "@/components/studio-tabs";
+import { ${manifestName} } from "./manifest";
+
+export default function ${componentName}() {
+  return (
+    <StudioTabs
+      manifest={${manifestName}}
+      componentProps={{}}
+      listClassName="grid h-auto w-full grid-cols-2 p-1 md:grid-cols-4"
+    />
+  );
+}
+`;
+}
+
+function studioManifestTemplate(id, directory, manifestName) {
+  return `import { defineStudioManifest } from "@/lib/studio-manifest";
+
+export const ${manifestName} = defineStudioManifest(
+  ${quote(id)},
+  ${quote(directory)},
+  [
+    // create-tool:tabs
+  ],
+);
+`;
+}
 function testTemplate(id, componentName) {
   return `import { describe, expect, it } from "vitest";
 import { process${componentName} } from "@/lib/processors/${id}";
@@ -225,16 +258,22 @@ function registryEntry(config) {
   if (config.kind === "studio-subtool") {
     lines.push(`    parent: ${quote(config.parent)},`);
     lines.push(`    tab: ${quote(config.tab)},`);
+  } else if (config.kind === "studio") {
+    lines.push(`    studioDirectory: ${quote(config.studioDirectory)},`);
   }
   lines.push("  },", "");
   return lines.join("\n");
 }
 
+function studioManifestEntry(config, componentName) {
+  return `    { id: ${quote(config.tab)}, shortLabel: ${quote(config.name)}, icon: "Wrench", loadComponent: () => import("./tabs/${componentName}Tab").then((module) => ({ default: module.${componentName}Tab })) },\n`;
+}
+
 function buildConfig(id, options, root) {
   assertKebabCase(id, "Tool ID");
   const kind = options.kind ?? "standalone";
-  if (!new Set(["standalone", "studio-subtool"]).has(kind)) {
-    throw new Error("--kind must be standalone or studio-subtool");
+  if (!new Set(["standalone", "studio", "studio-subtool"]).has(kind)) {
+    throw new Error("--kind must be standalone, studio, or studio-subtool");
   }
   const domain = options.domain ?? "web";
   if (!(domain in DOMAINS)) throw new Error(`Unknown registry domain: ${domain}`);
@@ -248,6 +287,8 @@ function buildConfig(id, options, root) {
   const entries = discoverRegistryEntries(root);
   if (entries.some((entry) => entry.id === id)) throw new Error(`Tool ID already exists: ${id}`);
   let parent;
+  let parentDirectory;
+  let studioDirectory;
   let tab;
   let path = `/tools/${id}`;
   if (kind === "studio-subtool") {
@@ -258,13 +299,17 @@ function buildConfig(id, options, root) {
     const parentEntry = entries.find((entry) => entry.id === parent);
     if (
       !parentEntry ||
-      parentEntry.kind !== "standalone" ||
+      parentEntry.kind !== "studio" ||
       !parentEntry.path ||
-      !(parent in STUDIO_DIRECTORIES)
+      !parentEntry.studioDirectory
     ) {
-      throw new Error(`Unknown standalone parent studio: ${parent}`);
+      throw new Error(`Unknown studio container: ${parent}`);
     }
+    parentDirectory = parentEntry.studioDirectory;
     path = `${parentEntry.path}?tab=${encodeURIComponent(tab)}`;
+  } else if (kind === "studio") {
+    studioDirectory = options["studio-directory"] ?? id;
+    assertKebabCase(studioDirectory, "Studio directory");
   }
 
   if (entries.some((entry) => entry.path === path)) {
@@ -278,7 +323,7 @@ function buildConfig(id, options, root) {
     .map((tag) => tag.trim())
     .filter(Boolean);
   const tags = requestedTags.length > 0 ? requestedTags : [id];
-  return { id, kind, domain, category, type, processing, parent, tab, path, name, description, tags };
+  return { id, kind, domain, category, type, processing, parent, parentDirectory, studioDirectory, tab, path, name, description, tags };
 }
 
 function buildChanges(config, root) {
@@ -288,18 +333,33 @@ function buildChanges(config, root) {
   const processorPath = resolve(root, `src/lib/processors/${config.id}.ts`);
   const testPath = resolve(root, `tests/${config.id}.test.ts`);
   const isTab = config.kind === "studio-subtool";
+  const isStudio = config.kind === "studio";
+  const manifestName = `${constantCase(config.id)}_MANIFEST`;
   const componentPath = isTab
     ? resolve(
         root,
-        `src/lib/tools/${STUDIO_DIRECTORIES[config.parent]}/tabs/${componentName}Tab.tsx`,
+        `src/lib/tools/${config.parentDirectory}/tabs/${componentName}Tab.tsx`,
       )
-    : resolve(root, `src/lib/tools/${config.id}.tsx`);
+    : isStudio
+      ? resolve(root, `src/lib/tools/${config.studioDirectory}/${componentName}.tsx`)
+      : resolve(root, `src/lib/tools/${config.id}.tsx`);
 
-  const create = new Map([
-    [componentPath, componentTemplate(config.id, config.name, componentName, isTab)],
-    [processorPath, processorTemplate(componentName)],
-    [testPath, testTemplate(config.id, componentName)],
-  ]);
+  const create = new Map();
+  create.set(
+    componentPath,
+    isStudio
+      ? studioComponentTemplate(componentName, manifestName)
+      : componentTemplate(config.id, config.name, componentName, isTab),
+  );
+  if (isStudio) {
+    create.set(
+      resolve(root, `src/lib/tools/${config.studioDirectory}/manifest.ts`),
+      studioManifestTemplate(config.id, config.studioDirectory, manifestName),
+    );
+  } else {
+    create.set(processorPath, processorTemplate(componentName));
+    create.set(testPath, testTemplate(config.id, componentName));
+  }
   for (const path of create.keys()) {
     if (existsSync(path)) throw new Error(`Refusing to overwrite existing file: ${path}`);
   }
@@ -328,8 +388,43 @@ function buildChanges(config, root) {
       replaceAnchor(
         readRequired(loadersPath),
         "} satisfies Record<ToolComponentId, ToolComponentLoader>;",
-        `  ${quote(config.id)}: () => import("@/lib/tools/${config.id}"),\n`,
+        isStudio
+          ? `  ${quote(config.id)}: () => import("@/lib/tools/${config.studioDirectory}/${componentName}"),\n`
+          : `  ${quote(config.id)}: () => import("@/lib/tools/${config.id}"),\n`,
         loadersPath,
+      ),
+    );
+    if (isStudio) {
+      const manifestsPath = resolve(root, "src/lib/studio-manifests.ts");
+      const manifestsSource = readRequired(manifestsPath);
+      const withImport = replaceAnchor(
+        manifestsSource,
+        "export const STUDIO_MANIFESTS",
+        `import { ${manifestName} } from "@/lib/tools/${config.studioDirectory}/manifest";\n\n`,
+        manifestsPath,
+      );
+      update.set(
+        manifestsPath,
+        replaceAnchor(
+          withImport,
+          "] as const;",
+          `  ${manifestName},\n`,
+          manifestsPath,
+        ),
+      );
+    }
+  } else {
+    const manifestPath = resolve(
+      root,
+      `src/lib/tools/${config.parentDirectory}/manifest.ts`,
+    );
+    update.set(
+      manifestPath,
+      replaceAnchor(
+        readRequired(manifestPath),
+        "    // create-tool:tabs",
+        studioManifestEntry(config, componentName),
+        manifestPath,
       ),
     );
   }
@@ -350,11 +445,12 @@ function printSummary(config, changes, root, dryRun) {
   console.log(`${dryRun ? "Would scaffold" : "Scaffolded"} ${config.kind} "${config.id}".`);
   for (const file of files) console.log(`- ${file}`);
   console.log("\nNext steps:");
-  if (config.kind === "studio-subtool") {
-    console.log(`- Export and render ${pascalCase(config.id)}Tab in the ${config.parent} studio layout.`);
+  console.log(
+    `- Replace the placeholder interface${config.kind === "studio" ? " and add its first tab" : " and processor"}.`,
+  );
+  if (config.kind !== "studio") {
+    console.log(`- Run: npm test -- --run tests/${config.id}.test.ts`);
   }
-  console.log("- Replace the placeholder processor and interface.");
-  console.log(`- Run: npm test -- --run tests/${config.id}.test.ts`);
   console.log("- Run: npm run validate:registry && npm run typecheck");
 }
 
