@@ -14,3 +14,4 @@ export * from "./qr-code";
 export * from "./source-formatters";
 export * from "./ui-primitives";
 export * from "./lorem";
+export * from "./serialization-core";
