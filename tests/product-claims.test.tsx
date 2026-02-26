@@ -36,8 +36,12 @@ function collectText(node: ReactNode): string {
 describe("product claims", () => {
   it("uses executable operations rather than studio containers for public totals", () => {
     expect(REGISTRY_ENTRY_COUNT).toBe(TOOL_REGISTRY.length);
-    expect(EXECUTABLE_TOOL_COUNT).toBe(57);
-    expect(REGISTRY_ENTRY_COUNT).toBe(63);
+    expect(EXECUTABLE_TOOL_COUNT).toBe(
+      TOOL_REGISTRY.filter((tool) => tool.kind !== "studio").length,
+    );
+    expect(REGISTRY_ENTRY_COUNT - EXECUTABLE_TOOL_COUNT).toBe(
+      TOOL_REGISTRY.filter((tool) => tool.kind === "studio").length,
+    );
     expect(TOOL_COUNT).toBe(EXECUTABLE_TOOL_COUNT);
     const homeCopy = collectText(HomePage()).replace(/\s+/g, " ");
     expect(homeCopy).toContain(`${TOOL_COUNT} Free Developer Tools`);

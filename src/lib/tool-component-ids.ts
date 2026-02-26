@@ -26,6 +26,7 @@ export const TOOL_COMPONENT_IDS = [
   "network-studio",
   "file-processing-studio",
   "icon-pack-generator",
+  "encoding-serialization-studio",
 ] as const;
 
 export type ToolComponentId = (typeof TOOL_COMPONENT_IDS)[number];

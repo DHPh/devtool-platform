@@ -45,4 +45,6 @@ export const TOOL_COMPONENT_LOADERS = {
   "file-processing-studio": () =>
     import("@/lib/tools/file-processing/FileProcessingStudio"),
   "icon-pack-generator": () => import("@/lib/tools/icon-pack-generator"),
+  "encoding-serialization-studio": () =>
+    import("@/lib/tools/encoding-serialization-studio/EncodingSerializationStudio"),
 } satisfies Record<ToolComponentId, ToolComponentLoader>;

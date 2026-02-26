@@ -81,6 +81,15 @@ const TOOL_ORDER = [
   "metadata-viewer",
   "duplicate-finder",
   "file-organizer",
+  "encoding-serialization-studio",
+  "yaml-formatter",
+  "yaml-validator",
+  "xml-formatter",
+  "xml-validator",
+  "toml-formatter",
+  "json-yaml-converter",
+  "csv-json-converter",
+  "number-base-converter",
 ] as const;
 
 const toolsById = new Map(DOMAIN_TOOLS.map((tool) => [tool.id, tool]));

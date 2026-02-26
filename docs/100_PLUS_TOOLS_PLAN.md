@@ -36,9 +36,9 @@ navigation containers:
 
 | Metric | Current | Planned addition | Target |
 | --- | ---: | ---: | ---: |
-| Executable tools and studio sub-tools | 57 | 48 | 105 |
-| Studio containers | 6 | 6 | 12 |
-| Total registry entries | 63 | 54 | 117 |
+| Executable tools and studio sub-tools | 65 | 40 | 105 |
+| Studio containers | 7 | 5 | 12 |
+| Total registry entries | 72 | 45 | 117 |
 
 Studio containers provide navigation and shared state but are not counted as
 executable tools in the public 100+ goal.
@@ -411,7 +411,35 @@ Acceptance criteria:
 
 Deliver the first 16 tools:
 
-- Encoding and Serialization Studio: all 8 tools.
+#### Milestone 2.1: Encoding and Serialization Studio — COMPLETE
+
+- [x] YAML formatter and validator.
+- [x] XML formatter and well-formedness validator.
+- [x] TOML formatter and validator.
+- [x] Bidirectional JSON/YAML and CSV/JSON converters.
+- [x] Arbitrary-precision binary, octal, decimal, and hexadecimal converter.
+- [x] Browser-only processing and Node functional contracts for all eight tools.
+
+#### Milestone 2.2: DevOps quick tools
+
+- [ ] Cron expression builder.
+- [ ] Chmod calculator.
+- [ ] `.env` manager.
+- [ ] Semantic-version comparator.
+
+#### Milestone 2.3: Data quick tools
+
+- [ ] JSON to TypeScript.
+- [ ] JSON flatten/unflatten.
+
+#### Milestone 2.4: Security quick tools
+
+- [ ] JWT inspector.
+- [ ] Hash/HMAC generator.
+
+Original delivery grouping:
+
+- Encoding and Serialization Studio: all 8 tools (complete).
 - DevOps tools: cron builder, chmod calculator, `.env` manager, and semver
   comparator.
 - Data tools: JSON to TypeScript and JSON flatten/unflatten.

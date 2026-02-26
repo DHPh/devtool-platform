@@ -7,15 +7,15 @@ import { getToolsByCategory, searchTools } from "@/lib/tool-registry";
 
 const EXPECTED_CATEGORY_COUNTS: Record<string, number> = {
   "text-processing": 9,
-  "data-conversion": 2,
+  "data-conversion": 5,
   generators: 7,
-  validators: 10,
+  validators: 12,
   "security-tools": 1,
   "web-development": 6,
   "api-testing": 4,
   utilities: 7,
   "data-analysis": 5,
-  "encoding-decoding": 3,
+  "encoding-decoding": 7,
   "file-processing": 9,
 };
 
