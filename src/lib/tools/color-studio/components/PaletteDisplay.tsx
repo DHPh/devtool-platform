@@ -110,6 +110,7 @@ export function PaletteDisplay({
             {palette.colors.map((color, index) => (
               <div key={index} className="space-y-2">
                 <button
+                  type="button"
                   className="w-full h-16 rounded-lg border-2 border-border hover:border-primary transition-colors relative group"
                   style={{ backgroundColor: color.hex }}
                   onClick={() => onColorSelect?.(color.hex)}

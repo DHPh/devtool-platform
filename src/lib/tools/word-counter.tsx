@@ -167,6 +167,7 @@ Nhập hoặc dán văn bản của bạn vào đây...
                 <div className="grid grid-cols-2 gap-2">
                   {languageExamples.map((example, index) => (
                     <button
+                      type="button"
                       key={index}
                       onClick={() => setText(example.text)}
                       className="p-2 text-left text-xs border rounded hover:bg-accent transition-colors"

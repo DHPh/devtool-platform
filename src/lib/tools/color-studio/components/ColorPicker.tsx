@@ -389,6 +389,7 @@ export function ColorPicker({
             <div className="grid grid-cols-6 gap-2">
               {COLOR_PRESETS.map((preset, index) => (
                 <button
+                  type="button"
                   key={index}
                   className="w-8 h-8 rounded border-2 border-border hover:border-primary transition-colors"
                   style={{ backgroundColor: preset }}

@@ -240,6 +240,8 @@ export function AccessibilityPaletteGenerator() {
                 {customColors.map((customColor) => (
                   <div key={customColor.id} className="relative group">
                     <button
+                      type="button"
+                      aria-label={`Edit ${customColor.color}`}
                       className="w-full h-16 rounded-lg border-2 border-border hover:border-primary transition-colors relative"
                       style={{ backgroundColor: customColor.color }}
                       onClick={() =>
@@ -252,6 +254,8 @@ export function AccessibilityPaletteGenerator() {
                     />
                     {customColors.length > 1 && (
                       <button
+                        type="button"
+                        aria-label={`Remove ${customColor.color}`}
                         onClick={() => removeCustomColor(customColor.id)}
                         className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                       >
@@ -283,6 +287,8 @@ export function AccessibilityPaletteGenerator() {
                 <Label>Base Color</Label>
                 <div className="flex items-center gap-3">
                   <button
+                    type="button"
+                    aria-label={`Edit base color ${baseColor}`}
                     className="w-12 h-12 rounded-lg border-2 border-border hover:border-primary transition-colors"
                     style={{ backgroundColor: baseColor }}
                     onClick={() => setShowColorPicker(!showColorPicker)}

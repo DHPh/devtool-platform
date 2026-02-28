@@ -118,6 +118,7 @@ function JsonStudioContent({
             </span>
             <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={loadSampleData}
                 className="text-sm px-3 py-1 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
               >
@@ -125,6 +126,7 @@ function JsonStudioContent({
               </button>
               {input.trim() && (
                 <button
+                  type="button"
                   onClick={downloadJson}
                   className="text-sm px-3 py-1 bg-secondary text-secondary-foreground rounded hover:bg-secondary/80 transition-colors flex items-center gap-1"
                 >

@@ -49,6 +49,8 @@ export function GradientColorStop({
 
           {/* Color Preview Button */}
           <button
+            type="button"
+            aria-label={`Edit gradient color ${stop.color}`}
             className="w-8 h-8 rounded border-2 border-border hover:border-primary transition-colors flex-shrink-0"
             style={{ backgroundColor: stop.color }}
             onClick={() => {

@@ -73,6 +73,8 @@ export function PaletteGeneratorTab() {
               <label className="text-sm font-medium">Base Color</label>
               <div className="flex items-center gap-3">
                 <button
+                  type="button"
+                  aria-label={`Edit base color ${baseColor}`}
                   className="w-12 h-12 rounded border-2 border-border hover:border-primary transition-colors"
                   style={{ backgroundColor: baseColor }}
                   onClick={() => setShowColorPicker(!showColorPicker)}

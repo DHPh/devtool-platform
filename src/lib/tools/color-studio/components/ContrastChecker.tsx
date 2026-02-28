@@ -172,6 +172,8 @@ Background: ${backgroundColor}
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
               <button
+                type="button"
+                aria-label={`Edit foreground color ${foregroundColor}`}
                 className="w-16 h-16 rounded-lg border-2 border-border hover:border-primary transition-colors"
                 style={{ backgroundColor: foregroundColor }}
                 onClick={() => setShowForegroundPicker(!showForegroundPicker)}
@@ -224,6 +226,8 @@ Background: ${backgroundColor}
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
               <button
+                type="button"
+                aria-label={`Edit background color ${backgroundColor}`}
                 className="w-16 h-16 rounded-lg border-2 border-border hover:border-primary transition-colors"
                 style={{ backgroundColor: backgroundColor }}
                 onClick={() => setShowBackgroundPicker(!showBackgroundPicker)}

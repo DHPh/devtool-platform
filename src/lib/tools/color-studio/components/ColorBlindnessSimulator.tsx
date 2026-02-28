@@ -127,6 +127,8 @@ export function ColorBlindnessSimulator() {
         <CardContent className="space-y-4">
           <div className="flex items-center gap-3">
             <button
+              type="button"
+              aria-label={`Edit input color ${inputColor}`}
               className="w-16 h-16 rounded-lg border-2 border-border hover:border-primary transition-colors"
               style={{ backgroundColor: inputColor }}
               onClick={() => setShowColorPicker(!showColorPicker)}
@@ -174,6 +176,8 @@ export function ColorBlindnessSimulator() {
           <div className="grid grid-cols-6 md:grid-cols-9 gap-2">
             {SAMPLE_COLORS.map((color, index) => (
               <button
+                type="button"
+                aria-label={`Select color ${color}`}
                 key={index}
                 className="w-12 h-12 rounded border-2 border-border hover:border-primary transition-colors"
                 style={{ backgroundColor: color }}
