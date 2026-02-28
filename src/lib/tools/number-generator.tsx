@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Hash, Dices } from "lucide-react";
+import { Copy, Hash, Dices } from "lucide-react";
 import { toast } from "sonner";
 import {
   ToolHeader,
@@ -98,6 +98,16 @@ export default function NumberGenerator() {
     const numbersText = formattedNumbers.join("\n");
     await navigator.clipboard.writeText(numbersText);
     toast.success("Numbers copied to clipboard!");
+  };
+
+  const copyNumber = async (number: number) => {
+    const formatted = formatNumber(number);
+    try {
+      await navigator.clipboard.writeText(formatted);
+      toast.success(`${formatted} copied to clipboard!`);
+    } catch {
+      toast.error("Failed to copy to clipboard");
+    }
   };
 
   const generateQuickRange = (newMin: number, newMax: number, newCount?: number) => {
@@ -283,8 +293,6 @@ export default function NumberGenerator() {
             title="Generated Numbers"
             description={`${generatedNumbers.length} numbers generated`}
             status={generatedNumbers.length > 0 ? "success" : "info"}
-            onCopy={generatedNumbers.length > 0 ? copyNumbers : undefined}
-            copyLabel="Copy Numbers"
           >
             {isGenerating ? (
               <div className="flex items-center justify-center p-8">
@@ -307,14 +315,21 @@ export default function NumberGenerator() {
                   </Button>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 max-h-80 overflow-y-auto">
-                  {generatedNumbers.map((number, index) => (
-                    <div
+                  {generatedNumbers.map((number, index) => {
+                    const formatted = formatNumber(number);
+                    return (
+                    <button
+                      type="button"
                       key={index}
-                      className="p-2 bg-muted rounded text-center font-mono text-sm"
+                      className="flex items-center justify-center gap-2 rounded bg-muted p-2 text-center font-mono text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      onClick={() => copyNumber(number)}
+                      aria-label={`Copy ${formatted}`}
                     >
-                      {formatNumber(number)}
-                    </div>
-                  ))}
+                      <span>{formatted}</span>
+                      <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+                    );
+                  })}
                 </div>
               </div>
             ) : (

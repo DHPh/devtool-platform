@@ -16,10 +16,9 @@ interface ResultCardProps {
   title: string;
   description?: string;
   status?: "success" | "error" | "warning" | "info";
-  result?: string | null;
   error?: string | null;
   warnings?: string[];
-  onCopy?: () => void;
+  onCopy?: () => void | Promise<void>;
   onDownload?: () => void;
   copyLabel?: string;
   downloadLabel?: string;
@@ -31,7 +30,6 @@ export function ResultCard({
   title,
   description,
   status = "info",
-  result,
   error,
   warnings = [],
   onCopy,
@@ -70,19 +68,17 @@ export function ResultCard({
   };
 
   const handleCopy = async () => {
-    if (!result || !onCopy) return;
+    if (!onCopy) return;
 
     try {
-      await navigator.clipboard.writeText(result);
-      toast.success(`${copyLabel} copied to clipboard!`);
-      onCopy();
+      await onCopy();
     } catch {
       toast.error("Failed to copy to clipboard");
     }
   };
 
   const handleDownload = () => {
-    if (!result || !onDownload) return;
+    if (!onDownload) return;
     onDownload();
   };
 
@@ -102,7 +98,10 @@ export function ResultCard({
       <CardContent className="space-y-4 px-4 sm:px-6 pb-4 sm:pb-6 pt-0">
         {/* Error Display */}
         {error && (
-          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+          <div
+            role="alert"
+            className="p-3 bg-destructive/10 border border-destructive/20 rounded-md"
+          >
             <p className="text-destructive text-sm">{error}</p>
           </div>
         )}
@@ -127,16 +126,16 @@ export function ResultCard({
         {children}
 
         {/* Action Buttons */}
-        {(onCopy || onDownload) && result && (
+        {(onCopy || onDownload) && (
           <div className="flex gap-2 pt-2">
             {onCopy && (
-              <Button onClick={handleCopy} variant="outline" size="sm">
+              <Button type="button" onClick={handleCopy} variant="outline" size="sm">
                 <Copy className="w-4 h-4 mr-2" />
                 {copyLabel}
               </Button>
             )}
             {onDownload && (
-              <Button onClick={handleDownload} variant="outline" size="sm">
+              <Button type="button" onClick={handleDownload} variant="outline" size="sm">
                 <Download className="w-4 h-4 mr-2" />
                 {downloadLabel}
               </Button>

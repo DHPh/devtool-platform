@@ -582,6 +582,7 @@ export default function RegexTester() {
                   {Object.entries(REGEX_PATTERNS).map(
                     ([key, { description, example }]) => (
                       <button
+                        type="button"
                         key={key}
                         onClick={() => loadPattern(key)}
                         className={`p-2 md:p-3 text-left rounded-lg border transition-colors ${
@@ -630,7 +631,8 @@ export default function RegexTester() {
                       <TooltipProvider key={flag}>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <button
+                          <button
+                            type="button"
                               onClick={() =>
                                 setFlags((prev) => ({
                                   ...prev,
@@ -787,6 +789,7 @@ export default function RegexTester() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
+                                      aria-label={`Copy match ${index + 1}`}
                                       onClick={() =>
                                         copyToClipboard(match.match, "Match")
                                       }

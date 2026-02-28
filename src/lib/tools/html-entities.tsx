@@ -51,11 +51,6 @@ export default function HtmlEntities() {
     },
   ];
 
-  const copyToClipboard = async (text: string, type: string) => {
-    await navigator.clipboard.writeText(text);
-    toast.success(`${type} copied to clipboard!`);
-  };
-
   const swapInputOutput = (output: string) => {
     setInput(output);
     toast.success("Swapped input and output!");
@@ -136,8 +131,6 @@ export default function HtmlEntities() {
             title="HTML Encoded"
             description="Special characters converted to HTML entities"
             status={encoded ? "success" : "info"}
-            onCopy={encoded ? () => copyToClipboard(encoded, "Encoded text") : undefined}
-            copyLabel="Copy Encoded"
           >
             <div className="space-y-2">
               <Button
@@ -164,8 +157,6 @@ export default function HtmlEntities() {
             title="HTML Decoded"
             description="HTML entities converted back to special characters"
             status={decoded ? "success" : "info"}
-            onCopy={decoded ? () => copyToClipboard(decoded, "Decoded text") : undefined}
-            copyLabel="Copy Decoded"
           >
             <div className="space-y-2">
               <Button

@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { RefreshCw, FileText } from "lucide-react";
-import { toast } from "sonner";
 import {
   ToolHeader,
   QuickActions,
@@ -42,15 +41,6 @@ export default function LoremIpsum() {
 
   const generateLorem = () => {
     setGenerated(generateLoremIpsum({ count, unit: type, startWithLorem }));
-  };
-
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(generated);
-      toast.success("Lorem ipsum copied to clipboard!");
-    } catch {
-      toast.error("Failed to copy to clipboard");
-    }
   };
 
   const presets: Array<{ name: string; type: LoremIpsumUnit; count: number }> = [
@@ -148,8 +138,6 @@ export default function LoremIpsum() {
             title="Generated Text"
             description="Your generated lorem ipsum text"
             status={generated ? "success" : "info"}
-            onCopy={generated ? () => copyToClipboard() : undefined}
-            copyLabel="Copy Text"
           >
             <CopyableResult
               value={generated}

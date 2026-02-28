@@ -83,11 +83,6 @@ export default function Base64Encoder() {
     }
   };
 
-  const copyToClipboard = async () => {
-    await navigator.clipboard.writeText(output);
-    toast.success("Copied to clipboard!");
-  };
-
   const sampleData = {
     encode: "Hello, World! This is a sample text to encode.",
     decode: "SGVsbG8sIFdvcmxkISBUaGlzIGlzIGEgc2FtcGxlIHRleHQgdG8gZW5jb2RlLg=="
@@ -274,8 +269,6 @@ export default function Base64Encoder() {
                 : "Decoded plain text result"
             }
             status={output ? "success" : "info"}
-            onCopy={output ? copyToClipboard : undefined}
-            copyLabel="Copy Result"
           >
             <CopyableResult
               value={output}

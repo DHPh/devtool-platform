@@ -82,11 +82,6 @@ export function JsonFormatter() {
     toast.error("Invalid JSON format");
   };
 
-  const copyToClipboard = async (text: string, type: string) => {
-    await navigator.clipboard.writeText(text);
-    toast.success(`${type} copied to clipboard!`);
-  };
-
   const downloadJson = () => {
     const blob = new Blob([output], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -216,8 +211,6 @@ export function JsonFormatter() {
             title="Formatted JSON"
             description="Formatted and validated JSON output"
             status={output ? (isValid ? "success" : "error") : "info"}
-            onCopy={() => copyToClipboard(output, "Formatted JSON")}
-            copyLabel="Copy JSON"
           >
             <div className="flex items-center gap-2 mb-2">
               <Button

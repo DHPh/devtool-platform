@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Code } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   ToolHeader,
@@ -34,15 +33,6 @@ export default function JsonValidator() {
     error: string | null;
     formatted: string | null;
   } | null>(null);
-
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success("Copied to clipboard!");
-    } catch {
-      toast.error("Failed to copy to clipboard");
-    }
-  };
 
   const sampleData = {
     simple: '{"name": "John Doe", "age": 30, "city": "New York"}',
@@ -149,7 +139,6 @@ Example: {"name": "John", "age": 30}'
             <ResultCard
               title="Formatted JSON"
               status="success"
-              onCopy={() => copyToClipboard(result.formatted!)}
             >
               <CopyableResult
                 value={result.formatted}

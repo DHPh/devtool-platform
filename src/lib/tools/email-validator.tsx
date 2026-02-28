@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Mail } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Copy, Mail } from "lucide-react";
 import { toast } from "sonner";
 import {
   ToolHeader,
@@ -79,6 +80,15 @@ export default function EmailValidator() {
     }
   };
 
+  const copyEmail = async (email: string) => {
+    try {
+      await navigator.clipboard.writeText(email);
+      toast.success("Email copied to clipboard!");
+    } catch {
+      toast.error("Failed to copy to clipboard");
+    }
+  };
+
   const clearAll = () => {
     setSingleEmail("");
     setBulkEmails("");
@@ -138,8 +148,9 @@ export default function EmailValidator() {
             <ResultCard
               title="Validation Result"
               status={singleResult.isValid ? "success" : "error"}
-              result={singleResult.normalizedEmail ?? singleResult.email}
-              onCopy={() => navigator.clipboard.writeText(singleResult.normalizedEmail ?? singleResult.email)}
+              onCopy={() =>
+                copyEmail(singleResult.normalizedEmail ?? singleResult.email)
+              }
               copyLabel="Copy Email"
             >
               <div className="space-y-3">
@@ -175,6 +186,7 @@ export default function EmailValidator() {
           <h3 className="font-semibold text-lg">Bulk Email Validation</h3>
 
           <Textarea
+            aria-label="Email addresses"
             placeholder="Enter multiple email addresses (one per line)..."
             value={bulkEmails}
             onChange={(e) => setBulkEmails(e.target.value)}
@@ -239,6 +251,41 @@ export default function EmailValidator() {
                 placeholder="Results will appear here..."
                 rows={8}
               />
+
+              <div className="max-h-80 space-y-2 overflow-y-auto" aria-label="Individual email results">
+                {bulkResults.map((result, index) => {
+                  const copyValue = result.normalizedEmail ?? result.email;
+                  return (
+                    <div
+                      key={`${result.email}-${index}`}
+                      className="flex items-center justify-between gap-3 rounded-md border p-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate font-mono text-sm">{result.email}</p>
+                        <p
+                          className={
+                            result.isValid
+                              ? "text-xs text-green-600"
+                              : "text-xs text-destructive"
+                          }
+                        >
+                          {result.isValid ? "Valid" : "Invalid"}
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyEmail(copyValue)}
+                        aria-label={`Copy ${result.email}`}
+                      >
+                        <Copy className="h-4 w-4" />
+                        Copy
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
 
               {/* Show validation messages for all errors/warnings */}
               <ValidationMessages

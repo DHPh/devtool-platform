@@ -99,11 +99,6 @@ export default function CssFormatter() {
     toast.success("Example loaded!");
   };
 
-  const copyOutput = async () => {
-    await navigator.clipboard.writeText(output);
-    toast.success("Copied to clipboard!");
-  };
-
   const downloadOutput = () => {
     const blob = new Blob([output], { type: "text/css" });
     const url = URL.createObjectURL(blob);
@@ -228,8 +223,6 @@ export default function CssFormatter() {
             title={mode === "format" ? "Formatted CSS" : "Minified CSS"}
             description={`${output.split("\n").length} lines, ${output.length} characters`}
             status={output ? "success" : "info"}
-            onCopy={output ? copyOutput : undefined}
-            copyLabel="Copy CSS"
           >
             <div className="space-y-2">
               {output && (

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Type } from "lucide-react";
-import { toast } from "sonner";
 import {
   ToolHeader,
   QuickActions,
@@ -25,15 +24,6 @@ export const metadata = {
 
 export default function CaseConverter() {
   const [input, setInput] = useState("Hello World Example Text");
-
-  const copyToClipboard = async (text: string, caseName: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success(`${caseName} copied to clipboard!`);
-    } catch {
-      toast.error("Failed to copy to clipboard");
-    }
-  };
 
   const results = convertTextToAllCases(input);
 
@@ -94,8 +84,6 @@ Examples: 'Hello World', 'myVariableName', 'some-kebab-case'"
                 key={name}
                 title={name}
                 status="success"
-                onCopy={() => copyToClipboard(result, name)}
-                copyLabel="Copy"
               >
                 <CopyableResult
                   value={result}

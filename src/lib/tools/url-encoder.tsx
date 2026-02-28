@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowRightLeft, Link } from "lucide-react";
-import { toast } from "sonner";
 import {
   ToolHeader,
   QuickActions,
@@ -56,15 +55,6 @@ export default function UrlEncoder() {
       return encodeFullUrl(text);
     } catch {
       return "Invalid URL";
-    }
-  };
-
-  const copyToClipboard = async (text: string, type: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success(`${type} copied to clipboard!`);
-    } catch {
-      toast.error("Failed to copy to clipboard");
     }
   };
 
@@ -184,8 +174,6 @@ export default function UrlEncoder() {
                 title="URL Component Encoded (encodeURIComponent)"
                 description="Encodes all characters except: A-Z a-z 0-9 - _ . ! ~ * ' ( )"
                 status="info"
-                onCopy={() => copyToClipboard(encoded, "Encoded URL")}
-                copyLabel="Copy Encoded"
               >
                 <div className="flex items-center gap-2 mb-2">
                   <Button
@@ -210,8 +198,6 @@ export default function UrlEncoder() {
                 title="URL Decoded (decodeURIComponent)"
                 description="Decodes percent-encoded characters back to their original form"
                 status="info"
-                onCopy={() => copyToClipboard(decoded, "Decoded URL")}
-                copyLabel="Copy Decoded"
               >
                 <div className="flex items-center gap-2 mb-2">
                   <Button
@@ -236,8 +222,6 @@ export default function UrlEncoder() {
                 title="Full URL Encoded (encodeURI)"
                 description="Preserves URL structure, only encodes characters that are not valid in URLs"
                 status="info"
-                onCopy={() => copyToClipboard(fullUrlEncoded, "Full URL Encoded")}
-                copyLabel="Copy Full URL"
               >
                 <div className="flex items-center gap-2 mb-2">
                   <Button

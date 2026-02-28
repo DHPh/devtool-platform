@@ -100,9 +100,7 @@ export default function HtmlFormatter() {
             title="Formatted Output"
             status={output ? "success" : "info"}
             description="Parser-produced HTML; comments and embedded language content are preserved"
-            onCopy={output ? () => void navigator.clipboard.writeText(output) : undefined}
             onDownload={output ? downloadFile : undefined}
-            copyLabel="Copy HTML"
             downloadLabel="Download HTML"
           >
             <CopyableResult value={output} placeholder="Formatted HTML will appear here..." fontFamily="mono" rows={15} />
