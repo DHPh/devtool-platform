@@ -15,6 +15,7 @@ interface CopyableResultProps {
   readOnly?: boolean;
   rows?: number;
   className?: string;
+  textareaClassName?: string;
   showCopyButton?: boolean;
   showToggleVisibility?: boolean;
   fontFamily?: "mono" | "sans";
@@ -30,6 +31,7 @@ export function CopyableResult({
   readOnly = true,
   rows = 6,
   className = "",
+  textareaClassName = "",
   showCopyButton = true,
   showToggleVisibility = false,
   fontFamily = "mono",
@@ -55,23 +57,26 @@ export function CopyableResult({
     setIsVisible(!isVisible);
   };
 
+  const copiedLabel = copyLabel.replace(/^Copy\s+/i, "");
+  const copiedAriaLabel = `${copiedLabel.charAt(0).toUpperCase()}${copiedLabel.slice(1)} copied`;
+
   return (
     <div className={`space-y-2 ${className}`}>
       {/* Header with label and controls */}
       {(label || showCopyButton || showToggleVisibility) && (
         <div className="flex items-center justify-between">
           {label && (
-            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              {label}
-            </label>
+            <span className="text-sm font-medium leading-none">{label}</span>
           )}
           <div className="flex gap-2">
             {showToggleVisibility && (
               <Button
+                type="button"
                 onClick={toggleVisibility}
                 variant="ghost"
                 size="sm"
                 className="h-8 px-2"
+                aria-label={isVisible ? "Hide result" : "Show result"}
               >
                 {isVisible ? (
                   <EyeOff className="h-4 w-4" />
@@ -82,11 +87,15 @@ export function CopyableResult({
             )}
             {showCopyButton && value && (
               <Button
+                type="button"
                 onClick={handleCopy}
                 variant="ghost"
                 size="sm"
                 className="h-8 px-2"
                 disabled={!value}
+                aria-label={
+                  copied ? copiedAriaLabel : copyLabel
+                }
               >
                 {copied ? (
                   <Check className="h-4 w-4 text-green-600" />
@@ -107,11 +116,12 @@ export function CopyableResult({
         value={isVisible ? value : "•".repeat(value.length)}
         onChange={(e) => onValueChange?.(e.target.value)}
         placeholder={placeholder}
+        aria-label={label ?? "Result"}
         readOnly={readOnly}
         rows={rows}
         className={`resize-none ${
           fontFamily === "mono" ? "font-mono text-sm" : ""
-        } ${!readOnly ? "cursor-text" : "cursor-default"}`}
+        } ${!readOnly ? "cursor-text" : "cursor-default"} ${textareaClassName}`}
       />
     </div>
   );
@@ -159,10 +169,13 @@ export function CopyableCodeBlock({
             </span>
           )}
           <Button
+            type="button"
             onClick={handleCopy}
             variant="ghost"
             size="sm"
             className="h-6 px-2"
+            disabled={!code}
+            aria-label={copied ? "Code copied" : "Copy code"}
           >
             {copied ? (
               <Check className="h-3 w-3 text-green-600" />

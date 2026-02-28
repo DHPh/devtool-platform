@@ -155,7 +155,13 @@ export function StudioTabs<Props extends object>({
         if (!TabComponent) return null;
         return (
           <TabsContent key={tab.id} value={tab.id} className={contentClassName}>
-            <Suspense fallback={<div className="py-8 text-center">Loading…</div>}>
+            <Suspense
+              fallback={
+                <div role="status" aria-live="polite" className="py-8 text-center">
+                  Loading…
+                </div>
+              }
+            >
               <TabComponent {...componentProps} />
             </Suspense>
           </TabsContent>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { CopyableResult } from "@/components/layout";
+import { Button } from "@/components/ui/button";
 import {
   convertCsvJson,
   convertIntegerBase,
@@ -46,6 +48,26 @@ const SAMPLES: Record<SerializationToolId, string> = {
   "number-base-converter": "255",
 };
 
+type ConversionDirection =
+  "json-to-yaml" | "yaml-to-json" | "csv-to-json" | "json-to-csv";
+
+function sampleFor(
+  tool: SerializationToolId,
+  direction: ConversionDirection,
+  base: IntegerBase,
+): string {
+  if (tool === "json-yaml-converter" && direction === "yaml-to-json") {
+    return "name: DevTool\nactive: true";
+  }
+  if (tool === "csv-json-converter" && direction === "json-to-csv") {
+    return '[{"name":"DevTool","active":true}]';
+  }
+  if (tool === "number-base-converter") {
+    return { 2: "11111111", 8: "377", 10: "255", 16: "FF" }[base];
+  }
+  return SAMPLES[tool];
+}
+
 function describeError(error: {
   message: string;
   line?: number;
@@ -58,11 +80,14 @@ function describeError(error: {
 }
 
 export function SerializationTool({ tool }: { tool: SerializationToolId }) {
-  const [input, setInput] = useState(SAMPLES[tool]);
+  const initialDirection: ConversionDirection =
+    tool === "csv-json-converter" ? "csv-to-json" : "json-to-yaml";
+  const [input, setInput] = useState(() =>
+    sampleFor(tool, initialDirection, 10),
+  );
   const [indent, setIndent] = useState(2);
-  const [direction, setDirection] = useState<
-    "json-to-yaml" | "yaml-to-json" | "csv-to-json" | "json-to-csv"
-  >(tool === "csv-json-converter" ? "csv-to-json" : "json-to-yaml");
+  const [direction, setDirection] =
+    useState<ConversionDirection>(initialDirection);
   const [sourceBase, setSourceBase] = useState<IntegerBase>(10);
 
   const result = useMemo(() => {
@@ -102,6 +127,37 @@ export function SerializationTool({ tool }: { tool: SerializationToolId }) {
   const isDirectional =
     tool === "json-yaml-converter" || tool === "csv-json-converter";
   const isFormatter = tool === "yaml-formatter" || tool === "xml-formatter";
+  const baseResults =
+    tool === "number-base-converter" &&
+    "ok" in result &&
+    result.ok &&
+    "value" in result
+      ? result.value
+      : null;
+
+  const handleDirectionChange = (nextDirection: ConversionDirection) => {
+    if ("ok" in result && result.ok && "output" in result) {
+      setInput(result.output);
+    }
+    setDirection(nextDirection);
+  };
+
+  const handleBaseChange = (nextBase: IntegerBase) => {
+    if ("ok" in result && result.ok && "value" in result) {
+      const key: Record<IntegerBase, keyof typeof result.value> = {
+        2: "binary",
+        8: "octal",
+        10: "decimal",
+        16: "hexadecimal",
+      };
+      setInput(result.value[key[nextBase]]);
+    }
+    setSourceBase(nextBase);
+  };
+
+  const restoreExample = () => {
+    setInput(sampleFor(tool, direction, sourceBase));
+  };
 
   return (
     <section className="space-y-4" aria-labelledby={`${tool}-title`}>
@@ -138,7 +194,7 @@ export function SerializationTool({ tool }: { tool: SerializationToolId }) {
               className="rounded-md border bg-background px-2 py-1"
               value={direction}
               onChange={(event) =>
-                setDirection(event.target.value as typeof direction)
+                handleDirectionChange(event.target.value as ConversionDirection)
               }
             >
               {tool === "json-yaml-converter" ? (
@@ -162,7 +218,7 @@ export function SerializationTool({ tool }: { tool: SerializationToolId }) {
               className="rounded-md border bg-background px-2 py-1"
               value={sourceBase}
               onChange={(event) =>
-                setSourceBase(Number(event.target.value) as IntegerBase)
+                handleBaseChange(Number(event.target.value) as IntegerBase)
               }
             >
               <option value={2}>Binary</option>
@@ -172,6 +228,26 @@ export function SerializationTool({ tool }: { tool: SerializationToolId }) {
             </select>
           </label>
         )}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={restoreExample}
+        >
+          Load example
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setInput("")}
+          disabled={!input}
+        >
+          Clear input
+        </Button>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -184,14 +260,56 @@ export function SerializationTool({ tool }: { tool: SerializationToolId }) {
             spellCheck={false}
           />
         </label>
-        <div className="space-y-2">
-          <span className="text-sm font-medium">Result</span>
-          <output
-            className={`block min-h-72 whitespace-pre-wrap rounded-md border p-3 font-mono text-sm ${successful ? "bg-muted/30" : "border-destructive text-destructive"}`}
-          >
-            {output}
-          </output>
-        </div>
+        {baseResults ? (
+          <div className="space-y-3">
+            <p role="status" aria-live="polite" className="sr-only">
+              Converted number values updated
+            </p>
+            <span className="text-sm font-medium">Results</span>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {(
+                [
+                  ["binary", "Binary"],
+                  ["octal", "Octal"],
+                  ["decimal", "Decimal"],
+                  ["hexadecimal", "Hexadecimal"],
+                ] as const
+              ).map(([key, label]) => (
+                <CopyableResult
+                  key={key}
+                  value={baseResults[key]}
+                  label={label}
+                  copyLabel={`Copy ${label.toLowerCase()}`}
+                  successMessage={`${label} value copied to clipboard`}
+                  rows={1}
+                  textareaClassName="bg-muted/30"
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div>
+            <p
+              role={successful ? "status" : "alert"}
+              aria-live={successful ? "polite" : "assertive"}
+              className="sr-only"
+            >
+              {successful ? "Result updated" : output}
+            </p>
+            <CopyableResult
+              value={output}
+              label={successful ? "Result" : "Error"}
+              copyLabel="Copy result"
+              successMessage="Result copied to clipboard"
+              rows={tool.endsWith("validator") ? 5 : 14}
+              textareaClassName={
+                successful
+                  ? "bg-muted/30"
+                  : "border-destructive text-destructive focus-visible:ring-destructive"
+              }
+            />
+          </div>
+        )}
       </div>
     </section>
   );
