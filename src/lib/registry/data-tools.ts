@@ -333,4 +333,24 @@ export const DATA_TOOLS = [
     parent: "encoding-serialization-studio",
     tab: "number-base-converter",
   },
+  {
+    id: "data-api-studio", kind: "studio", studioDirectory: "data-api-studio", processing: "client",
+    name: "Data and API Studio", description: "Transform JSON into developer-friendly structures and types",
+    category: TOOL_CATEGORIES.DATA_CONVERSION.id, type: TOOL_TYPES.CONVERTER,
+    tags: ["json", "typescript", "flatten", "data"], path: "/tools/data-api-studio", icon: "🧱", complexity: "intermediate",
+  },
+  {
+    id: "json-to-typescript", kind: "studio-subtool", processing: "client", name: "JSON to TypeScript",
+    description: "Infer a TypeScript type from JSON values", category: TOOL_CATEGORIES.DATA_CONVERSION.id,
+    type: TOOL_TYPES.GENERATOR, tags: ["json", "typescript", "types", "interface"],
+    path: "/tools/data-api-studio?tab=json-to-typescript", icon: "TS", complexity: "intermediate",
+    parent: "data-api-studio", tab: "json-to-typescript",
+  },
+  {
+    id: "json-flatten-unflatten", kind: "studio-subtool", processing: "client", name: "JSON Flatten and Unflatten",
+    description: "Convert nested JSON to escaped paths and restore it", category: TOOL_CATEGORIES.DATA_CONVERSION.id,
+    type: TOOL_TYPES.CONVERTER, tags: ["json", "flatten", "unflatten", "paths"],
+    path: "/tools/data-api-studio?tab=json-flatten-unflatten", icon: "↔️", complexity: "intermediate",
+    parent: "data-api-studio", tab: "json-flatten-unflatten",
+  },
 ] satisfies ToolMetadata[];
