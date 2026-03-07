@@ -47,4 +47,10 @@ export const TOOL_COMPONENT_LOADERS = {
   "icon-pack-generator": () => import("@/lib/tools/icon-pack-generator"),
   "encoding-serialization-studio": () =>
     import("@/lib/tools/encoding-serialization-studio/EncodingSerializationStudio"),
+  "devops-configuration-studio": () =>
+    import("@/lib/tools/devops-configuration-studio/DevOpsConfigurationStudio"),
+  "data-api-studio": () =>
+    import("@/lib/tools/data-api-studio/DataApiStudio"),
+  "security-identity-studio": () =>
+    import("@/lib/tools/security-identity-studio/SecurityIdentityStudio"),
 } satisfies Record<ToolComponentId, ToolComponentLoader>;

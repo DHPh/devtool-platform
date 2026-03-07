@@ -12,6 +12,9 @@ import {
   convertFileContent,
   convertCsvJson,
   convertIntegerBase,
+  compareEnvFiles,
+  compareSemanticVersions,
+  convertChmod,
   convertJsonYaml,
   convertTextToAllCases,
   countText,
@@ -29,6 +32,9 @@ import {
   formatToml,
   formatXml,
   formatYaml,
+  flattenJson,
+  generateDigest,
+  generateHmac,
   generateLoremIpsum,
   generateUuidBatch,
   groupDuplicateFiles,
@@ -39,6 +45,11 @@ import {
   minifyCss,
   parseCSV,
   getWheelWinner,
+  inspectCronExpression,
+  inspectJwt,
+  jsonToTypeScript,
+  redactEnvFile,
+  unflattenJson,
   unixToDateTime,
   validateEmail,
   validateJson,
@@ -349,6 +360,82 @@ const cases: FunctionalCase[] = [
         ok: true,
         value: { hexadecimal: "-A" },
       });
+    },
+  },
+  {
+    id: "cron-expression-builder",
+    run: () => {
+      const result = inspectCronExpression("0 9 * * 1-5", {
+        currentDate: new Date("2026-02-19T00:00:00Z"),
+        timezone: "UTC",
+        count: 2,
+      });
+      expect(result).toMatchObject({ ok: true });
+      if (result.ok) expect(result.value.nextRuns).toEqual([
+        "2026-02-19T09:00:00.000Z",
+        "2026-02-20T09:00:00.000Z",
+      ]);
+      expect(inspectCronExpression("bad cron").ok).toBe(false);
+    },
+  },
+  {
+    id: "chmod-calculator",
+    run: () => {
+      expect(convertChmod("755")).toMatchObject({ ok: true, value: { symbolic: "rwxr-xr-x" } });
+      expect(convertChmod("rw-r-----")).toMatchObject({ ok: true, value: { octal: "640" } });
+      expect(convertChmod("999").ok).toBe(false);
+    },
+  },
+  {
+    id: "env-file-manager",
+    run: () => {
+      expect(redactEnvFile("API_TOKEN=secret\nDEBUG=true")).toEqual({ ok: true, value: "API_TOKEN=[REDACTED]\nDEBUG=true" });
+      expect(compareEnvFiles("A=1\nB=2", "A=1\nB=3\nC=4")).toMatchObject({ ok: true, value: { changed: ["B"], onlyRight: ["C"] } });
+    },
+  },
+  {
+    id: "semver-comparator",
+    run: () => {
+      expect(compareSemanticVersions("v1.5.0", "2.0.0", "^1.0.0")).toMatchObject({ ok: true, value: { relation: "older", satisfiesRange: true } });
+      expect(compareSemanticVersions("bad", "2.0.0").ok).toBe(false);
+    },
+  },
+  {
+    id: "json-to-typescript",
+    run: () => {
+      const result = jsonToTypeScript('{"display-name":"Ada","roles":["admin"]}', "User");
+      expect(result).toMatchObject({ ok: true });
+      if (result.ok) expect(result.value).toContain('"display-name": string;');
+    },
+  },
+  {
+    id: "json-flatten-unflatten",
+    run: () => {
+      const source = '{"user":{"name":"Ada"},"items":[1,2]}';
+      const flat = flattenJson(source);
+      expect(flat.ok).toBe(true);
+      if (!flat.ok) return;
+      const restored = unflattenJson(flat.value);
+      expect(restored.ok).toBe(true);
+      if (restored.ok) expect(JSON.parse(restored.value)).toEqual(JSON.parse(source));
+    },
+  },
+  {
+    id: "jwt-inspector",
+    run: () => {
+      const result = inspectJwt("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMiLCJleHAiOjE4OTM0NTYwMDB9.signature", new Date("2026-01-01T00:00:00Z"));
+      expect(result).toMatchObject({ ok: true, value: { algorithm: "HS256", status: "active" } });
+      expect(inspectJwt("not-a-jwt").ok).toBe(false);
+    },
+  },
+  {
+    id: "hash-hmac-generator",
+    run: async () => {
+      await expect(generateDigest("abc", "SHA-256")).resolves.toEqual({ ok: true, value: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" });
+      const hmac = await generateHmac("message", "secret", "SHA-256");
+      expect(hmac).toMatchObject({ ok: true });
+      if (hmac.ok) expect(hmac.value).toHaveLength(64);
+      await expect(generateHmac("message", "", "SHA-256")).resolves.toMatchObject({ ok: false });
     },
   },
   {

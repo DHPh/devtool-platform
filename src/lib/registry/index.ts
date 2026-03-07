@@ -5,6 +5,7 @@ import { SECURITY_TOOLS } from "./security-tools";
 import { WEB_TOOLS } from "./web-tools";
 import { NETWORK_TOOLS } from "./network-tools";
 import { FILE_TOOLS } from "./file-tools";
+import { DEVELOPMENT_TOOLS } from "./development-tools";
 import type { ToolMetadata } from "./types";
 
 const DOMAIN_TOOLS: ToolMetadata[] = [
@@ -15,6 +16,7 @@ const DOMAIN_TOOLS: ToolMetadata[] = [
   ...WEB_TOOLS,
   ...NETWORK_TOOLS,
   ...FILE_TOOLS,
+  ...DEVELOPMENT_TOOLS,
 ];
 
 const TOOL_ORDER = [
@@ -90,6 +92,17 @@ const TOOL_ORDER = [
   "json-yaml-converter",
   "csv-json-converter",
   "number-base-converter",
+  "devops-configuration-studio",
+  "cron-expression-builder",
+  "chmod-calculator",
+  "env-file-manager",
+  "semver-comparator",
+  "data-api-studio",
+  "json-to-typescript",
+  "json-flatten-unflatten",
+  "security-identity-studio",
+  "jwt-inspector",
+  "hash-hmac-generator",
 ] as const;
 
 const toolsById = new Map(DOMAIN_TOOLS.map((tool) => [tool.id, tool]));

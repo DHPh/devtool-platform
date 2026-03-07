@@ -8,11 +8,10 @@ Updated: 2026-02-19
 
 Target: 105 executable tools
 
-> **CURRENT PHASE — Phase 2, Quick Browser Tools.**
+> **CURRENT PHASE — Phase 3, Developer and Data Workflows.**
 >
-> Phase 0 remediation and Phase 1 expansion infrastructure are complete.
-> New-tool delivery starts with the Encoding and Serialization Studio in
-> Phase 2.
+> Phase 0 remediation, Phase 1 expansion infrastructure, and all 16 Phase 2
+> quick browser tools are complete. The platform now has 73 executable tools.
 
 ## Roadmap at a glance
 
@@ -20,8 +19,8 @@ Target: 105 executable tools
 | --- | --- | ---: | --- |
 | Phase 0 | Fix existing security, correctness, standards, privacy, and capability gaps | 57 | Complete |
 | Phase 1 | Make studios and processors easier to scaffold and register | 57 | Complete |
-| **Phase 2** | **Deliver 16 quick browser tools** | **73** | **Current phase** |
-| Phase 3 | Deliver 16 developer and data tools | 89 | Blocked by Phase 2 |
+| Phase 2 | Deliver 16 quick browser tools | 73 | Complete |
+| **Phase 3** | **Deliver 16 developer and data tools** | **89** | **Current phase** |
 | Phase 4 | Deliver 8 advanced browser tools | 97 | Blocked by Phase 3 |
 | Phase 5 | Deliver 8 serverless website diagnostics | 105 | Blocked by Phase 4 |
 
@@ -407,7 +406,7 @@ Acceptance criteria:
 - [x] Registry validation distinguishes studio containers from executable entries.
 - [x] CI fails when an executable entry has no functional result test.
 
-### Phase 2: Quick Browser Tools
+### Phase 2: Quick Browser Tools — COMPLETE
 
 Deliver the first 16 tools:
 
@@ -422,20 +421,29 @@ Deliver the first 16 tools:
 
 #### Milestone 2.2: DevOps quick tools
 
-- [ ] Cron expression builder.
-- [ ] Chmod calculator.
-- [ ] `.env` manager.
-- [ ] Semantic-version comparator.
+- [x] Cron expression builder.
+- [x] Chmod calculator.
+- [x] `.env` manager.
+- [x] Semantic-version comparator.
 
 #### Milestone 2.3: Data quick tools
 
-- [ ] JSON to TypeScript.
-- [ ] JSON flatten/unflatten.
+- [x] JSON to TypeScript.
+- [x] JSON flatten/unflatten.
 
 #### Milestone 2.4: Security quick tools
 
-- [ ] JWT inspector.
-- [ ] Hash/HMAC generator.
+- [x] JWT inspector.
+- [x] Hash/HMAC generator.
+
+Implementation note (2026-02-19): Three registry-backed studios add the eight
+remaining Phase 2 operations. Shared processors cover cron parsing and run
+previews, Unix permission conversion, `.env` parsing/comparison/redaction,
+SemVer comparison and ranges, JSON-to-TypeScript inference, escaped-path JSON
+flattening, unverified JWT inspection, and Web Crypto SHA-2/HMAC generation.
+Every multi-value result has an individual copy action. Node functional
+contracts cover all 73 executable tools, with focused processor and rendered
+interaction tests for success, invalid-input, boundary, and copy behavior.
 
 Original delivery grouping:
 
