@@ -67,4 +67,24 @@ export const SECURITY_TOOLS = [
     parent: "password-studio",
     tab: "analysis",
   },
+  {
+    id: "security-identity-studio", kind: "studio", studioDirectory: "security-identity-studio", processing: "client",
+    name: "Security and Identity Studio", description: "Inspect tokens and generate cryptographic hashes locally",
+    category: TOOL_CATEGORIES.SECURITY_TOOLS.id, type: TOOL_TYPES.SECURITY,
+    tags: ["security", "jwt", "hash", "hmac"], path: "/tools/security-identity-studio", icon: "🛡️", complexity: "intermediate",
+  },
+  {
+    id: "jwt-inspector", kind: "studio-subtool", processing: "client", name: "JWT Inspector",
+    description: "Decode JWT headers and claims without implying signature verification", category: TOOL_CATEGORIES.SECURITY_TOOLS.id,
+    type: TOOL_TYPES.ANALYZER, tags: ["jwt", "token", "claims", "decode"],
+    path: "/tools/security-identity-studio?tab=jwt-inspector", icon: "🪪", complexity: "intermediate",
+    parent: "security-identity-studio", tab: "jwt-inspector",
+  },
+  {
+    id: "hash-hmac-generator", kind: "studio-subtool", processing: "client", name: "Hash and HMAC Generator",
+    description: "Generate SHA-2 digests and keyed HMAC values with Web Crypto", category: TOOL_CATEGORIES.SECURITY_TOOLS.id,
+    type: TOOL_TYPES.SECURITY, types: [TOOL_TYPES.GENERATOR], tags: ["hash", "hmac", "sha-256", "sha-512"],
+    path: "/tools/security-identity-studio?tab=hash-hmac-generator", icon: "#️⃣", complexity: "intermediate",
+    parent: "security-identity-studio", tab: "hash-hmac-generator",
+  },
 ] satisfies ToolMetadata[];
