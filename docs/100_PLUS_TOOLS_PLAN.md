@@ -466,11 +466,32 @@ Acceptance criteria:
 
 Deliver 16 tools:
 
-- Remaining Web Development Studio tools except JavaScript minification and SVG
-  optimization.
-- Remaining DevOps and Configuration Studio tools.
-- SQL formatter, SQL query builder, data-to-SQL generator, OpenAPI validator,
-  GraphQL formatter, and fake-data generator.
+#### Milestone 3.1: Web Development quick tools — IN PROGRESS
+
+- [ ] JavaScript and TypeScript formatter.
+- [ ] SVG data URI converter.
+- [ ] CSS unit converter.
+- [ ] CSS clamp calculator.
+- [ ] Open Graph generator.
+- [ ] Web manifest generator and validator.
+- [x] Shared `web-code-core` processors with success, invalid-input, and
+  boundary tests.
+
+#### Milestone 3.2: DevOps validation tools
+
+- [ ] Dockerfile linter.
+- [ ] Docker Compose validator.
+- [ ] Kubernetes manifest validator.
+- [ ] `.gitignore` generator.
+
+#### Milestone 3.3: Data and API workflows
+
+- [ ] SQL formatter.
+- [ ] SQL query builder.
+- [ ] Data-to-SQL generator.
+- [ ] OpenAPI validator.
+- [ ] GraphQL formatter.
+- [ ] Fake-data generator.
 
 Target after phase: 89 executable tools.
 
