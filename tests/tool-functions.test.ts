@@ -15,6 +15,7 @@ import {
   compareEnvFiles,
   compareSemanticVersions,
   convertChmod,
+  convertCssUnit,
   convertJsonYaml,
   convertTextToAllCases,
   countText,
@@ -28,6 +29,7 @@ import {
   extractFileMetadata,
   formatCss,
   formatHtml,
+  formatJavaScript,
   formatJson,
   formatToml,
   formatXml,
@@ -36,7 +38,9 @@ import {
   generateDigest,
   generateHmac,
   generateLoremIpsum,
+  generateOpenGraphTags,
   generateUuidBatch,
+  generateWebManifest,
   groupDuplicateFiles,
   hashFileContent,
   hashFileForDuplicateDetection,
@@ -49,6 +53,9 @@ import {
   inspectJwt,
   jsonToTypeScript,
   redactEnvFile,
+  createCssClamp,
+  dataUriToSvg,
+  svgToDataUri,
   unflattenJson,
   unixToDateTime,
   validateEmail,
@@ -398,6 +405,62 @@ const cases: FunctionalCase[] = [
     run: () => {
       expect(compareSemanticVersions("v1.5.0", "2.0.0", "^1.0.0")).toMatchObject({ ok: true, value: { relation: "older", satisfiesRange: true } });
       expect(compareSemanticVersions("bad", "2.0.0").ok).toBe(false);
+    },
+  },
+  {
+    id: "javascript-formatter",
+    run: async () => {
+      const result = await formatJavaScript("const answer:number=42", "typescript", { singleQuote: true });
+      expect(result).toEqual({ ok: true, value: "const answer: number = 42;\n" });
+      await expect(formatJavaScript("const =")).resolves.toMatchObject({ ok: false });
+    },
+  },
+  {
+    id: "svg-data-uri-converter",
+    run: () => {
+      const svg = '<svg xmlns="http://www.w3.org/2000/svg"><circle r="4"/></svg>';
+      const encoded = svgToDataUri(svg);
+      expect(encoded).toMatchObject({ ok: true });
+      if (encoded.ok) expect(dataUriToSvg(encoded.value)).toEqual({ ok: true, value: svg });
+      expect(svgToDataUri("<svg><script/></svg>").ok).toBe(false);
+    },
+  },
+  {
+    id: "css-unit-converter",
+    run: () => {
+      expect(convertCssUnit(2, "rem", { rootFontPx: 16 })).toMatchObject({
+        ok: true,
+        value: { px: 32, rem: 2 },
+      });
+      expect(convertCssUnit(1, "px", { rootFontPx: 0 }).ok).toBe(false);
+    },
+  },
+  {
+    id: "css-clamp-calculator",
+    run: () => {
+      expect(createCssClamp(16, 32, 320, 1280)).toEqual({
+        ok: true,
+        value: { css: "clamp(16px, 10.6667px + 1.6667vw, 32px)", slope: 5 / 3, intercept: 32 / 3 },
+      });
+      expect(createCssClamp(32, 16, 320, 1280).ok).toBe(false);
+    },
+  },
+  {
+    id: "open-graph-generator",
+    run: () => {
+      const result = generateOpenGraphTags({ title: 'A & "B"', description: "Summary", url: "https://example.com", image: "https://example.com/image.png" });
+      expect(result).toMatchObject({ ok: true });
+      if (result.ok) expect(result.value).toContain('content="A &amp; &quot;B&quot;"');
+      expect(generateOpenGraphTags({ title: "A", description: "B", url: "/relative", image: "https://example.com/image.png" }).ok).toBe(false);
+    },
+  },
+  {
+    id: "web-manifest-generator",
+    run: () => {
+      const result = generateWebManifest({ name: "Example", shortName: "App", startUrl: "/", display: "standalone", themeColor: "#112233", backgroundColor: "#ffffff" });
+      expect(result).toMatchObject({ ok: true });
+      if (result.ok) expect(JSON.parse(result.value)).toMatchObject({ short_name: "App", display: "standalone" });
+      expect(generateWebManifest({ name: "Example", shortName: "Way too long name", startUrl: "/", display: "standalone", themeColor: "#112233", backgroundColor: "#ffffff" }).ok).toBe(false);
     },
   },
   {

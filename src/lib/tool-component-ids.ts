@@ -30,6 +30,7 @@ export const TOOL_COMPONENT_IDS = [
   "devops-configuration-studio",
   "data-api-studio",
   "security-identity-studio",
+  "web-development-studio",
 ] as const;
 
 export type ToolComponentId = (typeof TOOL_COMPONENT_IDS)[number];

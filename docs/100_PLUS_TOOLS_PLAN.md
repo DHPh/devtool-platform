@@ -11,7 +11,8 @@ Target: 105 executable tools
 > **CURRENT PHASE — Phase 3, Developer and Data Workflows.**
 >
 > Phase 0 remediation, Phase 1 expansion infrastructure, and all 16 Phase 2
-> quick browser tools are complete. The platform now has 73 executable tools.
+> quick browser tools and Milestone 3.1 are complete. The platform now has 79
+> executable tools.
 
 ## Roadmap at a glance
 
@@ -466,14 +467,14 @@ Acceptance criteria:
 
 Deliver 16 tools:
 
-#### Milestone 3.1: Web Development quick tools — IN PROGRESS
+#### Milestone 3.1: Web Development quick tools — COMPLETE
 
-- [ ] JavaScript and TypeScript formatter.
-- [ ] SVG data URI converter.
-- [ ] CSS unit converter.
-- [ ] CSS clamp calculator.
-- [ ] Open Graph generator.
-- [ ] Web manifest generator and validator.
+- [x] JavaScript and TypeScript formatter.
+- [x] SVG data URI converter.
+- [x] CSS unit converter.
+- [x] CSS clamp calculator.
+- [x] Open Graph generator.
+- [x] Web manifest generator and validator.
 - [x] Shared `web-code-core` processors with success, invalid-input, and
   boundary tests.
 

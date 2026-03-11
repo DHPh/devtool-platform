@@ -103,6 +103,13 @@ const TOOL_ORDER = [
   "security-identity-studio",
   "jwt-inspector",
   "hash-hmac-generator",
+  "web-development-studio",
+  "javascript-formatter",
+  "svg-data-uri-converter",
+  "css-unit-converter",
+  "css-clamp-calculator",
+  "open-graph-generator",
+  "web-manifest-generator",
 ] as const;
 
 const toolsById = new Map(DOMAIN_TOOLS.map((tool) => [tool.id, tool]));

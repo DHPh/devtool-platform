@@ -47,7 +47,7 @@ function validateSvg(svg: string): ProcessorResult<string> {
   if (!/^<svg(?:\s|>)/i.test(normalized) || !/<\/svg>\s*$/i.test(normalized)) {
     return { ok: false, error: "Input must be a complete SVG document." };
   }
-  if (/<script(?:\s|>)/i.test(normalized) || /\son\w+\s*=/i.test(normalized)) {
+  if (/<script(?:\s|\/?>)/i.test(normalized) || /\son\w+\s*=/i.test(normalized)) {
     return { ok: false, error: "Scripts and inline event handlers are not allowed." };
   }
   return { ok: true, value: normalized };

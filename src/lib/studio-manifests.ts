@@ -9,6 +9,7 @@ import { ENCODING_SERIALIZATION_STUDIO_MANIFEST } from "@/lib/tools/encoding-ser
 import { DEVOPS_CONFIGURATION_STUDIO_MANIFEST } from "@/lib/tools/devops-configuration-studio/manifest";
 import { DATA_API_STUDIO_MANIFEST } from "@/lib/tools/data-api-studio/manifest";
 import { SECURITY_IDENTITY_STUDIO_MANIFEST } from "@/lib/tools/security-identity-studio/manifest";
+import { WEB_DEVELOPMENT_STUDIO_MANIFEST } from "@/lib/tools/web-development-studio/manifest";
 
 export const STUDIO_MANIFESTS = [
   COLOR_STUDIO_MANIFEST,
@@ -21,4 +22,5 @@ export const STUDIO_MANIFESTS = [
   DEVOPS_CONFIGURATION_STUDIO_MANIFEST,
   DATA_API_STUDIO_MANIFEST,
   SECURITY_IDENTITY_STUDIO_MANIFEST,
+  WEB_DEVELOPMENT_STUDIO_MANIFEST,
 ] as const;

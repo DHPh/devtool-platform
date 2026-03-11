@@ -53,4 +53,6 @@ export const TOOL_COMPONENT_LOADERS = {
     import("@/lib/tools/data-api-studio/DataApiStudio"),
   "security-identity-studio": () =>
     import("@/lib/tools/security-identity-studio/SecurityIdentityStudio"),
+  "web-development-studio": () =>
+    import("@/lib/tools/web-development-studio/WebDevelopmentStudio"),
 } satisfies Record<ToolComponentId, ToolComponentLoader>;
