@@ -37,6 +37,7 @@ import {
   flattenJson,
   generateDigest,
   generateHmac,
+  generateGitignore,
   generateLoremIpsum,
   generateOpenGraphTags,
   generateUuidBatch,
@@ -51,6 +52,7 @@ import {
   getWheelWinner,
   inspectCronExpression,
   inspectJwt,
+  lintDockerfile,
   jsonToTypeScript,
   redactEnvFile,
   createCssClamp,
@@ -59,7 +61,9 @@ import {
   unflattenJson,
   unixToDateTime,
   validateEmail,
+  validateDockerCompose,
   validateJson,
+  validateKubernetesManifest,
   validateXml,
   validateYaml,
 } from "@/lib/processors";
@@ -461,6 +465,47 @@ const cases: FunctionalCase[] = [
       expect(result).toMatchObject({ ok: true });
       if (result.ok) expect(JSON.parse(result.value)).toMatchObject({ short_name: "App", display: "standalone" });
       expect(generateWebManifest({ name: "Example", shortName: "Way too long name", startUrl: "/", display: "standalone", themeColor: "#112233", backgroundColor: "#ffffff" }).ok).toBe(false);
+    },
+  },
+  {
+    id: "dockerfile-linter",
+    run: () => {
+      expect(lintDockerfile('FROM node:22-alpine\nUSER node\nCMD ["node", "app.js"]')).toMatchObject({
+        ok: true,
+        value: { stages: 1, issues: [] },
+      });
+      expect(lintDockerfile("COPY . /app")).toMatchObject({ ok: true, value: { stages: 0 } });
+    },
+  },
+  {
+    id: "docker-compose-validator",
+    run: () => {
+      expect(validateDockerCompose("services:\n  web:\n    image: nginx:1.27")).toEqual({
+        ok: true,
+        value: { services: ["web"], issues: [] },
+      });
+      expect(validateDockerCompose("services: {}").ok).toBe(false);
+    },
+  },
+  {
+    id: "kubernetes-manifest-validator",
+    run: () => {
+      expect(validateKubernetesManifest("apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: app-config")).toMatchObject({
+        ok: true,
+        value: { resources: [{ apiVersion: "v1", kind: "ConfigMap", name: "app-config" }], issues: [] },
+      });
+      const result = validateKubernetesManifest("kind: Service\nmetadata: {}\nspec: {}");
+      expect(result).toMatchObject({ ok: true });
+      if (result.ok) expect(result.value.issues).toHaveLength(2);
+    },
+  },
+  {
+    id: "gitignore-generator",
+    run: () => {
+      const result = generateGitignore(["node", "nextjs"], ".env");
+      expect(result).toMatchObject({ ok: true });
+      if (result.ok) expect(result.value).toContain("node_modules/\n");
+      expect(generateGitignore([]).ok).toBe(false);
     },
   },
   {

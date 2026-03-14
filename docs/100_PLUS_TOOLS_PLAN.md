@@ -11,7 +11,7 @@ Target: 105 executable tools
 > **CURRENT PHASE — Phase 3, Developer and Data Workflows.**
 >
 > Phase 0 remediation, Phase 1 expansion infrastructure, and all 16 Phase 2
-> quick browser tools and Milestone 3.1 are complete. The platform now has 79
+> quick browser tools and Milestones 3.1–3.2 are complete. The platform now has 83
 > executable tools.
 
 ## Roadmap at a glance
@@ -478,12 +478,12 @@ Deliver 16 tools:
 - [x] Shared `web-code-core` processors with success, invalid-input, and
   boundary tests.
 
-#### Milestone 3.2: DevOps validation tools
+#### Milestone 3.2: DevOps validation tools — COMPLETE
 
-- [ ] Dockerfile linter.
-- [ ] Docker Compose validator.
-- [ ] Kubernetes manifest validator.
-- [ ] `.gitignore` generator.
+- [x] Dockerfile linter.
+- [x] Docker Compose validator.
+- [x] Kubernetes manifest validator.
+- [x] `.gitignore` generator.
 
 #### Milestone 3.3: Data and API workflows
 

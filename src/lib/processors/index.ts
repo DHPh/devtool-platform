@@ -19,3 +19,4 @@ export * from "./devops-config-core";
 export * from "./data-api-core";
 export * from "./crypto-core";
 export * from "./web-code-core";
+export * from "./devops-validation-core";
