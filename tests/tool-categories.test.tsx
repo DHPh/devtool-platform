@@ -6,10 +6,10 @@ import { getAllCategories } from "@/lib/tool-classification";
 import { getToolsByCategory, searchTools } from "@/lib/tool-registry";
 
 const EXPECTED_CATEGORY_COUNTS: Record<string, number> = {
-  "text-processing": 9,
-  "data-conversion": 8,
-  generators: 7,
-  validators: 12,
+  "text-processing": 11,
+  "data-conversion": 10,
+  generators: 8,
+  validators: 13,
   "security-tools": 4,
   "web-development": 13,
   "api-testing": 4,

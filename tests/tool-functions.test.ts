@@ -14,12 +14,14 @@ import {
   convertIntegerBase,
   compareEnvFiles,
   compareSemanticVersions,
+  buildSelectQuery,
   convertChmod,
   convertCssUnit,
   convertJsonYaml,
   convertTextToAllCases,
   countText,
   dateTimeInputToUnix,
+  dataToSql,
   decodeBase64,
   decodeHtmlEntities,
   decodeUrlComponent,
@@ -30,9 +32,11 @@ import {
   formatCss,
   formatHtml,
   formatJavaScript,
+  formatGraphql,
   formatJson,
   formatToml,
   formatXml,
+  formatSql,
   formatYaml,
   flattenJson,
   generateDigest,
@@ -40,6 +44,7 @@ import {
   generateGitignore,
   generateLoremIpsum,
   generateOpenGraphTags,
+  generateFakeData,
   generateUuidBatch,
   generateWebManifest,
   groupDuplicateFiles,
@@ -64,6 +69,7 @@ import {
   validateDockerCompose,
   validateJson,
   validateKubernetesManifest,
+  validateOpenApi,
   validateXml,
   validateYaml,
 } from "@/lib/processors";
@@ -465,6 +471,34 @@ const cases: FunctionalCase[] = [
       expect(result).toMatchObject({ ok: true });
       if (result.ok) expect(JSON.parse(result.value)).toMatchObject({ short_name: "App", display: "standalone" });
       expect(generateWebManifest({ name: "Example", shortName: "Way too long name", startUrl: "/", display: "standalone", themeColor: "#112233", backgroundColor: "#ffffff" }).ok).toBe(false);
+    },
+  },
+  {
+    id: "sql-formatter",
+    run: () => expect(formatSql("select id from users where active=true;")).toEqual({ ok: true, value: "SELECT id\nFROM users\nWHERE active = TRUE;\n" }),
+  },
+  {
+    id: "sql-query-builder",
+    run: () => expect(buildSelectQuery({ table: "users", columns: ["id"], limit: 5 })).toEqual({ ok: true, value: "SELECT id\nFROM users\nLIMIT 5;" }),
+  },
+  {
+    id: "data-sql-generator",
+    run: () => expect(dataToSql('[{"id":1,"name":"Ada"}]', "users")).toEqual({ ok: true, value: 'INSERT INTO "users" ("id", "name")\nVALUES\n  (1, \'Ada\');' }),
+  },
+  {
+    id: "openapi-validator",
+    run: () => expect(validateOpenApi("openapi: 3.1.0\ninfo:\n  title: API\n  version: 1.0.0\npaths: {}" )).toEqual({ ok: true, value: { version: "3.1.0", title: "API", paths: 0, operations: 0, issues: [] } }),
+  },
+  {
+    id: "graphql-formatter",
+    run: async () => expect(await formatGraphql("query{viewer{id}}")).toEqual({ ok: true, value: "query {\n  viewer {\n    id\n  }\n}\n" }),
+  },
+  {
+    id: "fake-data-generator",
+    run: () => {
+      const result = generateFakeData({ count: 3, seed: 1 });
+      expect(result).toMatchObject({ ok: true });
+      if (result.ok) expect(JSON.parse(result.value)).toHaveLength(3);
     },
   },
   {
