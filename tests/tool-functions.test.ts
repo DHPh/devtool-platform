@@ -52,8 +52,10 @@ import {
   hashFileForDuplicateDetection,
   ANDROID_ICON_SPECS,
   markdownToHtml,
+  minifyJavaScript,
   minifyCss,
   parseCSV,
+  optimizeSvg,
   getWheelWinner,
   inspectCronExpression,
   inspectJwt,
@@ -423,6 +425,22 @@ const cases: FunctionalCase[] = [
       const result = await formatJavaScript("const answer:number=42", "typescript", { singleQuote: true });
       expect(result).toEqual({ ok: true, value: "const answer: number = 42;\n" });
       await expect(formatJavaScript("const =")).resolves.toMatchObject({ ok: false });
+    },
+  },
+  {
+    id: "javascript-minifier",
+    run: async () => {
+      const result = await minifyJavaScript("function add(a, b) { return a + b; } console.log(add(1, 2));", { mangle: false });
+      expect(result).toMatchObject({ ok: true });
+      if (result.ok) expect(result.value.outputBytes).toBeLessThan(result.value.originalBytes);
+    },
+  },
+  {
+    id: "svg-optimizer",
+    run: async () => {
+      const result = await optimizeSvg('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><!-- note --><path fill="#ff0000" d="M0 0h10v10H0z"/></svg>');
+      expect(result).toMatchObject({ ok: true });
+      if (result.ok) expect(result.value.output).not.toContain("note");
     },
   },
   {

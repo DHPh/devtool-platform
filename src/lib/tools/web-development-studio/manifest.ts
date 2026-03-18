@@ -10,5 +10,7 @@ export const WEB_DEVELOPMENT_STUDIO_MANIFEST = defineStudioManifest(
     { id: "css-clamp-calculator", shortLabel: "Clamp", icon: "Activity", loadComponent: () => import("./tabs/CssClampCalculatorTab").then((module) => ({ default: module.CssClampCalculatorTab })) },
     { id: "open-graph-generator", shortLabel: "Open Graph", icon: "Globe", loadComponent: () => import("./tabs/OpenGraphGeneratorTab").then((module) => ({ default: module.OpenGraphGeneratorTab })) },
     { id: "web-manifest-generator", shortLabel: "Manifest", icon: "File", loadComponent: () => import("./tabs/WebManifestGeneratorTab").then((module) => ({ default: module.WebManifestGeneratorTab })) },
+    { id: "javascript-minifier", shortLabel: "JS minify", icon: "Zap", loadComponent: () => import("./tabs/JavaScriptMinifierTab").then((module) => ({ default: module.JavaScriptMinifierTab })) },
+    { id: "svg-optimizer", shortLabel: "SVG optimize", icon: "Image", loadComponent: () => import("./tabs/SvgOptimizerTab").then((module) => ({ default: module.SvgOptimizerTab })) },
   ],
 );

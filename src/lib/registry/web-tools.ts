@@ -389,4 +389,18 @@ export const WEB_TOOLS = [
     path: "/tools/web-development-studio?tab=web-manifest-generator", icon: "📱", complexity: "simple",
     parent: "web-development-studio", tab: "web-manifest-generator",
   },
+  {
+    id: "javascript-minifier", kind: "studio-subtool", processing: "client", name: "JavaScript Minifier",
+    description: "Minify modern JavaScript with Terser and exact size reporting", category: TOOL_CATEGORIES.WEB_DEVELOPMENT.id,
+    type: TOOL_TYPES.FORMATTER, types: [TOOL_TYPES.ANALYZER], tags: ["javascript", "minify", "terser", "compress"],
+    path: "/tools/web-development-studio?tab=javascript-minifier", icon: "🗜️", complexity: "advanced",
+    parent: "web-development-studio", tab: "javascript-minifier",
+  },
+  {
+    id: "svg-optimizer", kind: "studio-subtool", processing: "client", name: "SVG Optimizer",
+    description: "Optimize safe SVG markup with SVGO and exact size reporting", category: TOOL_CATEGORIES.WEB_DEVELOPMENT.id,
+    type: TOOL_TYPES.FORMATTER, types: [TOOL_TYPES.ANALYZER], tags: ["svg", "optimize", "svgo", "compress"],
+    path: "/tools/web-development-studio?tab=svg-optimizer", icon: "✨", complexity: "advanced",
+    parent: "web-development-studio", tab: "svg-optimizer",
+  },
 ] satisfies ToolMetadata[];

@@ -11,7 +11,7 @@ const EXPECTED_CATEGORY_COUNTS: Record<string, number> = {
   generators: 8,
   validators: 13,
   "security-tools": 4,
-  "web-development": 13,
+  "web-development": 15,
   "api-testing": 4,
   utilities: 16,
   "data-analysis": 5,

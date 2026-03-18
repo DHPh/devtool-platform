@@ -13,6 +13,8 @@ import {
   formatJavaScript,
   generateOpenGraphTags,
   generateWebManifest,
+  minifyJavaScript,
+  optimizeSvg,
   svgToDataUri,
   type CssUnit,
   type JavaScriptLanguage,
@@ -86,4 +88,30 @@ export function WebManifestGeneratorTool() {
   const result = useMemo(() => generateWebManifest({ name, shortName, startUrl, display, themeColor, backgroundColor }), [name, shortName, startUrl, display, themeColor, backgroundColor]);
   const fields: Array<[string, string, (value: string) => void]> = [["Application name", name, setName], ["Short name", shortName, setShortName], ["Start URL", startUrl, setStartUrl], ["Theme color", themeColor, setThemeColor], ["Background color", backgroundColor, setBackgroundColor]];
   return <section className="space-y-5"><Header title="Web Manifest Generator" description="Generate and validate core installable web app manifest fields." /><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{fields.map(([label, current, setter]) => <label key={label} className="space-y-2"><span className="text-sm font-medium">{label}</span><Input value={current} onChange={(event) => setter(event.target.value)} /></label>)}<label className="space-y-2"><span className="text-sm font-medium">Display mode</span><Select value={display} onValueChange={(value) => setDisplay(value as typeof display)}><SelectTrigger aria-label="Display mode"><SelectValue /></SelectTrigger><SelectContent>{(["standalone", "fullscreen", "minimal-ui", "browser"] as const).map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select></label></div>{result.ok ? <CopyableResult value={result.value} label="manifest.webmanifest" copyLabel="Copy web manifest" rows={14} /> : <ErrorResult message={result.error} />}</section>;
+}
+
+function CompressionResults({ result, outputLabel, copyLabel }: { result: { output: string; originalBytes: number; outputBytes: number; savedBytes: number; reductionPercent: number }; outputLabel: string; copyLabel: string }) {
+  return <div className="space-y-4"><CopyableResult value={result.output} label={outputLabel} copyLabel={copyLabel} rows={16} /><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><CopyableResult value={String(result.originalBytes)} label="Original bytes" copyLabel="Copy original bytes" rows={1} /><CopyableResult value={String(result.outputBytes)} label="Output bytes" copyLabel="Copy output bytes" rows={1} /><CopyableResult value={String(result.savedBytes)} label="Saved bytes" copyLabel="Copy saved bytes" rows={1} /><CopyableResult value={`${result.reductionPercent}%`} label="Reduction" copyLabel="Copy reduction" rows={1} /></div></div>;
+}
+
+export function JavaScriptMinifierTool() {
+  const [input, setInput] = useState("function greet(name) {\n  const message = `Hello ${name}`;\n  return message;\n}\nconsole.log(greet('Ada'));\n");
+  const [mangle, setMangle] = useState(true);
+  const [module, setModule] = useState(false);
+  const [result, setResult] = useState<Awaited<ReturnType<typeof minifyJavaScript>> | null>(null);
+  const [working, setWorking] = useState(false);
+  const run = async () => { setWorking(true); setResult(await minifyJavaScript(input, { mangle, module })); setWorking(false); };
+  return <section className="space-y-5"><Header title="JavaScript Minifier" description="Compress JavaScript locally with Terser and report exact UTF-8 size savings." /><div className="flex flex-wrap items-center gap-4"><Button type="button" onClick={() => void run()} disabled={working}>{working ? "Minifying…" : "Minify JavaScript"}</Button><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={mangle} onChange={(event) => setMangle(event.target.checked)} />Mangle local names</label><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={module} onChange={(event) => setModule(event.target.checked)} />ES module</label></div><label className="block space-y-2"><span className="text-sm font-medium">JavaScript source</span><Textarea value={input} onChange={(event) => setInput(event.target.value)} rows={16} className="font-mono" spellCheck={false} /></label>{result?.ok ? <CompressionResults result={result.value} outputLabel="Minified JavaScript" copyLabel="Copy minified JavaScript" /> : result ? <ErrorResult message={result.error} /> : null}</section>;
+}
+
+const SVG_OPTIMIZER_SAMPLE = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">\n  <!-- decorative circle -->\n  <circle cx="60" cy="60" r="48" fill="#6366f1" />\n</svg>';
+
+export function SvgOptimizerTool() {
+  const [input, setInput] = useState(SVG_OPTIMIZER_SAMPLE);
+  const [multipass, setMultipass] = useState(true);
+  const [preserveViewBox, setPreserveViewBox] = useState(true);
+  const [result, setResult] = useState<Awaited<ReturnType<typeof optimizeSvg>> | null>(null);
+  const [working, setWorking] = useState(false);
+  const run = async () => { setWorking(true); setResult(await optimizeSvg(input, { multipass, preserveViewBox })); setWorking(false); };
+  return <section className="space-y-5"><Header title="SVG Optimizer" description="Optimize safe SVG markup locally with SVGO. This rejects active content but is not a general-purpose sanitizer." /><div className="flex flex-wrap items-center gap-4"><Button type="button" onClick={() => void run()} disabled={working}>{working ? "Optimizing…" : "Optimize SVG"}</Button><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={multipass} onChange={(event) => setMultipass(event.target.checked)} />Multiple passes</label><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={preserveViewBox} onChange={(event) => setPreserveViewBox(event.target.checked)} />Preserve viewBox</label></div><label className="block space-y-2"><span className="text-sm font-medium">SVG markup</span><Textarea value={input} onChange={(event) => setInput(event.target.value)} rows={16} className="font-mono" spellCheck={false} /></label>{result?.ok ? <CompressionResults result={result.value} outputLabel="Optimized SVG" copyLabel="Copy optimized SVG" /> : result ? <ErrorResult message={result.error} /> : null}</section>;
 }

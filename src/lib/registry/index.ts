@@ -120,6 +120,8 @@ const TOOL_ORDER = [
   "css-clamp-calculator",
   "open-graph-generator",
   "web-manifest-generator",
+  "javascript-minifier",
+  "svg-optimizer",
 ] as const;
 
 const toolsById = new Map(DOMAIN_TOOLS.map((tool) => [tool.id, tool]));
