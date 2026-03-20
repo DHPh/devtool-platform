@@ -10,8 +10,7 @@ Target: 105 executable tools
 
 > **CURRENT PHASE — Phase 4, Advanced Browser Processing.**
 >
-> Phases 0–3 and the Phase 4 advanced web-processing slice are complete. The
-> platform now has 91 executable tools.
+> Phases 0–4 are complete. The platform now has 97 executable tools.
 
 ## Roadmap at a glance
 
@@ -21,8 +20,8 @@ Target: 105 executable tools
 | Phase 1 | Make studios and processors easier to scaffold and register | 57 | Complete |
 | Phase 2 | Deliver 16 quick browser tools | 73 | Complete |
 | Phase 3 | Deliver 16 developer and data tools | 89 | Complete |
-| **Phase 4** | **Deliver 8 advanced browser tools** | **97** | **Current phase** |
-| Phase 5 | Deliver 8 serverless website diagnostics | 105 | Blocked by Phase 4 |
+| Phase 4 | Deliver 8 advanced browser tools | 97 | Complete |
+| **Phase 5** | **Deliver 8 serverless website diagnostics** | **105** | **Current phase** |
 
 ## 1. Objective
 
@@ -507,7 +506,7 @@ Acceptance criteria:
 Deliver 8 tools:
 
 - [x] JavaScript minifier and SVG optimizer.
-- [ ] Remaining six Security and Identity tools.
+- [x] Remaining six Security and Identity tools.
 
 Target after phase: 97 executable tools.
 

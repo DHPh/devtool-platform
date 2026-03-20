@@ -25,9 +25,12 @@ import {
   decodeBase64,
   decodeHtmlEntities,
   decodeUrlComponent,
+  decryptText,
+  decodeCertificate,
   encodeBase64,
   encodeHtmlEntities,
   encodeUrlComponent,
+  encryptText,
   extractFileMetadata,
   formatCss,
   formatHtml,
@@ -45,6 +48,9 @@ import {
   generateLoremIpsum,
   generateOpenGraphTags,
   generateFakeData,
+  generateSigningKeyPair,
+  generateSri,
+  generateTotp,
   generateUuidBatch,
   generateWebManifest,
   groupDuplicateFiles,
@@ -62,6 +68,7 @@ import {
   lintDockerfile,
   jsonToTypeScript,
   redactEnvFile,
+  signText,
   createCssClamp,
   dataUriToSvg,
   svgToDataUri,
@@ -72,8 +79,11 @@ import {
   validateJson,
   validateKubernetesManifest,
   validateOpenApi,
+  validateTotp,
   validateXml,
   validateYaml,
+  verifyJwtSignature,
+  verifyTextSignature,
 } from "@/lib/processors";
 import { parseJSON } from "@/lib/utils/json-parser";
 import {
@@ -596,6 +606,54 @@ const cases: FunctionalCase[] = [
       expect(hmac).toMatchObject({ ok: true });
       if (hmac.ok) expect(hmac.value).toHaveLength(64);
       await expect(generateHmac("message", "", "SHA-256")).resolves.toMatchObject({ ok: false });
+    },
+  },
+  {
+    id: "jwt-signature-verifier",
+    run: async () => expect(await verifyJwtSignature("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c", "your-256-bit-secret")).toMatchObject({ ok: true, value: { verified: true, algorithm: "HS256" } }),
+  },
+  {
+    id: "symmetric-encryption",
+    run: async () => {
+      const encrypted = await encryptText("test password", "secret text", 100_000);
+      expect(encrypted).toMatchObject({ ok: true });
+      if (encrypted.ok) await expect(decryptText("test password", encrypted.value)).resolves.toEqual({ ok: true, value: "secret text" });
+    },
+  },
+  {
+    id: "keypair-signature-tool",
+    run: async () => {
+      const pair = await generateSigningKeyPair();
+      expect(pair).toMatchObject({ ok: true });
+      if (!pair.ok) return;
+      const signature = await signText(JSON.stringify(pair.value.privateJwk), "message");
+      expect(signature).toMatchObject({ ok: true });
+      if (signature.ok) await expect(verifyTextSignature(JSON.stringify(pair.value.publicJwk), "message", signature.value)).resolves.toEqual({ ok: true, value: true });
+    },
+  },
+  {
+    id: "sri-generator",
+    run: async () => expect(await generateSri("hello", "SHA-256")).toMatchObject({ ok: true, value: expect.stringMatching(/^sha-256-/) }),
+  },
+  {
+    id: "totp-tool",
+    run: async () => {
+      const secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
+      const result = await generateTotp(secret, 59_000, 8);
+      expect(result).toEqual({ ok: true, value: "94287082" });
+      await expect(validateTotp(secret, "94287082", 59_000)).resolves.toEqual({ ok: true, value: true });
+    },
+  },
+  {
+    id: "certificate-decoder",
+    run: async () => {
+      await import("reflect-metadata");
+      const x509 = await import("@peculiar/x509");
+      x509.cryptoProvider.set(crypto);
+      const algorithm = { name: "ECDSA", namedCurve: "P-256", hash: "SHA-256" };
+      const keys = await crypto.subtle.generateKey(algorithm, true, ["sign", "verify"]);
+      const certificate = await x509.X509CertificateGenerator.createSelfSigned({ serialNumber: "02", name: "CN=Contract Test", notBefore: new Date("2026-01-01T00:00:00Z"), notAfter: new Date("2027-01-01T00:00:00Z"), signingAlgorithm: algorithm, keys });
+      await expect(decodeCertificate(certificate.toString("pem"), new Date("2026-02-19T00:00:00Z"))).resolves.toMatchObject({ ok: true, value: { subject: "CN=Contract Test", status: "valid", selfSigned: true } });
     },
   },
   {

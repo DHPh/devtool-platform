@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
+    "@peculiar/x509": "^2.0.0",
     "@radix-ui/react-collapsible": "^1.1.11",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-dropdown-menu": "^2.1.15",
@@ -51,6 +52,7 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-markdown": "^10.1.0",
+    "reflect-metadata": "^0.2.2",
     "remark-gfm": "^4.0.1",
     "semver": "^7.8.5",
     "smol-toml": "^1.7.0",

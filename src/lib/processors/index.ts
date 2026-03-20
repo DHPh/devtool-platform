@@ -22,3 +22,4 @@ export * from "./web-code-core";
 export * from "./devops-validation-core";
 export * from "./data-workflow-core";
 export * from "./advanced-web-core";
+export * from "./advanced-crypto-core";
