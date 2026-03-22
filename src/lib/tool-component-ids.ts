@@ -31,6 +31,7 @@ export const TOOL_COMPONENT_IDS = [
   "data-api-studio",
   "security-identity-studio",
   "web-development-studio",
+  "website-diagnostics-studio",
 ] as const;
 
 export type ToolComponentId = (typeof TOOL_COMPONENT_IDS)[number];

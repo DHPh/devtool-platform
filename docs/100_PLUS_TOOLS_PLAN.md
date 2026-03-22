@@ -1,6 +1,6 @@
 # 100+ Executable Tools Plan
 
-Status: In progress
+Status: Complete
 
 Created: 2026-01-24
 
@@ -8,9 +8,10 @@ Updated: 2026-02-19
 
 Target: 105 executable tools
 
-> **CURRENT PHASE — Phase 4, Advanced Browser Processing.**
+> **PLAN COMPLETE — Phase 5, Serverless Website Diagnostics.**
 >
-> Phases 0–4 are complete. The platform now has 97 executable tools.
+> Phases 0–5 are complete. The platform now has 105 executable tools and 117
+> registry entries.
 
 ## Roadmap at a glance
 
@@ -21,7 +22,7 @@ Target: 105 executable tools
 | Phase 2 | Deliver 16 quick browser tools | 73 | Complete |
 | Phase 3 | Deliver 16 developer and data tools | 89 | Complete |
 | Phase 4 | Deliver 8 advanced browser tools | 97 | Complete |
-| **Phase 5** | **Deliver 8 serverless website diagnostics** | **105** | **Current phase** |
+| **Phase 5** | **Deliver 8 serverless website diagnostics** | **105** | **Complete** |
 
 ## 1. Objective
 
@@ -520,8 +521,17 @@ Acceptance criteria:
 
 Deliver all 8 Website Diagnostics tools.
 
-Status: IN PROGRESS — shared bounded HTTP inspection engine implemented for
-redirect, security-header, CORS, robots, sitemap, and Open Graph diagnostics.
+Status: COMPLETE — shared bounded HTTP and DNS inspection engines, serverless
+routes, studio UI, registry entries, and deterministic tests implemented.
+
+- [x] Redirect tracer.
+- [x] Security header analyzer.
+- [x] CORS analyzer.
+- [x] Robots.txt inspector.
+- [x] Sitemap validator.
+- [x] Open Graph inspector.
+- [x] Email DNS analyzer.
+- [x] DNS propagation checker.
 
 Target after phase: 105 executable tools and 117 total registry entries.
 

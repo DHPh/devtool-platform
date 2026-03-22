@@ -12,7 +12,7 @@ const EXPECTED_CATEGORY_COUNTS: Record<string, number> = {
   validators: 13,
   "security-tools": 10,
   "web-development": 15,
-  "api-testing": 4,
+  "api-testing": 13,
   utilities: 16,
   "data-analysis": 5,
   "encoding-decoding": 7,
@@ -41,7 +41,7 @@ describe("canonical tool categories", () => {
       getAllCategories().map((category) => [
         category.id,
         getToolsByCategory(category.id).length,
-      ])
+      ]),
     );
 
     expect(categoryCounts).toEqual(EXPECTED_CATEGORY_COUNTS);
@@ -60,12 +60,13 @@ describe("canonical tool categories", () => {
   });
 
   it("searches names, descriptions, and tags case-insensitively", () => {
-    expect(searchTools("JSON FORMATTER").map((tool) => tool.id))
-      .toContain("json-formatter");
-    expect(searchTools("DNS").map((tool) => tool.id))
-      .toContain("dns-lookup");
-    expect(searchTools("uuid").map((tool) => tool.id))
-      .toContain("uuid-generator");
+    expect(searchTools("JSON FORMATTER").map((tool) => tool.id)).toContain(
+      "json-formatter",
+    );
+    expect(searchTools("DNS").map((tool) => tool.id)).toContain("dns-lookup");
+    expect(searchTools("uuid").map((tool) => tool.id)).toContain(
+      "uuid-generator",
+    );
     expect(searchTools("definitely-not-a-tool")).toEqual([]);
   });
 });

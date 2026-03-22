@@ -49,10 +49,11 @@ export const TOOL_COMPONENT_LOADERS = {
     import("@/lib/tools/encoding-serialization-studio/EncodingSerializationStudio"),
   "devops-configuration-studio": () =>
     import("@/lib/tools/devops-configuration-studio/DevOpsConfigurationStudio"),
-  "data-api-studio": () =>
-    import("@/lib/tools/data-api-studio/DataApiStudio"),
+  "data-api-studio": () => import("@/lib/tools/data-api-studio/DataApiStudio"),
   "security-identity-studio": () =>
     import("@/lib/tools/security-identity-studio/SecurityIdentityStudio"),
   "web-development-studio": () =>
     import("@/lib/tools/web-development-studio/WebDevelopmentStudio"),
+  "website-diagnostics-studio": () =>
+    import("@/lib/tools/website-diagnostics-studio/WebsiteDiagnosticsStudio"),
 } satisfies Record<ToolComponentId, ToolComponentLoader>;

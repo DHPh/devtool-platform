@@ -120,6 +120,7 @@ import {
   serverWebSocketTest,
 } from "@/lib/utils/network/server-api-client";
 import { classifyUrlTestOutcome } from "@/lib/utils/network/url-test-outcome";
+import { runWebsiteDiagnostic } from "@/lib/utils/network/website-inspection-client";
 
 type FunctionalCase = {
   id: string;
@@ -400,55 +401,90 @@ const cases: FunctionalCase[] = [
         count: 2,
       });
       expect(result).toMatchObject({ ok: true });
-      if (result.ok) expect(result.value.nextRuns).toEqual([
-        "2026-02-19T09:00:00.000Z",
-        "2026-02-20T09:00:00.000Z",
-      ]);
+      if (result.ok)
+        expect(result.value.nextRuns).toEqual([
+          "2026-02-19T09:00:00.000Z",
+          "2026-02-20T09:00:00.000Z",
+        ]);
       expect(inspectCronExpression("bad cron").ok).toBe(false);
     },
   },
   {
     id: "chmod-calculator",
     run: () => {
-      expect(convertChmod("755")).toMatchObject({ ok: true, value: { symbolic: "rwxr-xr-x" } });
-      expect(convertChmod("rw-r-----")).toMatchObject({ ok: true, value: { octal: "640" } });
+      expect(convertChmod("755")).toMatchObject({
+        ok: true,
+        value: { symbolic: "rwxr-xr-x" },
+      });
+      expect(convertChmod("rw-r-----")).toMatchObject({
+        ok: true,
+        value: { octal: "640" },
+      });
       expect(convertChmod("999").ok).toBe(false);
     },
   },
   {
     id: "env-file-manager",
     run: () => {
-      expect(redactEnvFile("API_TOKEN=secret\nDEBUG=true")).toEqual({ ok: true, value: "API_TOKEN=[REDACTED]\nDEBUG=true" });
-      expect(compareEnvFiles("A=1\nB=2", "A=1\nB=3\nC=4")).toMatchObject({ ok: true, value: { changed: ["B"], onlyRight: ["C"] } });
+      expect(redactEnvFile("API_TOKEN=secret\nDEBUG=true")).toEqual({
+        ok: true,
+        value: "API_TOKEN=[REDACTED]\nDEBUG=true",
+      });
+      expect(compareEnvFiles("A=1\nB=2", "A=1\nB=3\nC=4")).toMatchObject({
+        ok: true,
+        value: { changed: ["B"], onlyRight: ["C"] },
+      });
     },
   },
   {
     id: "semver-comparator",
     run: () => {
-      expect(compareSemanticVersions("v1.5.0", "2.0.0", "^1.0.0")).toMatchObject({ ok: true, value: { relation: "older", satisfiesRange: true } });
+      expect(
+        compareSemanticVersions("v1.5.0", "2.0.0", "^1.0.0"),
+      ).toMatchObject({
+        ok: true,
+        value: { relation: "older", satisfiesRange: true },
+      });
       expect(compareSemanticVersions("bad", "2.0.0").ok).toBe(false);
     },
   },
   {
     id: "javascript-formatter",
     run: async () => {
-      const result = await formatJavaScript("const answer:number=42", "typescript", { singleQuote: true });
-      expect(result).toEqual({ ok: true, value: "const answer: number = 42;\n" });
-      await expect(formatJavaScript("const =")).resolves.toMatchObject({ ok: false });
+      const result = await formatJavaScript(
+        "const answer:number=42",
+        "typescript",
+        { singleQuote: true },
+      );
+      expect(result).toEqual({
+        ok: true,
+        value: "const answer: number = 42;\n",
+      });
+      await expect(formatJavaScript("const =")).resolves.toMatchObject({
+        ok: false,
+      });
     },
   },
   {
     id: "javascript-minifier",
     run: async () => {
-      const result = await minifyJavaScript("function add(a, b) { return a + b; } console.log(add(1, 2));", { mangle: false });
+      const result = await minifyJavaScript(
+        "function add(a, b) { return a + b; } console.log(add(1, 2));",
+        { mangle: false },
+      );
       expect(result).toMatchObject({ ok: true });
-      if (result.ok) expect(result.value.outputBytes).toBeLessThan(result.value.originalBytes);
+      if (result.ok)
+        expect(result.value.outputBytes).toBeLessThan(
+          result.value.originalBytes,
+        );
     },
   },
   {
     id: "svg-optimizer",
     run: async () => {
-      const result = await optimizeSvg('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><!-- note --><path fill="#ff0000" d="M0 0h10v10H0z"/></svg>');
+      const result = await optimizeSvg(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><!-- note --><path fill="#ff0000" d="M0 0h10v10H0z"/></svg>',
+      );
       expect(result).toMatchObject({ ok: true });
       if (result.ok) expect(result.value.output).not.toContain("note");
     },
@@ -456,10 +492,12 @@ const cases: FunctionalCase[] = [
   {
     id: "svg-data-uri-converter",
     run: () => {
-      const svg = '<svg xmlns="http://www.w3.org/2000/svg"><circle r="4"/></svg>';
+      const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg"><circle r="4"/></svg>';
       const encoded = svgToDataUri(svg);
       expect(encoded).toMatchObject({ ok: true });
-      if (encoded.ok) expect(dataUriToSvg(encoded.value)).toEqual({ ok: true, value: svg });
+      if (encoded.ok)
+        expect(dataUriToSvg(encoded.value)).toEqual({ ok: true, value: svg });
       expect(svgToDataUri("<svg><script/></svg>").ok).toBe(false);
     },
   },
@@ -478,7 +516,11 @@ const cases: FunctionalCase[] = [
     run: () => {
       expect(createCssClamp(16, 32, 320, 1280)).toEqual({
         ok: true,
-        value: { css: "clamp(16px, 10.6667px + 1.6667vw, 32px)", slope: 5 / 3, intercept: 32 / 3 },
+        value: {
+          css: "clamp(16px, 10.6667px + 1.6667vw, 32px)",
+          slope: 5 / 3,
+          intercept: 32 / 3,
+        },
       });
       expect(createCssClamp(32, 16, 320, 1280).ok).toBe(false);
     },
@@ -486,40 +528,102 @@ const cases: FunctionalCase[] = [
   {
     id: "open-graph-generator",
     run: () => {
-      const result = generateOpenGraphTags({ title: 'A & "B"', description: "Summary", url: "https://example.com", image: "https://example.com/image.png" });
+      const result = generateOpenGraphTags({
+        title: 'A & "B"',
+        description: "Summary",
+        url: "https://example.com",
+        image: "https://example.com/image.png",
+      });
       expect(result).toMatchObject({ ok: true });
-      if (result.ok) expect(result.value).toContain('content="A &amp; &quot;B&quot;"');
-      expect(generateOpenGraphTags({ title: "A", description: "B", url: "/relative", image: "https://example.com/image.png" }).ok).toBe(false);
+      if (result.ok)
+        expect(result.value).toContain('content="A &amp; &quot;B&quot;"');
+      expect(
+        generateOpenGraphTags({
+          title: "A",
+          description: "B",
+          url: "/relative",
+          image: "https://example.com/image.png",
+        }).ok,
+      ).toBe(false);
     },
   },
   {
     id: "web-manifest-generator",
     run: () => {
-      const result = generateWebManifest({ name: "Example", shortName: "App", startUrl: "/", display: "standalone", themeColor: "#112233", backgroundColor: "#ffffff" });
+      const result = generateWebManifest({
+        name: "Example",
+        shortName: "App",
+        startUrl: "/",
+        display: "standalone",
+        themeColor: "#112233",
+        backgroundColor: "#ffffff",
+      });
       expect(result).toMatchObject({ ok: true });
-      if (result.ok) expect(JSON.parse(result.value)).toMatchObject({ short_name: "App", display: "standalone" });
-      expect(generateWebManifest({ name: "Example", shortName: "Way too long name", startUrl: "/", display: "standalone", themeColor: "#112233", backgroundColor: "#ffffff" }).ok).toBe(false);
+      if (result.ok)
+        expect(JSON.parse(result.value)).toMatchObject({
+          short_name: "App",
+          display: "standalone",
+        });
+      expect(
+        generateWebManifest({
+          name: "Example",
+          shortName: "Way too long name",
+          startUrl: "/",
+          display: "standalone",
+          themeColor: "#112233",
+          backgroundColor: "#ffffff",
+        }).ok,
+      ).toBe(false);
     },
   },
   {
     id: "sql-formatter",
-    run: () => expect(formatSql("select id from users where active=true;")).toEqual({ ok: true, value: "SELECT id\nFROM users\nWHERE active = TRUE;\n" }),
+    run: () =>
+      expect(formatSql("select id from users where active=true;")).toEqual({
+        ok: true,
+        value: "SELECT id\nFROM users\nWHERE active = TRUE;\n",
+      }),
   },
   {
     id: "sql-query-builder",
-    run: () => expect(buildSelectQuery({ table: "users", columns: ["id"], limit: 5 })).toEqual({ ok: true, value: "SELECT id\nFROM users\nLIMIT 5;" }),
+    run: () =>
+      expect(
+        buildSelectQuery({ table: "users", columns: ["id"], limit: 5 }),
+      ).toEqual({ ok: true, value: "SELECT id\nFROM users\nLIMIT 5;" }),
   },
   {
     id: "data-sql-generator",
-    run: () => expect(dataToSql('[{"id":1,"name":"Ada"}]', "users")).toEqual({ ok: true, value: 'INSERT INTO "users" ("id", "name")\nVALUES\n  (1, \'Ada\');' }),
+    run: () =>
+      expect(dataToSql('[{"id":1,"name":"Ada"}]', "users")).toEqual({
+        ok: true,
+        value: 'INSERT INTO "users" ("id", "name")\nVALUES\n  (1, \'Ada\');',
+      }),
   },
   {
     id: "openapi-validator",
-    run: () => expect(validateOpenApi("openapi: 3.1.0\ninfo:\n  title: API\n  version: 1.0.0\npaths: {}" )).toEqual({ ok: true, value: { version: "3.1.0", title: "API", paths: 0, operations: 0, issues: [] } }),
+    run: () =>
+      expect(
+        validateOpenApi(
+          "openapi: 3.1.0\ninfo:\n  title: API\n  version: 1.0.0\npaths: {}",
+        ),
+      ).toEqual({
+        ok: true,
+        value: {
+          version: "3.1.0",
+          title: "API",
+          paths: 0,
+          operations: 0,
+          issues: [],
+        },
+      }),
   },
   {
     id: "graphql-formatter",
-    run: async () => expect(await formatGraphql("query{viewer{id}}")).toEqual({ ok: true, value: "query {\n  viewer {\n    id\n  }\n}\n" }),
+    run: async () =>
+      expect(await formatGraphql("query{viewer{id}}")).toEqual({
+        ok: true,
+        value: "query {\n  viewer {\n    id\n  }\n}\n",
+      }),
   },
   {
     id: "fake-data-generator",
@@ -532,17 +636,26 @@ const cases: FunctionalCase[] = [
   {
     id: "dockerfile-linter",
     run: () => {
-      expect(lintDockerfile('FROM node:22-alpine\nUSER node\nCMD ["node", "app.js"]')).toMatchObject({
+      expect(
+        lintDockerfile(
+          'FROM node:22-alpine\nUSER node\nCMD ["node", "app.js"]',
+        ),
+      ).toMatchObject({
         ok: true,
         value: { stages: 1, issues: [] },
       });
-      expect(lintDockerfile("COPY . /app")).toMatchObject({ ok: true, value: { stages: 0 } });
+      expect(lintDockerfile("COPY . /app")).toMatchObject({
+        ok: true,
+        value: { stages: 0 },
+      });
     },
   },
   {
     id: "docker-compose-validator",
     run: () => {
-      expect(validateDockerCompose("services:\n  web:\n    image: nginx:1.27")).toEqual({
+      expect(
+        validateDockerCompose("services:\n  web:\n    image: nginx:1.27"),
+      ).toEqual({
         ok: true,
         value: { services: ["web"], issues: [] },
       });
@@ -552,11 +665,22 @@ const cases: FunctionalCase[] = [
   {
     id: "kubernetes-manifest-validator",
     run: () => {
-      expect(validateKubernetesManifest("apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: app-config")).toMatchObject({
+      expect(
+        validateKubernetesManifest(
+          "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: app-config",
+        ),
+      ).toMatchObject({
         ok: true,
-        value: { resources: [{ apiVersion: "v1", kind: "ConfigMap", name: "app-config" }], issues: [] },
+        value: {
+          resources: [
+            { apiVersion: "v1", kind: "ConfigMap", name: "app-config" },
+          ],
+          issues: [],
+        },
       });
-      const result = validateKubernetesManifest("kind: Service\nmetadata: {}\nspec: {}");
+      const result = validateKubernetesManifest(
+        "kind: Service\nmetadata: {}\nspec: {}",
+      );
       expect(result).toMatchObject({ ok: true });
       if (result.ok) expect(result.value.issues).toHaveLength(2);
     },
@@ -573,7 +697,10 @@ const cases: FunctionalCase[] = [
   {
     id: "json-to-typescript",
     run: () => {
-      const result = jsonToTypeScript('{"display-name":"Ada","roles":["admin"]}', "User");
+      const result = jsonToTypeScript(
+        '{"display-name":"Ada","roles":["admin"]}',
+        "User",
+      );
       expect(result).toMatchObject({ ok: true });
       if (result.ok) expect(result.value).toContain('"display-name": string;');
     },
@@ -587,37 +714,66 @@ const cases: FunctionalCase[] = [
       if (!flat.ok) return;
       const restored = unflattenJson(flat.value);
       expect(restored.ok).toBe(true);
-      if (restored.ok) expect(JSON.parse(restored.value)).toEqual(JSON.parse(source));
+      if (restored.ok)
+        expect(JSON.parse(restored.value)).toEqual(JSON.parse(source));
     },
   },
   {
     id: "jwt-inspector",
     run: () => {
-      const result = inspectJwt("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMiLCJleHAiOjE4OTM0NTYwMDB9.signature", new Date("2026-01-01T00:00:00Z"));
-      expect(result).toMatchObject({ ok: true, value: { algorithm: "HS256", status: "active" } });
+      const result = inspectJwt(
+        "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMiLCJleHAiOjE4OTM0NTYwMDB9.signature",
+        new Date("2026-01-01T00:00:00Z"),
+      );
+      expect(result).toMatchObject({
+        ok: true,
+        value: { algorithm: "HS256", status: "active" },
+      });
       expect(inspectJwt("not-a-jwt").ok).toBe(false);
     },
   },
   {
     id: "hash-hmac-generator",
     run: async () => {
-      await expect(generateDigest("abc", "SHA-256")).resolves.toEqual({ ok: true, value: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" });
+      await expect(generateDigest("abc", "SHA-256")).resolves.toEqual({
+        ok: true,
+        value:
+          "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+      });
       const hmac = await generateHmac("message", "secret", "SHA-256");
       expect(hmac).toMatchObject({ ok: true });
       if (hmac.ok) expect(hmac.value).toHaveLength(64);
-      await expect(generateHmac("message", "", "SHA-256")).resolves.toMatchObject({ ok: false });
+      await expect(
+        generateHmac("message", "", "SHA-256"),
+      ).resolves.toMatchObject({ ok: false });
     },
   },
   {
     id: "jwt-signature-verifier",
-    run: async () => expect(await verifyJwtSignature("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c", "your-256-bit-secret")).toMatchObject({ ok: true, value: { verified: true, algorithm: "HS256" } }),
+    run: async () =>
+      expect(
+        await verifyJwtSignature(
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+          "your-256-bit-secret",
+        ),
+      ).toMatchObject({
+        ok: true,
+        value: { verified: true, algorithm: "HS256" },
+      }),
   },
   {
     id: "symmetric-encryption",
     run: async () => {
-      const encrypted = await encryptText("test password", "secret text", 100_000);
+      const encrypted = await encryptText(
+        "test password",
+        "secret text",
+        100_000,
+      );
       expect(encrypted).toMatchObject({ ok: true });
-      if (encrypted.ok) await expect(decryptText("test password", encrypted.value)).resolves.toEqual({ ok: true, value: "secret text" });
+      if (encrypted.ok)
+        await expect(
+          decryptText("test password", encrypted.value),
+        ).resolves.toEqual({ ok: true, value: "secret text" });
     },
   },
   {
@@ -626,14 +782,28 @@ const cases: FunctionalCase[] = [
       const pair = await generateSigningKeyPair();
       expect(pair).toMatchObject({ ok: true });
       if (!pair.ok) return;
-      const signature = await signText(JSON.stringify(pair.value.privateJwk), "message");
+      const signature = await signText(
+        JSON.stringify(pair.value.privateJwk),
+        "message",
+      );
       expect(signature).toMatchObject({ ok: true });
-      if (signature.ok) await expect(verifyTextSignature(JSON.stringify(pair.value.publicJwk), "message", signature.value)).resolves.toEqual({ ok: true, value: true });
+      if (signature.ok)
+        await expect(
+          verifyTextSignature(
+            JSON.stringify(pair.value.publicJwk),
+            "message",
+            signature.value,
+          ),
+        ).resolves.toEqual({ ok: true, value: true });
     },
   },
   {
     id: "sri-generator",
-    run: async () => expect(await generateSri("hello", "SHA-256")).toMatchObject({ ok: true, value: expect.stringMatching(/^sha-256-/) }),
+    run: async () =>
+      expect(await generateSri("hello", "SHA-256")).toMatchObject({
+        ok: true,
+        value: expect.stringMatching(/^sha-256-/),
+      }),
   },
   {
     id: "totp-tool",
@@ -641,7 +811,10 @@ const cases: FunctionalCase[] = [
       const secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
       const result = await generateTotp(secret, 59_000, 8);
       expect(result).toEqual({ ok: true, value: "94287082" });
-      await expect(validateTotp(secret, "94287082", 59_000)).resolves.toEqual({ ok: true, value: true });
+      await expect(validateTotp(secret, "94287082", 59_000)).resolves.toEqual({
+        ok: true,
+        value: true,
+      });
     },
   },
   {
@@ -651,9 +824,31 @@ const cases: FunctionalCase[] = [
       const x509 = await import("@peculiar/x509");
       x509.cryptoProvider.set(crypto);
       const algorithm = { name: "ECDSA", namedCurve: "P-256", hash: "SHA-256" };
-      const keys = await crypto.subtle.generateKey(algorithm, true, ["sign", "verify"]);
-      const certificate = await x509.X509CertificateGenerator.createSelfSigned({ serialNumber: "02", name: "CN=Contract Test", notBefore: new Date("2026-01-01T00:00:00Z"), notAfter: new Date("2027-01-01T00:00:00Z"), signingAlgorithm: algorithm, keys });
-      await expect(decodeCertificate(certificate.toString("pem"), new Date("2026-02-19T00:00:00Z"))).resolves.toMatchObject({ ok: true, value: { subject: "CN=Contract Test", status: "valid", selfSigned: true } });
+      const keys = await crypto.subtle.generateKey(algorithm, true, [
+        "sign",
+        "verify",
+      ]);
+      const certificate = await x509.X509CertificateGenerator.createSelfSigned({
+        serialNumber: "02",
+        name: "CN=Contract Test",
+        notBefore: new Date("2026-01-01T00:00:00Z"),
+        notAfter: new Date("2027-01-01T00:00:00Z"),
+        signingAlgorithm: algorithm,
+        keys,
+      });
+      await expect(
+        decodeCertificate(
+          certificate.toString("pem"),
+          new Date("2026-02-19T00:00:00Z"),
+        ),
+      ).resolves.toMatchObject({
+        ok: true,
+        value: {
+          subject: "CN=Contract Test",
+          status: "valid",
+          selfSigned: true,
+        },
+      });
     },
   },
   {
@@ -1122,6 +1317,135 @@ const cases: FunctionalCase[] = [
         contentType: "application/zip",
         contentLength: 1024,
       }),
+  },
+  {
+    id: "redirect-tracer",
+    run: async () =>
+      expect(
+        await callMockedNetworkRoute(
+          "/api/network/website-inspection",
+          { operation: "redirect-tracer", url: "https://example.com" },
+          { result: { finalUrl: "https://www.example.com", redirectCount: 1 } },
+          () => runWebsiteDiagnostic("redirect-tracer", "https://example.com"),
+        ),
+      ).toEqual({ finalUrl: "https://www.example.com", redirectCount: 1 }),
+  },
+  {
+    id: "security-header-analyzer",
+    run: async () =>
+      expect(
+        await callMockedNetworkRoute(
+          "/api/network/website-inspection",
+          {
+            operation: "security-header-analyzer",
+            url: "https://example.com",
+          },
+          { result: { score: 83, missing: ["content-security-policy"] } },
+          () =>
+            runWebsiteDiagnostic(
+              "security-header-analyzer",
+              "https://example.com",
+            ),
+        ),
+      ).toEqual({ score: 83, missing: ["content-security-policy"] }),
+  },
+  {
+    id: "cors-analyzer",
+    run: async () =>
+      expect(
+        await callMockedNetworkRoute(
+          "/api/network/website-inspection",
+          { operation: "cors-analyzer", url: "https://example.com" },
+          { result: { allowedOrigin: "*", allowsCredentials: false } },
+          () => runWebsiteDiagnostic("cors-analyzer", "https://example.com"),
+        ),
+      ).toEqual({ allowedOrigin: "*", allowsCredentials: false }),
+  },
+  {
+    id: "robots-inspector",
+    run: async () =>
+      expect(
+        await callMockedNetworkRoute(
+          "/api/network/website-inspection",
+          { operation: "robots-inspector", url: "https://example.com" },
+          { result: { groups: 1, sitemaps: ["https://example.com/map.xml"] } },
+          () => runWebsiteDiagnostic("robots-inspector", "https://example.com"),
+        ),
+      ).toEqual({
+        groups: 1,
+        sitemaps: ["https://example.com/map.xml"],
+      }),
+  },
+  {
+    id: "sitemap-validator",
+    run: async () =>
+      expect(
+        await callMockedNetworkRoute(
+          "/api/network/website-inspection",
+          {
+            operation: "sitemap-validator",
+            url: "https://example.com/sitemap.xml",
+          },
+          { result: { valid: true, locations: ["https://example.com/"] } },
+          () =>
+            runWebsiteDiagnostic(
+              "sitemap-validator",
+              "https://example.com/sitemap.xml",
+            ),
+        ),
+      ).toEqual({ valid: true, locations: ["https://example.com/"] }),
+  },
+  {
+    id: "open-graph-inspector",
+    run: async () =>
+      expect(
+        await callMockedNetworkRoute(
+          "/api/network/website-inspection",
+          { operation: "open-graph-inspector", url: "https://example.com" },
+          { result: { title: "Example", openGraph: { "og:type": "website" } } },
+          () =>
+            runWebsiteDiagnostic("open-graph-inspector", "https://example.com"),
+        ),
+      ).toEqual({
+        title: "Example",
+        openGraph: { "og:type": "website" },
+      }),
+  },
+  {
+    id: "email-dns-analyzer",
+    run: async () =>
+      expect(
+        await callMockedNetworkRoute(
+          "/api/network/dns-inspection",
+          { operation: "email-dns-analyzer", domain: "example.com" },
+          { result: { mx: ["10 mail.example.com"], spf: ["v=spf1 -all"] } },
+          () => runWebsiteDiagnostic("email-dns-analyzer", "example.com"),
+        ),
+      ).toEqual({
+        mx: ["10 mail.example.com"],
+        spf: ["v=spf1 -all"],
+      }),
+  },
+  {
+    id: "dns-propagation-checker",
+    run: async () =>
+      expect(
+        await callMockedNetworkRoute(
+          "/api/network/dns-inspection",
+          {
+            operation: "dns-propagation-checker",
+            domain: "example.com",
+            recordType: "AAAA",
+          },
+          { result: { consistent: true, recordType: "AAAA", resolvers: 3 } },
+          () =>
+            runWebsiteDiagnostic(
+              "dns-propagation-checker",
+              "example.com",
+              "AAAA",
+            ),
+        ),
+      ).toEqual({ consistent: true, recordType: "AAAA", resolvers: 3 }),
   },
   {
     id: "image-resizer",
