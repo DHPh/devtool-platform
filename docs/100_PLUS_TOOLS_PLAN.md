@@ -520,6 +520,9 @@ Acceptance criteria:
 
 Deliver all 8 Website Diagnostics tools.
 
+Status: IN PROGRESS — shared bounded HTTP inspection engine implemented for
+redirect, security-header, CORS, robots, sitemap, and Open Graph diagnostics.
+
 Target after phase: 105 executable tools and 117 total registry entries.
 
 Acceptance criteria:

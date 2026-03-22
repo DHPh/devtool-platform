@@ -63,6 +63,7 @@ export interface OutboundRequestOptions {
   maxRedirects?: number;
   maxResponseBytes?: number;
   maxRequestBodyBytes?: number;
+  onRedirect?: (redirect: { from: string; to: string; status: number }) => void;
 }
 
 export interface OutboundResponse {
@@ -559,7 +560,9 @@ export async function requestOutbound(
         throw new OutboundRequestError("TOO_MANY_REDIRECTS");
       }
 
-      url = parseOutboundUrl(new URL(location, url).toString());
+      const nextUrl = parseOutboundUrl(new URL(location, url).toString());
+      options.onRedirect?.({ from: url.toString(), to: nextUrl.toString(), status: response.status });
+      url = nextUrl;
       if (
         response.status === 303 ||
         ((response.status === 301 || response.status === 302) && method === "POST")
