@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CopyableResult } from "@/components/layout";
+import { CopyableResult, ToolSectionHeader } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import {
   convertCsvJson,
@@ -161,14 +161,11 @@ export function SerializationTool({ tool }: { tool: SerializationToolId }) {
 
   return (
     <section className="space-y-4" aria-labelledby={`${tool}-title`}>
-      <div>
-        <h2 id={`${tool}-title`} className="text-2xl font-semibold">
-          {TITLES[tool]}
-        </h2>
-        <p className="text-muted-foreground">
-          Runs locally in your browser. Input is not uploaded.
-        </p>
-      </div>
+      <ToolSectionHeader
+        title={TITLES[tool]}
+        titleId={`${tool}-title`}
+        description="Runs locally in your browser. Input is not uploaded."
+      />
 
       <div className="flex flex-wrap gap-3">
         {isFormatter && (

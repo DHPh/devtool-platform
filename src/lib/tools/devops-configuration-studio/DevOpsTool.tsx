@@ -1,7 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CopyableResult } from "@/components/layout";
+import {
+  CopyableResult,
+  ToolErrorResult as ErrorResult,
+  ToolSectionHeader as Header,
+} from "@/components/layout";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -18,14 +22,6 @@ import {
   type GitignorePreset,
   type ValidationIssue,
 } from "@/lib/processors";
-
-function Header({ title, description }: { title: string; description: string }) {
-  return <div><h2 className="text-2xl font-semibold">{title}</h2><p className="text-muted-foreground">{description}</p></div>;
-}
-
-function ErrorResult({ message }: { message: string }) {
-  return <div role="alert"><CopyableResult value={message} label="Error" copyLabel="Copy error" rows={3} textareaClassName="border-destructive text-destructive" /></div>;
-}
 
 function IssueResults({ issues }: { issues: ValidationIssue[] }) {
   if (!issues.length) return <CopyableResult value="No issues found." label="Validation result" copyLabel="Copy validation result" rows={1} />;

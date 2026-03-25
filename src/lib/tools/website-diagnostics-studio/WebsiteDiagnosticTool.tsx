@@ -1,8 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { CopyableResult } from "@/components/layout";
-import { Button } from "@/components/ui/button";
+import {
+  AsyncActionButton,
+  CopyableResult,
+  ToolErrorResult,
+  ToolSectionHeader,
+} from "@/components/layout";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -148,8 +152,10 @@ export function WebsiteDiagnosticTool({
   return (
     <section className="space-y-5">
       <div>
-        <h2 className="text-2xl font-semibold">{config.title}</h2>
-        <p className="text-muted-foreground">{config.description}</p>
+        <ToolSectionHeader
+          title={config.title}
+          description={config.description}
+        />
         <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">
           The entered public destination is sent to this site&apos;s serverless
           diagnostic endpoint.
@@ -180,20 +186,16 @@ export function WebsiteDiagnosticTool({
             </Select>
           </label>
         )}
-        <Button type="button" onClick={() => void run()} disabled={working}>
-          {working ? "Running…" : config.button}
-        </Button>
+        <AsyncActionButton
+          pending={working}
+          pendingLabel="Running…"
+          onClick={() => void run()}
+        >
+          {config.button}
+        </AsyncActionButton>
       </div>
       {error ? (
-        <div role="alert">
-          <CopyableResult
-            value={error}
-            label="Error"
-            copyLabel="Copy error"
-            rows={3}
-            textareaClassName="border-destructive text-destructive"
-          />
-        </div>
+        <ToolErrorResult message={error} />
       ) : outputs.length > 0 ? (
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {outputs.map((output, index) => {

@@ -1,7 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CopyableResult } from "@/components/layout";
+import {
+  CopyableResult,
+  AsyncActionButton,
+  ToolErrorResult as ErrorResult,
+  ToolSectionHeader as Header,
+} from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,14 +24,6 @@ import {
   type CssUnit,
   type JavaScriptLanguage,
 } from "@/lib/processors";
-
-function Header({ title, description }: { title: string; description: string }) {
-  return <div><h2 className="text-2xl font-semibold">{title}</h2><p className="text-muted-foreground">{description}</p></div>;
-}
-
-function ErrorResult({ message }: { message: string }) {
-  return <div role="alert"><CopyableResult value={message} label="Error" copyLabel="Copy error" rows={4} textareaClassName="border-destructive text-destructive" /></div>;
-}
 
 export function JavaScriptFormatterTool() {
   const [input, setInput] = useState("const user={name:'Ada',active:true};\nconsole.log(user)");
@@ -101,7 +98,7 @@ export function JavaScriptMinifierTool() {
   const [result, setResult] = useState<Awaited<ReturnType<typeof minifyJavaScript>> | null>(null);
   const [working, setWorking] = useState(false);
   const run = async () => { setWorking(true); setResult(await minifyJavaScript(input, { mangle, module })); setWorking(false); };
-  return <section className="space-y-5"><Header title="JavaScript Minifier" description="Compress JavaScript locally with Terser and report exact UTF-8 size savings." /><div className="flex flex-wrap items-center gap-4"><Button type="button" onClick={() => void run()} disabled={working}>{working ? "Minifying…" : "Minify JavaScript"}</Button><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={mangle} onChange={(event) => setMangle(event.target.checked)} />Mangle local names</label><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={module} onChange={(event) => setModule(event.target.checked)} />ES module</label></div><label className="block space-y-2"><span className="text-sm font-medium">JavaScript source</span><Textarea value={input} onChange={(event) => setInput(event.target.value)} rows={16} className="font-mono" spellCheck={false} /></label>{result?.ok ? <CompressionResults result={result.value} outputLabel="Minified JavaScript" copyLabel="Copy minified JavaScript" /> : result ? <ErrorResult message={result.error} /> : null}</section>;
+  return <section className="space-y-5"><Header title="JavaScript Minifier" description="Compress JavaScript locally with Terser and report exact UTF-8 size savings." /><div className="flex flex-wrap items-center gap-4"><AsyncActionButton pending={working} pendingLabel="Minifying…" onClick={() => void run()}>Minify JavaScript</AsyncActionButton><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={mangle} onChange={(event) => setMangle(event.target.checked)} />Mangle local names</label><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={module} onChange={(event) => setModule(event.target.checked)} />ES module</label></div><label className="block space-y-2"><span className="text-sm font-medium">JavaScript source</span><Textarea value={input} onChange={(event) => setInput(event.target.value)} rows={16} className="font-mono" spellCheck={false} /></label>{result?.ok ? <CompressionResults result={result.value} outputLabel="Minified JavaScript" copyLabel="Copy minified JavaScript" /> : result ? <ErrorResult message={result.error} /> : null}</section>;
 }
 
 const SVG_OPTIMIZER_SAMPLE = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">\n  <!-- decorative circle -->\n  <circle cx="60" cy="60" r="48" fill="#6366f1" />\n</svg>';
@@ -113,5 +110,5 @@ export function SvgOptimizerTool() {
   const [result, setResult] = useState<Awaited<ReturnType<typeof optimizeSvg>> | null>(null);
   const [working, setWorking] = useState(false);
   const run = async () => { setWorking(true); setResult(await optimizeSvg(input, { multipass, preserveViewBox })); setWorking(false); };
-  return <section className="space-y-5"><Header title="SVG Optimizer" description="Optimize safe SVG markup locally with SVGO. This rejects active content but is not a general-purpose sanitizer." /><div className="flex flex-wrap items-center gap-4"><Button type="button" onClick={() => void run()} disabled={working}>{working ? "Optimizing…" : "Optimize SVG"}</Button><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={multipass} onChange={(event) => setMultipass(event.target.checked)} />Multiple passes</label><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={preserveViewBox} onChange={(event) => setPreserveViewBox(event.target.checked)} />Preserve viewBox</label></div><label className="block space-y-2"><span className="text-sm font-medium">SVG markup</span><Textarea value={input} onChange={(event) => setInput(event.target.value)} rows={16} className="font-mono" spellCheck={false} /></label>{result?.ok ? <CompressionResults result={result.value} outputLabel="Optimized SVG" copyLabel="Copy optimized SVG" /> : result ? <ErrorResult message={result.error} /> : null}</section>;
+  return <section className="space-y-5"><Header title="SVG Optimizer" description="Optimize safe SVG markup locally with SVGO. This rejects active content but is not a general-purpose sanitizer." /><div className="flex flex-wrap items-center gap-4"><AsyncActionButton pending={working} pendingLabel="Optimizing…" onClick={() => void run()}>Optimize SVG</AsyncActionButton><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={multipass} onChange={(event) => setMultipass(event.target.checked)} />Multiple passes</label><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={preserveViewBox} onChange={(event) => setPreserveViewBox(event.target.checked)} />Preserve viewBox</label></div><label className="block space-y-2"><span className="text-sm font-medium">SVG markup</span><Textarea value={input} onChange={(event) => setInput(event.target.value)} rows={16} className="font-mono" spellCheck={false} /></label>{result?.ok ? <CompressionResults result={result.value} outputLabel="Optimized SVG" copyLabel="Copy optimized SVG" /> : result ? <ErrorResult message={result.error} /> : null}</section>;
 }
