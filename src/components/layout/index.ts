@@ -12,7 +12,18 @@ export { ResponsiveTextArea } from "./responsive-textarea";
 export { ResultCard } from "./result-card";
 export { ValidationMessage, ValidationMessages } from "./validation-messages";
 export { SampleDataLoader, CommonSamples } from "./sample-data-loader";
-export { CopyableResult, CopyableCodeBlock } from "./copyable-result";
+export {
+  CopyableResult,
+  CopyableCodeBlock,
+  CopyableResultGrid,
+} from "./copyable-result";
+export type { CopyableResultGridItem } from "./copyable-result";
+export { CopyButton } from "./copy-button";
+export {
+  ToolSectionHeader,
+  ToolErrorResult,
+  AsyncActionButton,
+} from "./tool-primitives";
 export { ToolHeader } from "./tool-header";
 export { QuickActions, CommonActions, ActionGroups } from "./quick-actions";
 export { FileUploadZone } from "./file-upload-zone";

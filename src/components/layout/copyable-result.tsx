@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Copy, Check, Eye, EyeOff } from "lucide-react";
-import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react";
+import { CopyButton } from "./copy-button";
+import { cn } from "@/lib/utils";
 
 interface CopyableResultProps {
   value: string;
@@ -37,28 +38,15 @@ export function CopyableResult({
   fontFamily = "mono",
   onValueChange,
 }: CopyableResultProps) {
-  const [copied, setCopied] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
-
-  const handleCopy = async () => {
-    if (!value) return;
-
-    try {
-      await navigator.clipboard.writeText(value);
-      toast.success(successMessage);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error("Failed to copy to clipboard");
-    }
-  };
 
   const toggleVisibility = () => {
     setIsVisible(!isVisible);
   };
-
-  const copiedLabel = copyLabel.replace(/^Copy\s+/i, "");
-  const copiedAriaLabel = `${copiedLabel.charAt(0).toUpperCase()}${copiedLabel.slice(1)} copied`;
+  const copiedSubject = copyLabel.replace(/^Copy\s+/i, "");
+  const copiedAriaLabel = copiedSubject
+    ? `${copiedSubject.charAt(0).toUpperCase()}${copiedSubject.slice(1)} copied`
+    : "Copied";
 
   return (
     <div className={`space-y-2 ${className}`}>
@@ -85,27 +73,14 @@ export function CopyableResult({
                 )}
               </Button>
             )}
-            {showCopyButton && value && (
-              <Button
-                type="button"
-                onClick={handleCopy}
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2"
-                disabled={!value}
-                aria-label={
-                  copied ? copiedAriaLabel : copyLabel
-                }
-              >
-                {copied ? (
-                  <Check className="h-4 w-4 text-green-600" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-                <span className="ml-1 text-xs">
-                  {copied ? "Copied!" : copyLabel}
-                </span>
-              </Button>
+            {showCopyButton && (
+              <CopyButton
+                value={value}
+                label={copyLabel}
+                copiedLabel={copiedAriaLabel}
+                successMessage={successMessage}
+                className="h-8 px-2 text-xs"
+              />
             )}
           </div>
         </div>
@@ -140,19 +115,6 @@ export function CopyableCodeBlock({
   label,
   className = "",
 }: CopyableCodeBlockProps) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(code);
-      toast.success("Code copied to clipboard!");
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error("Failed to copy to clipboard");
-    }
-  };
-
   return (
     <div className={`relative ${className}`}>
       {/* Header */}
@@ -168,21 +130,14 @@ export function CopyableCodeBlock({
               {language}
             </span>
           )}
-          <Button
-            type="button"
-            onClick={handleCopy}
-            variant="ghost"
-            size="sm"
+          <CopyButton
+            value={code}
+            label="Copy code"
+            copiedLabel="Code copied"
+            successMessage="Code copied to clipboard!"
             className="h-6 px-2"
-            disabled={!code}
-            aria-label={copied ? "Code copied" : "Copy code"}
-          >
-            {copied ? (
-              <Check className="h-3 w-3 text-green-600" />
-            ) : (
-              <Copy className="h-3 w-3" />
-            )}
-          </Button>
+            showText={false}
+          />
         </div>
       </div>
 
@@ -190,6 +145,63 @@ export function CopyableCodeBlock({
       <pre className="bg-muted/50 border border-t-0 rounded-b-md p-4 overflow-x-auto">
         <code className="text-sm font-mono">{code}</code>
       </pre>
+    </div>
+  );
+}
+
+export interface CopyableResultGridItem {
+  id: string;
+  label: string;
+  value: string;
+  rows?: number;
+  tone?: "default" | "success" | "warning" | "error";
+}
+
+export function CopyableResultGrid({
+  items,
+  className,
+}: {
+  items: CopyableResultGridItem[];
+  className?: string;
+}) {
+  return (
+    <div className={cn("grid gap-3 sm:grid-cols-2", className)}>
+      {items.map((item) => (
+        <div
+          key={item.id}
+          className={cn(
+            "rounded-md border bg-muted/20 p-3",
+            item.tone === "success" && "border-green-500/30 bg-green-500/5",
+            item.tone === "warning" && "border-orange-500/30 bg-orange-500/5",
+            item.tone === "error" &&
+              "border-destructive/30 bg-destructive/5",
+          )}
+        >
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-sm font-medium">{item.label}</span>
+            <CopyButton
+              value={item.value}
+              label={`Copy ${item.label}`}
+              copiedLabel={`${item.label} copied`}
+              showText={false}
+              className="h-7 w-7 p-0"
+            />
+          </div>
+          {item.rows && item.rows > 1 ? (
+            <Textarea
+              value={item.value}
+              readOnly
+              rows={item.rows}
+              aria-label={item.label}
+              className="resize-none font-mono text-sm"
+            />
+          ) : (
+            <output className="block break-all font-mono text-sm">
+              {item.value}
+            </output>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
