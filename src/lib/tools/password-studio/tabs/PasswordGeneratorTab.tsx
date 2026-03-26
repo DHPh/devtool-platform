@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -110,7 +111,7 @@ export function PasswordGeneratorTab({
 
   const handleCopyPassword = () => {
     if (currentPassword) {
-      navigator.clipboard.writeText(currentPassword);
+      void writeClipboardText(currentPassword);
     }
   };
 

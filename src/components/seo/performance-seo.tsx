@@ -84,11 +84,11 @@ export function usePerformanceTracking() {
   if (typeof window !== "undefined") {
     // Web Vitals tracking
     import("web-vitals").then(({ onCLS, onINP, onFCP, onLCP, onTTFB }) => {
-      onCLS(console.log);
-      onINP(console.log);
-      onFCP(console.log);
-      onLCP(console.log);
-      onTTFB(console.log);
+      onCLS(() => {});
+      onINP(() => {});
+      onFCP(() => {});
+      onLCP(() => {});
+      onTTFB(() => {});
     });
   }
 }

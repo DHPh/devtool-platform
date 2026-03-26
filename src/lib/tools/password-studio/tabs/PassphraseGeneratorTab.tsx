@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,7 +78,7 @@ export function PassphraseGeneratorTab({
 
   const handleCopyPassphrase = () => {
     if (currentPassphrase) {
-      navigator.clipboard.writeText(currentPassphrase);
+      void writeClipboardText(currentPassphrase);
     }
   };
 
@@ -365,7 +366,7 @@ export function PassphraseGeneratorTab({
                     variant="ghost"
                     size="sm"
                     onClick={() =>
-                      navigator.clipboard.writeText(result.passphrase)
+                      writeClipboardText(result.passphrase)
                     }
                     className="h-8 w-8 p-0 ml-3"
                   >

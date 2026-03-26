@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, Palette } from "lucide-react";
@@ -52,7 +53,7 @@ export function ContrastSuggestions({
 
   const handleColorClick = (suggestion: ContrastSuggestion) => {
     onColorSelect(suggestion.hex);
-    navigator.clipboard.writeText(suggestion.hex);
+    void writeClipboardText(suggestion.hex);
     toast.success(`Color ${suggestion.hex} copied and applied!`);
   };
 

@@ -83,7 +83,7 @@ export function RegexTesterTab({
 
   const handleHighlightMatch = (match: RegexMatch) => {
     // Could implement highlighting logic here if needed
-    console.log("Highlighting match:", match);
+    void match;
   };
 
   return (

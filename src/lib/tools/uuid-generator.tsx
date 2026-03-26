@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import { Copy, Hash, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -48,7 +49,7 @@ export default function UuidGenerator() {
   };
 
   const copy = async (value: string, message = "UUID copied") => {
-    await navigator.clipboard.writeText(value);
+    await writeClipboardText(value);
     toast.success(message);
   };
 

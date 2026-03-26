@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,7 +104,7 @@ export function ColorBlindnessSimulator() {
 
   const copySimulatedColor = (color: string, type: ColorBlindnessType) => {
     const simulated = simulateColor(color, type);
-    navigator.clipboard.writeText(simulated);
+    void writeClipboardText(simulated);
     toast.success(`Simulated color (${type}) copied to clipboard`);
   };
 
@@ -113,7 +114,7 @@ export function ColorBlindnessSimulator() {
     ).join("\n");
 
     const output = `Original: ${inputColor}\n${results}`;
-    navigator.clipboard.writeText(output);
+    void writeClipboardText(output);
     toast.success("All simulations copied to clipboard");
   };
 
@@ -316,7 +317,7 @@ export function ColorBlindnessSimulator() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => navigator.clipboard.writeText(inputColor)}
+                  onClick={() => void writeClipboardText(inputColor)}
                   className="h-6 w-6 p-0"
                 >
                   <Copy className="h-3 w-3" />

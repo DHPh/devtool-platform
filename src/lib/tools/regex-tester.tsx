@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -437,7 +438,7 @@ export default function RegexTester() {
 
   // Copy to clipboard
   const copyToClipboard = (text: string, type: string) => {
-    navigator.clipboard.writeText(text);
+    void writeClipboardText(text);
     toast.success(`${type} copied to clipboard`);
   };
 

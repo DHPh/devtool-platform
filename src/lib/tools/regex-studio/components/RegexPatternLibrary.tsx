@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -24,7 +25,7 @@ export function RegexPatternLibrary({
   searchQuery = "",
 }: RegexPatternLibraryProps) {
   const handleCopyPattern = (pattern: string) => {
-    navigator.clipboard.writeText(pattern);
+    void writeClipboardText(pattern);
   };
 
   const handleSelectPattern = (pattern: string) => {

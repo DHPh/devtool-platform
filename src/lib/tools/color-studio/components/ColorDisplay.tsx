@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,7 @@ export function ColorDisplay({ color, showDetails = true, onCopy, onChange }: Co
   const previewLabel = mapped.hex ?? color.hex;
 
   const handleCopy = (value: string, format: string) => {
-    void navigator.clipboard.writeText(value);
+    void writeClipboardText(value);
     toast.success(`${format} copied to clipboard`);
     onCopy?.(value, format);
   };

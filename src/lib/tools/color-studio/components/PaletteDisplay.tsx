@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,13 +21,13 @@ export function PaletteDisplay({
   showExport = true,
 }: PaletteDisplayProps) {
   const handleCopyColor = (color: string) => {
-    navigator.clipboard.writeText(color);
+    void writeClipboardText(color);
     toast.success(`${color} copied to clipboard`);
   };
 
   const handleCopyPalette = () => {
     const paletteText = palette.colors.map((c) => c.hex).join(", ");
-    navigator.clipboard.writeText(paletteText);
+    void writeClipboardText(paletteText);
     toast.success("Palette copied to clipboard");
   };
 

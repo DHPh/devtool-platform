@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import { Copy, Hash, Dices } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -96,14 +97,14 @@ export default function NumberGenerator() {
   const copyNumbers = async () => {
     const formattedNumbers = generatedNumbers.map(formatNumber);
     const numbersText = formattedNumbers.join("\n");
-    await navigator.clipboard.writeText(numbersText);
+    await writeClipboardText(numbersText);
     toast.success("Numbers copied to clipboard!");
   };
 
   const copyNumber = async (number: number) => {
     const formatted = formatNumber(number);
     try {
-      await navigator.clipboard.writeText(formatted);
+      await writeClipboardText(formatted);
       toast.success(`${formatted} copied to clipboard!`);
     } catch {
       toast.error("Failed to copy to clipboard");

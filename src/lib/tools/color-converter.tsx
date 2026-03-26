@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import { Palette, Copy } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -182,7 +183,7 @@ export default function ColorConverter() {
   };
 
   const copyColor = async (format: string, value: string) => {
-    await navigator.clipboard.writeText(value);
+    await writeClipboardText(value);
     toast.success(`${format} value copied to clipboard!`);
   };
 

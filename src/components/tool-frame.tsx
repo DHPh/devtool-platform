@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import {
   Card,
   CardContent,
@@ -55,14 +56,14 @@ export function ToolFrame({ tool, children }: ToolFrameProps) {
       }
     } else {
       // Fallback to copying URL
-      await navigator.clipboard.writeText(url);
+      await writeClipboardText(url);
       toast.success("URL copied to clipboard");
     }
   };
 
   const handleCopyUrl = async () => {
     const url = window.location.href;
-    await navigator.clipboard.writeText(url);
+    await writeClipboardText(url);
     toast.success("URL copied to clipboard");
   };
 

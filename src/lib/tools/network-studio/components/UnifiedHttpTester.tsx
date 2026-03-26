@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -282,7 +283,7 @@ export function UnifiedHttpTester() {
 
   const copyResponse = () => {
     if (response) {
-      navigator.clipboard.writeText(JSON.stringify(response, null, 2));
+      void writeClipboardText(JSON.stringify(response, null, 2));
       toast.success("Response copied to clipboard");
     }
   };

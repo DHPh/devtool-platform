@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -102,7 +103,7 @@ export function RegexReplaceTab({
   };
 
   const handleCopyResult = () => {
-    navigator.clipboard.writeText(replaceResult.result);
+    void writeClipboardText(replaceResult.result);
   };
 
   const handleDownloadResult = () => {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import { Shuffle, User } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -99,13 +100,13 @@ export default function NameGenerator() {
   };
 
   const copyName = async (name: string) => {
-    await navigator.clipboard.writeText(name);
+    await writeClipboardText(name);
     toast.success("Name copied to clipboard!");
   };
 
   const copyAllNames = async () => {
     const allNames = generatedNames.join("\n");
-    await navigator.clipboard.writeText(allNames);
+    await writeClipboardText(allNames);
     toast.success("All names copied to clipboard!");
   };
 

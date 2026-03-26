@@ -156,11 +156,6 @@ export function UrlTester() {
         // Create error object from test result
         const resultError = new Error(testResult.error || "Request failed");
 
-        console.log("Test result error:", {
-          error: testResult.error,
-          statusCode: testResult.statusCode,
-        });
-
         const errorInfo = categorizeError(resultError, testResult);
         setError(errorInfo);
         toast.error(`URL test failed: ${errorInfo.category}`);
@@ -170,7 +165,6 @@ export function UrlTester() {
         toast.success(`URL is accessible (${testResult.statusCode || "OK"})`);
       }
     } catch (error) {
-      console.log("Caught error:", error);
       const errorInfo = categorizeError(error);
       setError(errorInfo);
       toast.error(`URL test failed: ${errorInfo.category}`);

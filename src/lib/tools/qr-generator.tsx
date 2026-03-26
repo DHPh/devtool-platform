@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -85,7 +86,7 @@ export default function QrGenerator() {
   const copySvg = async () => {
     if (!("svg" in generated)) return;
     try {
-      await navigator.clipboard.writeText(generated.svg);
+      await writeClipboardText(generated.svg);
       toast.success("SVG markup copied.");
     } catch {
       toast.error("Unable to copy SVG markup.");

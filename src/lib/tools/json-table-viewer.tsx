@@ -69,11 +69,6 @@ export default function JSONTableViewer() {
         return;
       }
 
-      // Debug logging
-      console.log("Parsed JSON result:", result);
-      console.log("Sample row:", result.data[0]);
-      console.log("Headers:", result.headers);
-
       setData(result.data);
       setHasNestedData(result.hasNestedData);
 

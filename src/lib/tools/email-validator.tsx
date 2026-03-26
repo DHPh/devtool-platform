@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -73,7 +74,7 @@ export default function EmailValidator() {
       .join("\n");
 
     try {
-      await navigator.clipboard.writeText(validEmails);
+      await writeClipboardText(validEmails);
       toast.success("Valid emails copied to clipboard!");
     } catch {
       toast.error("Failed to copy to clipboard");
@@ -82,7 +83,7 @@ export default function EmailValidator() {
 
   const copyEmail = async (email: string) => {
     try {
-      await navigator.clipboard.writeText(email);
+      await writeClipboardText(email);
       toast.success("Email copied to clipboard!");
     } catch {
       toast.error("Failed to copy to clipboard");

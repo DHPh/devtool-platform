@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -105,7 +106,7 @@ export function ApiTester() {
   };
 
   const handleCopy = (text: string, type: string) => {
-    navigator.clipboard.writeText(text);
+    void writeClipboardText(text);
     toast.success(`${type} copied to clipboard`);
   };
 

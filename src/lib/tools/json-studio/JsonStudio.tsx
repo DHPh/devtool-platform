@@ -40,10 +40,8 @@ function JsonStudioContent({
   }, [input]);
 
   // Handle file upload
-  const handleFileSelect = (content: string, fileName: string) => {
+  const handleFileSelect = (content: string) => {
     setInput(content);
-    // Could use fileName for additional features like displaying file name
-    console.log(`Loaded JSON file: ${fileName}`);
   };
 
   // Handle sample data

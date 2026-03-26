@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -133,7 +134,7 @@ export function GradientCreator() {
   });
 
   const copyCss = () => {
-    navigator.clipboard.writeText(gradientCSS);
+    void writeClipboardText(gradientCSS);
     toast.success("CSS copied to clipboard");
   };
 
@@ -155,7 +156,7 @@ export function GradientCreator() {
   };
 
   const copySwiftUI = () => {
-    navigator.clipboard.writeText(generateSwiftUICode());
+    void writeClipboardText(generateSwiftUICode());
     toast.success("SwiftUI code copied to clipboard");
   };
 

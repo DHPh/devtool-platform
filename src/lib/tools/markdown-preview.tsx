@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import {
   Card,
   CardContent,
@@ -75,13 +76,13 @@ function hello() {
   );
 
   const copyMarkdown = () => {
-    navigator.clipboard.writeText(input);
+    void writeClipboardText(input);
     toast.success("Markdown copied to clipboard!");
   };
 
   const copyHtml = () => {
     const htmlOutput = renderMarkdownToSafeHtml(input);
-    navigator.clipboard.writeText(htmlOutput);
+    void writeClipboardText(htmlOutput);
     toast.success("HTML copied to clipboard!");
   };
 

@@ -6,6 +6,7 @@
 "use client";
 
 import { useState } from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -92,7 +93,7 @@ export function JsonSchemaValidator({
       toast.error("No schema to copy");
       return;
     }
-    navigator.clipboard.writeText(schema);
+    void writeClipboardText(schema);
     toast.success("Schema copied to clipboard");
   };
 

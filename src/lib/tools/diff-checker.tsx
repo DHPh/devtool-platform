@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import { GitCompare, Copy, Download, FileText } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -284,7 +285,7 @@ export default function DiffChecker() {
       })
       .join("\n");
 
-    navigator.clipboard.writeText(diffText);
+    void writeClipboardText(diffText);
     toast.success("Diff copied to clipboard!");
   };
 

@@ -6,6 +6,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -78,14 +79,14 @@ export function JsonPathExplorer({ data, className }: JsonPathExplorerProps) {
   };
 
   const copyPath = (path: string) => {
-    navigator.clipboard.writeText(path);
+    void writeClipboardText(path);
     toast.success("Path copied to clipboard");
   };
 
   const copyValue = (value: unknown) => {
     const valueStr =
       typeof value === "string" ? value : JSON.stringify(value, null, 2);
-    navigator.clipboard.writeText(valueStr);
+    void writeClipboardText(valueStr);
     toast.success("Value copied to clipboard");
   };
 

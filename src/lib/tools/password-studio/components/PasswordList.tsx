@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { writeClipboardText } from "@/hooks/use-clipboard";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -31,7 +32,7 @@ export function PasswordList({
   );
 
   const handleCopyPassword = (password: string) => {
-    navigator.clipboard.writeText(password);
+    void writeClipboardText(password);
   };
 
   const togglePasswordVisibility = (index: number) => {
