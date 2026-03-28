@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Copy } from "lucide-react";
 import { toast } from "sonner";
+import { TermHelp } from "@/components/tool-glossary";
 import {
   mapCSSColorToGamut,
   parseCSSColor,
@@ -50,10 +51,14 @@ export function ColorDisplay({ color, showDetails = true, onCopy, onChange }: Co
           <div className="flex flex-wrap justify-end gap-2">
             <Badge variant={color.isLight ? "default" : "secondary"}>{color.isLight ? "Light" : "Dark"}</Badge>
             <Badge variant={cssColor.gamut.srgb ? "secondary" : "destructive"}>
-              sRGB {cssColor.gamut.srgb ? "in gamut" : "clipped"}
+              <TermHelp definition="sRGB is the standard web color range. “In gamut” means the color fits unchanged; “clipped” means the preview limits out-of-range channels to the nearest available value.">
+                sRGB {cssColor.gamut.srgb ? "in gamut" : "clipped"}
+              </TermHelp>
             </Badge>
             <Badge variant={cssColor.gamut.displayP3 ? "secondary" : "destructive"}>
-              P3 {cssColor.gamut.displayP3 ? "in gamut" : "out of gamut"}
+              <TermHelp definition="Display-P3 is a wider display color range than sRGB. “Out of gamut” means this exact color cannot be represented in P3 without adjustment.">
+                P3 {cssColor.gamut.displayP3 ? "in gamut" : "out of gamut"}
+              </TermHelp>
             </Badge>
           </div>
         </div>

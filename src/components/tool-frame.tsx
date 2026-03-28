@@ -16,6 +16,7 @@ import { ToolMetadata } from "@/lib/tool-registry";
 import { toast } from "sonner";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { getProcessingInfo } from "@/lib/tool-processing";
+import { ToolGlossary } from "@/components/tool-glossary";
 
 interface ToolFrameProps {
   tool: ToolMetadata;
@@ -139,6 +140,7 @@ export function ToolFrame({ tool, children }: ToolFrameProps) {
         </CardHeader>
         <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
           {children}
+          <ToolGlossary toolId={tool.id} />
         </CardContent>
       </Card>
     </div>

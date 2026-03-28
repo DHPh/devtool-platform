@@ -17,6 +17,7 @@ import {
   rgbToHex,
   hsvToRgb,
 } from "@/lib/utils/color";
+import { TermHelp } from "@/components/tool-glossary";
 
 interface ColorPickerProps {
   value: string;
@@ -192,10 +193,14 @@ export function ColorPicker({
         {/* Color Sliders */}
         <div className="flex flex-wrap gap-2" aria-label="Color gamut status">
           <Badge variant={cssColor?.gamut.srgb ? "secondary" : "destructive"}>
-            sRGB: {cssColor?.gamut.srgb ? "in gamut" : "clipped in preview"}
+            <TermHelp definition="sRGB is the standard web color range. If the color is outside it, this on-screen preview clips channels to the nearest representable sRGB value.">
+              sRGB: {cssColor?.gamut.srgb ? "in gamut" : "clipped in preview"}
+            </TermHelp>
           </Badge>
           <Badge variant={cssColor?.gamut.displayP3 ? "secondary" : "destructive"}>
-            Display-P3: {cssColor?.gamut.displayP3 ? "in gamut" : "out of gamut"}
+            <TermHelp definition="Display-P3 is a wider color range available on compatible displays. “Out of gamut” means P3 cannot reproduce the exact requested color.">
+              Display-P3: {cssColor?.gamut.displayP3 ? "in gamut" : "out of gamut"}
+            </TermHelp>
           </Badge>
         </div>
 
