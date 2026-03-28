@@ -255,6 +255,15 @@ export default function DuplicateFinderTab() {
                 "hover:border-primary/50 hover:bg-primary/5"
               )}
               onClick={() => fileInputRef.current?.click()}
+              role="button"
+              tabIndex={0}
+              aria-label="Choose files to scan for duplicates"
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
             >
               <Upload className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
               <p className="text-lg font-medium">Upload Files</p>
@@ -512,6 +521,7 @@ export default function DuplicateFinderTab() {
                           variant="ghost"
                           onClick={() => window.open(file.url, "_blank")}
                           className="h-6 w-6 p-0"
+                          aria-label={`Preview ${file.name}`}
                         >
                           <Eye className="h-3 w-3" />
                         </Button>

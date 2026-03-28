@@ -233,7 +233,7 @@ export default function FileHasherTab() {
                     <h4 className="font-medium mb-3">Hash Algorithms</h4>
                     <div className="grid grid-cols-2 gap-2">
                       {HASH_ALGORITHMS.map((algo) => (
-                        <div
+                        <label
                           key={algo.key}
                           className={cn(
                             "border rounded-lg p-3 cursor-pointer transition-colors",
@@ -241,7 +241,6 @@ export default function FileHasherTab() {
                               ? "border-primary bg-primary/5"
                               : "hover:border-primary/50"
                           )}
-                          onClick={() => toggleAlgorithm(algo.key)}
                         >
                           <div className="flex items-center space-x-2">
                             <input
@@ -257,7 +256,7 @@ export default function FileHasherTab() {
                               </p>
                             </div>
                           </div>
-                        </div>
+                        </label>
                       ))}
                     </div>
                   </div>
@@ -269,6 +268,15 @@ export default function FileHasherTab() {
                       "hover:border-primary/50 hover:bg-primary/5"
                     )}
                     onClick={() => fileInputRef.current?.click()}
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Choose files to hash"
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        fileInputRef.current?.click();
+                      }
+                    }}
                   >
                     <Upload className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
                     <p className="text-lg font-medium">Upload Files</p>
@@ -416,6 +424,7 @@ export default function FileHasherTab() {
                                     size="sm"
                                     variant="outline"
                                     onClick={() => exportHashes(file)}
+                                    aria-label={`Export hashes for ${file.name}`}
                                   >
                                     <Download className="h-4 w-4" />
                                   </Button>
@@ -431,6 +440,7 @@ export default function FileHasherTab() {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => removeFile(file.id)}
+                                  aria-label={`Remove ${file.name}`}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>

@@ -252,6 +252,7 @@ export function DnsLookup() {
                             `${result.recordType} records`
                           )
                         }
+                        aria-label={`Copy ${result.recordType} records`}
                       >
                         <Copy className="h-3 w-3" />
                       </Button>

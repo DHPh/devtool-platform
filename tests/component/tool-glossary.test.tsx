@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { TermHelp, ToolGlossary } from "@/components/tool-glossary";
+import { Badge } from "@/components/ui/badge";
 
 afterEach(cleanup);
 
@@ -41,5 +42,21 @@ describe("tool vocabulary help", () => {
     expect(await screen.findByRole("tooltip")).toHaveTextContent(
       "The range of colors a display can represent.",
     );
+  });
+
+  it("keeps the help icon visible and large enough on destructive badges", () => {
+    render(
+      <Badge variant="destructive">
+        <TermHelp term="sRGB gamut status" definition="Preview explanation">
+          sRGB clipped
+        </TermHelp>
+      </Badge>,
+    );
+
+    const trigger = screen.getByRole("button", {
+      name: "Explain sRGB gamut status",
+    });
+    expect(trigger).toHaveClass("text-current", "h-6", "w-6");
+    expect(trigger).not.toHaveClass("text-muted-foreground");
   });
 });

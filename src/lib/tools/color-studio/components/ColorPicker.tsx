@@ -193,12 +193,12 @@ export function ColorPicker({
         {/* Color Sliders */}
         <div className="flex flex-wrap gap-2" aria-label="Color gamut status">
           <Badge variant={cssColor?.gamut.srgb ? "secondary" : "destructive"}>
-            <TermHelp definition="sRGB is the standard web color range. If the color is outside it, this on-screen preview clips channels to the nearest representable sRGB value.">
+            <TermHelp term="sRGB gamut status" definition="sRGB is the standard web color range. If the color is outside it, this on-screen preview clips channels to the nearest representable sRGB value.">
               sRGB: {cssColor?.gamut.srgb ? "in gamut" : "clipped in preview"}
             </TermHelp>
           </Badge>
           <Badge variant={cssColor?.gamut.displayP3 ? "secondary" : "destructive"}>
-            <TermHelp definition="Display-P3 is a wider color range available on compatible displays. “Out of gamut” means P3 cannot reproduce the exact requested color.">
+            <TermHelp term="Display-P3 gamut status" definition="Display-P3 is a wider color range available on compatible displays. “Out of gamut” means P3 cannot reproduce the exact requested color.">
               Display-P3: {cssColor?.gamut.displayP3 ? "in gamut" : "out of gamut"}
             </TermHelp>
           </Badge>

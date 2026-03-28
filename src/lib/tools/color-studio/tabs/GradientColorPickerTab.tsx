@@ -396,6 +396,7 @@ export function GradientColorPickerTab() {
                           size="sm"
                           onClick={() => copyColor(result.hex, "HEX")}
                           className="h-6 w-6 p-0"
+                          aria-label={`Copy HEX color ${result.hex}`}
                         >
                           <Copy className="h-3 w-3" />
                         </Button>
@@ -407,6 +408,7 @@ export function GradientColorPickerTab() {
                           size="sm"
                           onClick={() => copyColor(result.rgb, "RGB")}
                           className="h-6 w-6 p-0"
+                          aria-label={`Copy RGB color ${result.rgb}`}
                         >
                           <Copy className="h-3 w-3" />
                         </Button>
@@ -418,6 +420,7 @@ export function GradientColorPickerTab() {
                           size="sm"
                           onClick={() => copyColor(result.hsl, "HSL")}
                           className="h-6 w-6 p-0"
+                          aria-label={`Copy HSL color ${result.hsl}`}
                         >
                           <Copy className="h-3 w-3" />
                         </Button>
@@ -431,6 +434,7 @@ export function GradientColorPickerTab() {
                       size="sm"
                       onClick={() => removePickedColor(index)}
                       className="h-8 w-8 p-0"
+                      aria-label={`Remove picked color ${index + 1}`}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

@@ -171,7 +171,7 @@ export default function NameGenerator() {
               <div>
                 <Label htmlFor="name-type">Name Type</Label>
                 <Select value={nameType} onValueChange={(value) => setNameType(value as typeof nameType)}>
-                  <SelectTrigger>
+                  <SelectTrigger aria-label="Name type">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -186,7 +186,7 @@ export default function NameGenerator() {
                 <div>
                   <Label htmlFor="gender">Gender</Label>
                   <Select value={personGender} onValueChange={(value) => setPersonGender(value as typeof personGender)}>
-                    <SelectTrigger>
+                    <SelectTrigger aria-label="Person gender">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

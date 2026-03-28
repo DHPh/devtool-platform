@@ -329,6 +329,15 @@ export default function FileOrganizerTab() {
                     "hover:border-primary/50 hover:bg-primary/5"
                   )}
                   onClick={() => fileInputRef.current?.click()}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Choose files to organize"
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      fileInputRef.current?.click();
+                    }
+                  }}
                 >
                   <Upload className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
                   <p className="text-lg font-medium">Upload Files</p>
@@ -374,7 +383,7 @@ export default function FileOrganizerTab() {
                     Organization Rule
                   </label>
                   <Select value={selectedRule} onValueChange={handleRuleChange}>
-                    <SelectTrigger className="mt-2">
+                    <SelectTrigger className="mt-2" aria-label="Organization rule">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -461,6 +470,7 @@ export default function FileOrganizerTab() {
                                 variant="ghost"
                                 onClick={() => removeFile(file.id)}
                                 className="h-6 w-6 p-0"
+                                aria-label={`Remove ${file.name}`}
                               >
                                 <Trash2 className="h-3 w-3" />
                               </Button>

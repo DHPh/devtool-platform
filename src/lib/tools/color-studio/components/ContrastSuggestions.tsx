@@ -151,10 +151,12 @@ export function ContrastSuggestions({
                 {getCurrentSuggestions()
                   .slice(0, 48)
                   .map((suggestion, index) => (
-                    <div
+                    <button
+                      type="button"
                       key={index}
                       className="group relative cursor-pointer"
                       onClick={() => handleColorClick(suggestion)}
+                      aria-label={`Use suggested color ${suggestion.hex}, contrast ${suggestion.ratio.toFixed(2)} to 1, ${suggestion.level}`}
                     >
                       <div
                         className="w-8 h-8 rounded border-2 border-gray-200 hover:border-gray-400 transition-all duration-200 hover:scale-110"
@@ -174,7 +176,7 @@ export function ContrastSuggestions({
                           {getContrastLevel(suggestion.level).label}
                         </div>
                       </div>
-                    </div>
+                    </button>
                   ))}
               </div>
 

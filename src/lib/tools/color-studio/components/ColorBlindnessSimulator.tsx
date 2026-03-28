@@ -210,7 +210,7 @@ export function ColorBlindnessSimulator() {
               setSelectedType(value)
             }
           >
-            <SelectTrigger>
+            <SelectTrigger aria-label="Color blindness simulation type">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -319,6 +319,7 @@ export function ColorBlindnessSimulator() {
                   size="sm"
                   onClick={() => void writeClipboardText(inputColor)}
                   className="h-6 w-6 p-0"
+                  aria-label={`Copy input color ${inputColor}`}
                 >
                   <Copy className="h-3 w-3" />
                 </Button>
@@ -348,6 +349,7 @@ export function ColorBlindnessSimulator() {
                       size="sm"
                       onClick={() => copySimulatedColor(inputColor, type.value)}
                       className="h-6 w-6 p-0"
+                      aria-label={`Copy ${type.label} simulated color`}
                     >
                       <Copy className="h-3 w-3" />
                     </Button>

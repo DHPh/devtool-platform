@@ -259,7 +259,7 @@ export default function NumberGenerator() {
               <div>
                 <Label htmlFor="format">Number Format</Label>
                 <Select value={format} onValueChange={(value) => setFormat(value as typeof format)}>
-                  <SelectTrigger>
+                  <SelectTrigger aria-label="Number format">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

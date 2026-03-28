@@ -104,7 +104,7 @@ export function PaletteGeneratorTab() {
                   setPaletteType(value)
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger aria-label="Palette type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

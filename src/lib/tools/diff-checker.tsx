@@ -397,7 +397,7 @@ New line added`);
                 setDiffType(value)
               }
             >
-              <SelectTrigger>
+              <SelectTrigger aria-label="Diff view type">
                 <SelectValue placeholder="Select view type" />
               </SelectTrigger>
               <SelectContent>
@@ -415,7 +415,7 @@ New line added`);
                 setDiffLevel(value)
               }
             >
-              <SelectTrigger>
+              <SelectTrigger aria-label="Comparison level">
                 <SelectValue placeholder="Select comparison level" />
               </SelectTrigger>
               <SelectContent>

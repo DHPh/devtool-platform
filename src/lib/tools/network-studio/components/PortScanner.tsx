@@ -105,7 +105,7 @@ export function PortScanner() {
                 value={selectedProfile}
                 onValueChange={setSelectedProfile}
               >
-                <SelectTrigger>
+                <SelectTrigger aria-label="Port scan profile">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

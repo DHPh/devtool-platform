@@ -171,7 +171,7 @@ export default function Base64Encoder() {
         <div className="space-y-2">
           <Label>Alphabet</Label>
           <Select value={variant} onValueChange={(value) => setVariant(value as Base64Variant)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger aria-label="Base64 alphabet"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="standard">Base64 (+, /, padded)</SelectItem>
               <SelectItem value="url">Base64url (-, _, unpadded)</SelectItem>
@@ -182,7 +182,7 @@ export default function Base64Encoder() {
           <div className="space-y-2">
             <Label>Decode mode</Label>
             <Select value={decodeMode} onValueChange={(value) => setDecodeMode(value as Base64DecodeMode)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label="Base64 decode mode"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="strict">Strict canonical</SelectItem>
                 <SelectItem value="forgiving">Forgiving whitespace/padding</SelectItem>

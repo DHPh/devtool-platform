@@ -441,6 +441,15 @@ export default function ImageResizerTab() {
                   "hover:border-primary/50 hover:bg-primary/5"
                 )}
                 onClick={() => fileInputRef.current?.click()}
+                role="button"
+                tabIndex={0}
+                aria-label="Choose images to resize"
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    fileInputRef.current?.click();
+                  }
+                }}
               >
                 <Upload className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-lg font-medium">Upload Images</p>
@@ -648,7 +657,7 @@ export default function ImageResizerTab() {
                 <div>
                   <Label className="text-sm font-medium">Output Format</Label>
                   <Select value={format} onValueChange={setFormat}>
-                    <SelectTrigger className="mt-2">
+                    <SelectTrigger className="mt-2" aria-label="Output image format">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -767,6 +776,15 @@ export default function ImageResizerTab() {
                         : "hover:border-primary/50"
                     )}
                     onClick={() => setSelectedImage(image)}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Select ${image.file.name} for editing`}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setSelectedImage(image);
+                      }
+                    }}
                   >
                     <div className="aspect-video bg-muted rounded overflow-hidden mb-3">
                       <img
@@ -798,6 +816,7 @@ export default function ImageResizerTab() {
                                 downloadImage(image);
                               }}
                               disabled={image.resizedUrl === image.originalUrl}
+                              aria-label={`Download resized ${image.file.name}`}
                             >
                               <Download className="h-3 w-3" />
                             </Button>
@@ -815,6 +834,7 @@ export default function ImageResizerTab() {
                                 e.stopPropagation();
                                 removeImage(image.id);
                               }}
+                              aria-label={`Remove ${image.file.name}`}
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>

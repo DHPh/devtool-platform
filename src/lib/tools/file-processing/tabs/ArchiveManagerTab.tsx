@@ -324,6 +324,15 @@ export default function ArchiveManagerTab() {
                     "hover:border-primary/50 hover:bg-primary/5"
                   )}
                   onClick={() => archiveInputRef.current?.click()}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Choose ZIP archive files"
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      archiveInputRef.current?.click();
+                    }
+                  }}
                 >
                   <Archive className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
                   <p className="text-lg font-medium">Upload Archive Files</p>
@@ -381,6 +390,7 @@ export default function ArchiveManagerTab() {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => downloadArchive(archive)}
+                                  aria-label={`Download archive ${archive.name}`}
                                 >
                                   <Download className="h-4 w-4" />
                                 </Button>
@@ -395,6 +405,7 @@ export default function ArchiveManagerTab() {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => removeArchive(archive.id)}
+                                  aria-label={`Remove archive ${archive.name}`}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -449,7 +460,7 @@ export default function ArchiveManagerTab() {
                                   <File className="h-3 w-3 text-gray-500" />
                                   <span className="flex-1 truncate">{file.name}</span>
                                   <span className="text-muted-foreground">{formatFileSize(file.size)}</span>
-                                  <Button size="sm" variant="ghost" onClick={() => downloadExtractedFile(file)}>
+                                  <Button size="sm" variant="ghost" onClick={() => downloadExtractedFile(file)} aria-label={`Download extracted file ${file.name}`}>
                                     <Download className="h-3 w-3" />
                                   </Button>
                                 </div>
@@ -482,6 +493,15 @@ export default function ArchiveManagerTab() {
                       "hover:border-primary/50 hover:bg-primary/5"
                     )}
                     onClick={() => filesInputRef.current?.click()}
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Choose files to add to archive"
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        filesInputRef.current?.click();
+                      }
+                    }}
                   >
                     <Upload className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
                     <p className="font-medium">Add Files</p>
@@ -527,6 +547,7 @@ export default function ArchiveManagerTab() {
                                       removeFileToCompress(file.id)
                                     }
                                     className="h-6 w-6 p-0"
+                                    aria-label={`Remove ${file.name}`}
                                   >
                                     <Trash2 className="h-3 w-3" />
                                   </Button>

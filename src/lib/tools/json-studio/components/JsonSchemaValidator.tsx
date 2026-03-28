@@ -167,6 +167,7 @@ export function JsonSchemaValidator({
                       variant="outline"
                       size="sm"
                       onClick={generateSchema}
+                      aria-label="Generate schema from data"
                     >
                       <Wand2 className="h-4 w-4" />
                     </Button>
@@ -177,7 +178,7 @@ export function JsonSchemaValidator({
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={copySchema}>
+                    <Button variant="outline" size="sm" onClick={copySchema} aria-label="Copy JSON Schema">
                       <Copy className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>

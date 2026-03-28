@@ -51,12 +51,12 @@ export function ColorDisplay({ color, showDetails = true, onCopy, onChange }: Co
           <div className="flex flex-wrap justify-end gap-2">
             <Badge variant={color.isLight ? "default" : "secondary"}>{color.isLight ? "Light" : "Dark"}</Badge>
             <Badge variant={cssColor.gamut.srgb ? "secondary" : "destructive"}>
-              <TermHelp definition="sRGB is the standard web color range. “In gamut” means the color fits unchanged; “clipped” means the preview limits out-of-range channels to the nearest available value.">
+              <TermHelp term="sRGB gamut status" definition="sRGB is the standard web color range. “In gamut” means the color fits unchanged; “clipped” means the preview limits out-of-range channels to the nearest available value.">
                 sRGB {cssColor.gamut.srgb ? "in gamut" : "clipped"}
               </TermHelp>
             </Badge>
             <Badge variant={cssColor.gamut.displayP3 ? "secondary" : "destructive"}>
-              <TermHelp definition="Display-P3 is a wider display color range than sRGB. “Out of gamut” means this exact color cannot be represented in P3 without adjustment.">
+              <TermHelp term="Display-P3 gamut status" definition="Display-P3 is a wider display color range than sRGB. “Out of gamut” means this exact color cannot be represented in P3 without adjustment.">
                 P3 {cssColor.gamut.displayP3 ? "in gamut" : "out of gamut"}
               </TermHelp>
             </Badge>
@@ -70,16 +70,15 @@ export function ColorDisplay({ color, showDetails = true, onCopy, onChange }: Co
         >
           <div
             data-testid="mapped-color-preview"
-            className="w-full h-32 rounded-md flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-primary transition-colors"
+            className="w-full h-32 rounded-md flex items-center justify-center"
             style={{ backgroundColor: mapped.css }}
-            onClick={() => onChange && document.getElementById("color-display-picker")?.click()}
           >
             <span className="text-sm font-medium px-3 py-1 rounded bg-background/80 text-foreground">
               {previewLabel}
             </span>
           </div>
           {onChange && (
-            <input id="color-display-picker" type="color" value={color.hex} onChange={event => onChange(event.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+            <input id="color-display-picker" aria-label="Choose display color" type="color" value={color.hex} onChange={event => onChange(event.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
           )}
         </div>
 

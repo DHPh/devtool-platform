@@ -138,14 +138,14 @@ export function JsonPathExplorer({ data, className }: JsonPathExplorerProps) {
             placeholder="Enter JSONPath query (e.g., $.store.book[0].title)"
             className="flex-1"
           />
-          <Button type="submit" size="sm">
+          <Button type="submit" size="sm" aria-label="Run JSONPath query">
             <Play className="h-4 w-4" />
           </Button>
         </form>
 
         {/* Error Display */}
         {error && (
-          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+          <div role="alert" className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
             <p className="text-sm text-destructive">{error}</p>
           </div>
         )}
@@ -214,6 +214,7 @@ export function JsonPathExplorer({ data, className }: JsonPathExplorerProps) {
                                   size="sm"
                                   className="h-auto p-1"
                                   onClick={() => copyPath(item.path)}
+                                  aria-label={`Copy result path ${item.path}`}
                                 >
                                   <Copy className="h-3 w-3" />
                                 </Button>
@@ -229,6 +230,7 @@ export function JsonPathExplorer({ data, className }: JsonPathExplorerProps) {
                                   size="sm"
                                   className="h-auto p-1"
                                   onClick={() => copyValue(item.value)}
+                                  aria-label={`Copy value at ${item.path}`}
                                 >
                                   <Copy className="h-3 w-3" />
                                 </Button>

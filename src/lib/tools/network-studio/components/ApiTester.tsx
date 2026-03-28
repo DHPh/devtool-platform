@@ -149,7 +149,7 @@ export function ApiTester() {
                   setRequest({ ...request, method: value as HttpMethodType })
                 }
               >
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="w-32" aria-label="HTTP method">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -293,6 +293,7 @@ export function ApiTester() {
                           onClick={() =>
                             handleCopy(result.response!.data, "Response body")
                           }
+                          aria-label="Copy response body"
                         >
                           <Copy className="h-3 w-3" />
                         </Button>
@@ -327,6 +328,7 @@ export function ApiTester() {
                               "Headers"
                             )
                           }
+                          aria-label="Copy response headers"
                         >
                           <Copy className="h-3 w-3" />
                         </Button>
@@ -355,6 +357,7 @@ export function ApiTester() {
                             "cURL command"
                           )
                         }
+                        aria-label="Copy equivalent cURL command"
                       >
                         <Copy className="h-3 w-3" />
                       </Button>

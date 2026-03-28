@@ -401,6 +401,7 @@ export default function ColorConverter() {
                 size="sm"
                 variant="ghost"
                 onClick={() => copyColor("HEX", colorValues.hex)}
+                aria-label="Copy HEX color"
               >
                 <Copy className="h-3 w-3" />
               </Button>
@@ -414,6 +415,7 @@ export default function ColorConverter() {
                 size="sm"
                 variant="ghost"
                 onClick={() => copyColor("RGB", `rgb(${colorValues.rgb.r}, ${colorValues.rgb.g}, ${colorValues.rgb.b})`)}
+                aria-label="Copy RGB color"
               >
                 <Copy className="h-3 w-3" />
               </Button>
@@ -429,6 +431,7 @@ export default function ColorConverter() {
                 size="sm"
                 variant="ghost"
                 onClick={() => copyColor("HSL", `hsl(${colorValues.hsl.h}, ${colorValues.hsl.s}%, ${colorValues.hsl.l}%)`)}
+                aria-label="Copy HSL color"
               >
                 <Copy className="h-3 w-3" />
               </Button>
@@ -444,6 +447,7 @@ export default function ColorConverter() {
                 size="sm"
                 variant="ghost"
                 onClick={() => copyColor("CMYK", `cmyk(${colorValues.cmyk.c}%, ${colorValues.cmyk.m}%, ${colorValues.cmyk.y}%, ${colorValues.cmyk.k}%)`)}
+                aria-label="Copy CMYK color"
               >
                 <Copy className="h-3 w-3" />
               </Button>

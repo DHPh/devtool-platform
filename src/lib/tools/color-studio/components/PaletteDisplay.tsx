@@ -88,6 +88,7 @@ export function PaletteDisplay({
                   size="sm"
                   onClick={handleCopyPalette}
                   className="h-8"
+                  aria-label="Copy entire color palette"
                 >
                   <Copy className="h-3 w-3" />
                 </Button>
@@ -96,6 +97,7 @@ export function PaletteDisplay({
                   size="sm"
                   onClick={() => exportPalette("css")}
                   className="h-8"
+                  aria-label="Download palette as CSS"
                 >
                   <Download className="h-3 w-3" />
                 </Button>
@@ -158,6 +160,7 @@ export function PaletteDisplay({
                       size="sm"
                       onClick={() => handleCopyColor(color.hex)}
                       className="h-6 w-6 p-0"
+                      aria-label={`Copy ${color.name} color ${color.hex}`}
                     >
                       <Copy className="h-3 w-3" />
                     </Button>
@@ -167,6 +170,7 @@ export function PaletteDisplay({
                       onClick={() => onColorSelect?.(color.hex)}
                       className="h-6 w-6 p-0"
                       title="Use this color"
+                      aria-label={`Use ${color.name} color ${color.hex}`}
                     >
                       →
                     </Button>

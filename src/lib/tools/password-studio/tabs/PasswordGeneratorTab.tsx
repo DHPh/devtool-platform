@@ -152,6 +152,7 @@ export function PasswordGeneratorTab({
                     size="sm"
                     onClick={() => setShowPassword(!showPassword)}
                     className="h-6 w-6 p-0"
+                    aria-label={showPassword ? "Hide generated password" : "Show generated password"}
                   >
                     {showPassword ? (
                       <EyeOff className="h-3 w-3" />
@@ -165,6 +166,7 @@ export function PasswordGeneratorTab({
                     onClick={handleCopyPassword}
                     disabled={!currentPassword}
                     className="h-6 w-6 p-0"
+                    aria-label="Copy generated password"
                   >
                     <Copy className="h-3 w-3" />
                   </Button>

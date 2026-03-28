@@ -129,7 +129,7 @@ export default function QrGenerator() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">PNG size</label>
                   <Select value={size} onValueChange={setSize}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-label="PNG size"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {[100, 150, 200, 300, 400, 500].map(value => <SelectItem key={value} value={String(value)}>{value}×{value}</SelectItem>)}
                     </SelectContent>
@@ -138,7 +138,7 @@ export default function QrGenerator() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Error correction</label>
                   <Select value={errorLevel} onValueChange={value => setErrorLevel(value as QrErrorCorrectionLevel)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-label="QR error correction level"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="L">Low (about 7%)</SelectItem>
                       <SelectItem value="M">Medium (about 15%)</SelectItem>

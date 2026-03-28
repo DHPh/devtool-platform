@@ -99,7 +99,7 @@ export default function LoremIpsum() {
                 value={type}
                 onValueChange={(value: LoremIpsumUnit) => setType(value)}
               >
-                    <SelectTrigger>
+                    <SelectTrigger aria-label="Lorem ipsum unit type">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

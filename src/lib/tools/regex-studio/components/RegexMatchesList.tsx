@@ -95,6 +95,7 @@ export function RegexMatchesList({
                       size="sm"
                       onClick={() => handleHighlightMatch(match)}
                       className="h-6 w-6 p-0"
+                      aria-label={`Highlight match ${index + 1}`}
                     >
                       <Eye className="h-3 w-3" />
                     </Button>
@@ -104,6 +105,7 @@ export function RegexMatchesList({
                     size="sm"
                     onClick={() => handleCopyMatch(match.match)}
                     className="h-6 w-6 p-0"
+                    aria-label={`Copy match ${index + 1}`}
                   >
                     <Copy className="h-3 w-3" />
                   </Button>

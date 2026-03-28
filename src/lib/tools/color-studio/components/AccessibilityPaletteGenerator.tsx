@@ -328,7 +328,7 @@ export function AccessibilityPaletteGenerator() {
                       | "complement"
                   ) => setAlgorithm(value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger aria-label="Palette generation algorithm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -360,7 +360,7 @@ export function AccessibilityPaletteGenerator() {
                   setColorBlindnessType(value)
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger aria-label="Color blindness type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -385,7 +385,7 @@ export function AccessibilityPaletteGenerator() {
                 value={contrastLevel}
                 onValueChange={(value: "AA" | "AAA") => setContrastLevel(value)}
               >
-                <SelectTrigger>
+                <SelectTrigger aria-label="Contrast level">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

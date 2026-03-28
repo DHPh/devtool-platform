@@ -209,7 +209,7 @@ export function GradientCreator() {
             <div>
               <Label>Type</Label>
               <Select value={gradient.type} onValueChange={changeGradientType}>
-                <SelectTrigger>
+                <SelectTrigger aria-label="Gradient type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -275,7 +275,7 @@ export function GradientCreator() {
                     updateGradient({ angle: Number(value) })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger aria-label="Gradient direction">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -315,7 +315,7 @@ export function GradientCreator() {
                       updateGradient({ shape: value })
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger aria-label="Radial gradient shape">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -332,7 +332,7 @@ export function GradientCreator() {
                       updateGradient({ size: value })
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger aria-label="Radial gradient size">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

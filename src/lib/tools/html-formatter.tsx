@@ -113,10 +113,10 @@ export default function HtmlFormatter() {
 
       <SettingsPanel title="Formatting Options">
         <FormField label="Indent Size" description="Visual indentation width from 1 to 8 columns">
-          <Select value={indentSize} onValueChange={setIndentSize}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{[2, 4, 6, 8].map(value => <SelectItem key={value} value={String(value)}>{value}</SelectItem>)}</SelectContent></Select>
+          <Select value={indentSize} onValueChange={setIndentSize}><SelectTrigger aria-label="Indent size"><SelectValue /></SelectTrigger><SelectContent>{[2, 4, 6, 8].map(value => <SelectItem key={value} value={String(value)}>{value}</SelectItem>)}</SelectContent></Select>
         </FormField>
         <FormField label="Indent Type" description="Use spaces or tab characters">
-          <Select value={indentType} onValueChange={setIndentType}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="spaces">Spaces</SelectItem><SelectItem value="tabs">Tabs</SelectItem></SelectContent></Select>
+          <Select value={indentType} onValueChange={setIndentType}><SelectTrigger aria-label="Indent type"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="spaces">Spaces</SelectItem><SelectItem value="tabs">Tabs</SelectItem></SelectContent></Select>
         </FormField>
       </SettingsPanel>
 

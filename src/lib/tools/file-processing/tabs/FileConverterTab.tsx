@@ -122,7 +122,7 @@ export default function FileConverterTab() {
         <Card>
           <CardHeader><CardTitle>Upload & Convert</CardTitle><CardDescription>Each file only shows formats this browser converter can produce.</CardDescription></CardHeader>
           <CardContent className="space-y-6">
-            <div className={cn("border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors", "hover:border-primary/50 hover:bg-primary/5")} onClick={() => fileInputRef.current?.click()}>
+            <div className={cn("border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors", "hover:border-primary/50 hover:bg-primary/5")} onClick={() => fileInputRef.current?.click()} role="button" tabIndex={0} aria-label="Choose files to convert" onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); fileInputRef.current?.click(); } }}>
               <Upload className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
               <p className="text-lg font-medium">Upload Files</p>
               <p className="text-sm text-muted-foreground">JPEG, PNG, WebP, TXT, or JSON</p>
@@ -145,11 +145,11 @@ export default function FileConverterTab() {
               </div>
               {entry.error && <p className="text-sm text-red-600 bg-red-50 dark:bg-red-950 p-2 rounded">{entry.error}</p>}
               <div className="flex items-end justify-between gap-3">
-                <div><Label className="text-xs">Target Format</Label><Select value={entry.targetFormat} onValueChange={(value: ConversionTarget) => setFiles((current) => current.map((file) => file.id === entry.id ? { ...file, targetFormat: value } : file))} disabled={entry.status !== "pending" || getConversionTargets(entry.file).length === 0}><SelectTrigger className="w-36 h-8"><SelectValue /></SelectTrigger><SelectContent>{getConversionTargets(entry.file).map((format) => <SelectItem key={format.value} value={format.value}>{format.label}</SelectItem>)}</SelectContent></Select></div>
+                <div><Label className="text-xs">Target Format</Label><Select value={entry.targetFormat} onValueChange={(value: ConversionTarget) => setFiles((current) => current.map((file) => file.id === entry.id ? { ...file, targetFormat: value } : file))} disabled={entry.status !== "pending" || getConversionTargets(entry.file).length === 0}><SelectTrigger className="w-36 h-8" aria-label={`Target format for ${entry.file.name}`}><SelectValue /></SelectTrigger><SelectContent>{getConversionTargets(entry.file).map((format) => <SelectItem key={format.value} value={format.value}>{format.label}</SelectItem>)}</SelectContent></Select></div>
                 <div className="flex gap-2">
                   {entry.status === "pending" && <Button size="sm" onClick={() => convertFile(entry.id)}><RefreshCw className="h-4 w-4 mr-1" />Convert</Button>}
-                  {entry.status === "completed" && <Tooltip><TooltipTrigger asChild><Button size="sm" variant="outline" onClick={() => downloadFile(entry)}><Download className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Download converted file</TooltipContent></Tooltip>}
-                  <Tooltip><TooltipTrigger asChild><Button size="sm" variant="outline" onClick={() => removeFile(entry.id)} disabled={entry.status === "converting"}><Trash2 className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Remove file</TooltipContent></Tooltip>
+                  {entry.status === "completed" && <Tooltip><TooltipTrigger asChild><Button size="sm" variant="outline" onClick={() => downloadFile(entry)} aria-label={`Download converted ${entry.file.name}`}><Download className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Download converted file</TooltipContent></Tooltip>}
+                  <Tooltip><TooltipTrigger asChild><Button size="sm" variant="outline" onClick={() => removeFile(entry.id)} disabled={entry.status === "converting"} aria-label={`Remove ${entry.file.name}`}><Trash2 className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Remove file</TooltipContent></Tooltip>
                 </div>
               </div>
             </div>

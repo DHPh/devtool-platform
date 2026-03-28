@@ -312,7 +312,7 @@ export function UnifiedHttpTester() {
               {/* URL and Method */}
               <div className="flex gap-2">
                 <Select value={method} onValueChange={setMethod}>
-                  <SelectTrigger className="w-32">
+                  <SelectTrigger className="w-32" aria-label="HTTP method">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -395,6 +395,7 @@ export function UnifiedHttpTester() {
                       variant="outline"
                       size="sm"
                       onClick={() => removeHeader(index)}
+                      aria-label={`Remove request header ${index + 1}`}
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
@@ -462,7 +463,7 @@ export function UnifiedHttpTester() {
                       value={selectedCategory}
                       onValueChange={setSelectedCategory}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger aria-label="Header category">
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                       <SelectContent>
@@ -480,9 +481,10 @@ export function UnifiedHttpTester() {
                     {/* Header List */}
                     <div className="max-h-80 overflow-y-auto space-y-2">
                       {filteredHeaders.slice(0, 20).map((header) => (
-                        <div
+                        <button
+                          type="button"
                           key={header.name}
-                          className="p-3 border rounded-lg hover:bg-accent/50 cursor-pointer"
+                          className="w-full p-3 border rounded-lg hover:bg-accent/50 cursor-pointer text-left"
                           onClick={() => addHeaderFromLibrary(header)}
                         >
                           <div className="flex justify-between items-start">
@@ -503,7 +505,7 @@ export function UnifiedHttpTester() {
                               {header.examples[0]}
                             </div>
                           )}
-                        </div>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -537,7 +539,7 @@ export function UnifiedHttpTester() {
                   <Clock className="h-3 w-3" />
                   {response.responseTime}ms
                 </Badge>
-                <Button variant="outline" size="sm" onClick={copyResponse}>
+                <Button variant="outline" size="sm" onClick={copyResponse} aria-label="Copy HTTP response">
                   <Copy className="h-3 w-3" />
                 </Button>
               </div>
@@ -546,7 +548,7 @@ export function UnifiedHttpTester() {
           <CardContent>
             {/* Error Display */}
             {response.error && (
-              <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <div role="alert" className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                 <div className="flex items-start gap-2">
                   <AlertCircle className="h-4 w-4 text-red-600 mt-0.5" />
                   <div>

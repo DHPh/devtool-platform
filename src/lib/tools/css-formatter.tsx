@@ -189,7 +189,7 @@ export default function CssFormatter() {
                 <div className="space-y-2">
                   <Label htmlFor="indent-size">Indent Size</Label>
                   <Select value={indentSize} onValueChange={setIndentSize}>
-                    <SelectTrigger>
+                    <SelectTrigger aria-label="Indent size">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -203,7 +203,7 @@ export default function CssFormatter() {
                 <div className="space-y-2">
                   <Label htmlFor="indent-type">Indent Type</Label>
                   <Select value={indentType} onValueChange={setIndentType}>
-                    <SelectTrigger>
+                    <SelectTrigger aria-label="Indent type">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

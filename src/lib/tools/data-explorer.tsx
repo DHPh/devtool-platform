@@ -465,7 +465,7 @@ Charlie Wilson,32,Phoenix,72000,false`;
                   setSelectedFormat(value)
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger aria-label="Input data format">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

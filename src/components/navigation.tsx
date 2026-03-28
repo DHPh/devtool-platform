@@ -170,6 +170,7 @@ export function Navigation() {
                     variant="outline"
                     size="icon"
                     onClick={handleSearchOpen}
+                    aria-label="Open tool search"
                   >
                     <Search className="h-4 w-4" />
                   </Button>
@@ -182,6 +183,8 @@ export function Navigation() {
                 size="icon"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="flex-shrink-0"
+                aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+                aria-expanded={isMobileMenuOpen}
               >
                 {isMobileMenuOpen ? (
                   <X className="h-4 w-4" />

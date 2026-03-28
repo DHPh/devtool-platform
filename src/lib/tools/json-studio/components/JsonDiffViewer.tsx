@@ -241,7 +241,7 @@ export function JsonDiffViewer({ data, className }: JsonDiffViewerProps) {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={copyDiff}>
+                    <Button variant="outline" size="sm" onClick={copyDiff} aria-label="Copy diff">
                       <Copy className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -251,7 +251,7 @@ export function JsonDiffViewer({ data, className }: JsonDiffViewerProps) {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={copyPatches}>
+                    <Button variant="outline" size="sm" onClick={copyPatches} aria-label="Copy JSON patches">
                       <FileText className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -261,7 +261,7 @@ export function JsonDiffViewer({ data, className }: JsonDiffViewerProps) {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={downloadDiff}>
+                    <Button variant="outline" size="sm" onClick={downloadDiff} aria-label="Download diff">
                       <Download className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>

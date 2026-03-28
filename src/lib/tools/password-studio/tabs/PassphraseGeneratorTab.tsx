@@ -115,6 +115,7 @@ export function PassphraseGeneratorTab({
                     size="sm"
                     onClick={() => setShowPassphrase(!showPassphrase)}
                     className="h-6 w-6 p-0"
+                    aria-label={showPassphrase ? "Hide generated passphrase" : "Show generated passphrase"}
                   >
                     {showPassphrase ? (
                       <EyeOff className="h-3 w-3" />
@@ -128,6 +129,7 @@ export function PassphraseGeneratorTab({
                     onClick={handleCopyPassphrase}
                     disabled={!currentPassphrase}
                     className="h-6 w-6 p-0"
+                    aria-label="Copy generated passphrase"
                   >
                     <Copy className="h-3 w-3" />
                   </Button>
@@ -368,6 +370,7 @@ export function PassphraseGeneratorTab({
                     onClick={() =>
                       writeClipboardText(result.passphrase)
                     }
+                    aria-label={`Copy passphrase history item ${index + 1}`}
                     className="h-8 w-8 p-0 ml-3"
                   >
                     <Copy className="h-3 w-3" />

@@ -617,6 +617,7 @@ export default function RandomWheel() {
                           onClick={() => removeItem(item.id)}
                           disabled={isSpinning}
                           className="ml-2 flex-shrink-0"
+                          aria-label={`Remove ${item.text}`}
                         >
                           <X className="h-3 w-3" />
                         </Button>

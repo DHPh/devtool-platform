@@ -17,10 +17,12 @@ import { cn } from "@/lib/utils";
 export function TermHelp({
   children,
   definition,
+  term,
   className,
 }: {
   children: React.ReactNode;
   definition: string;
+  term?: string;
   className?: string;
 }) {
   return (
@@ -31,10 +33,10 @@ export function TermHelp({
           <TooltipTrigger asChild>
             <button
               type="button"
-              className="rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label="Explain this term"
+              className="-mr-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-current opacity-90 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current focus-visible:ring-offset-1"
+              aria-label={`Explain ${term ?? "this term"}`}
             >
-              <CircleHelp className="h-3.5 w-3.5" />
+              <CircleHelp className="h-4 w-4" strokeWidth={2.5} />
             </button>
           </TooltipTrigger>
           <TooltipContent className="max-w-xs">

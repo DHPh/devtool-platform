@@ -181,6 +181,7 @@ export function PasswordList({
                     size="sm"
                     onClick={() => togglePasswordVisibility(index)}
                     className="h-8 w-8 p-0"
+                    aria-label={hiddenPasswords.has(index) ? `Show password ${index + 1}` : `Hide password ${index + 1}`}
                   >
                     {isHidden ? (
                       <Eye className="h-3 w-3" />
@@ -193,6 +194,7 @@ export function PasswordList({
                     size="sm"
                     onClick={() => handleCopyPassword(result.password)}
                     className="h-8 w-8 p-0"
+                    aria-label={`Copy password ${index + 1}`}
                   >
                     <Copy className="h-3 w-3" />
                   </Button>

@@ -65,6 +65,7 @@ export function RegexPatternLibrary({
               size="sm"
               onClick={() => handleCopyPattern(pattern.pattern)}
               className="h-8 w-8 p-0"
+              aria-label={`Copy ${pattern.name} pattern`}
             >
               <Copy className="h-3 w-3" />
             </Button>

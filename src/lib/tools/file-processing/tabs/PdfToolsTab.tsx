@@ -260,6 +260,15 @@ export default function PdfToolsTab() {
                   "hover:border-primary/50 hover:bg-primary/5"
                 )}
                 onClick={() => fileInputRef.current?.click()}
+                role="button"
+                tabIndex={0}
+                aria-label="Choose PDF files"
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    fileInputRef.current?.click();
+                  }
+                }}
               >
                 <Upload className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-lg font-medium">Upload PDF Files</p>
@@ -365,9 +374,8 @@ export default function PdfToolsTab() {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
-                      <div
+                      <label
                         className="flex items-center space-x-2 cursor-pointer"
-                        onClick={() => toggleFileSelection(file.id)}
                       >
                         <input
                           type="checkbox"
@@ -376,7 +384,7 @@ export default function PdfToolsTab() {
                           className="rounded"
                         />
                         <FileText className="h-8 w-8 text-red-500" />
-                      </div>
+                      </label>
                       <div>
                         <p className="font-medium">{file.name}</p>
                         <div className="flex items-center space-x-4 text-sm text-muted-foreground">
@@ -393,6 +401,7 @@ export default function PdfToolsTab() {
                         size="sm"
                         variant="outline"
                         onClick={() => window.open(file.url, "_blank")}
+                        aria-label={`Preview ${file.name}`}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -401,6 +410,7 @@ export default function PdfToolsTab() {
                         variant="outline"
                         onClick={() => splitPDF(file.id)}
                         disabled={isProcessing}
+                        aria-label={`Split ${file.name}`}
                       >
                         <Scissors className="h-4 w-4" />
                       </Button>
@@ -409,6 +419,7 @@ export default function PdfToolsTab() {
                         variant="outline"
                         onClick={() => rotatePDF(file.id, 90)}
                         disabled={isProcessing}
+                        aria-label={`Rotate ${file.name} clockwise`}
                       >
                         <RotateCw className="h-4 w-4" />
                       </Button>
@@ -416,6 +427,7 @@ export default function PdfToolsTab() {
                         size="sm"
                         variant="outline"
                         onClick={() => downloadFile(file)}
+                        aria-label={`Download ${file.name}`}
                       >
                         <Download className="h-4 w-4" />
                       </Button>
@@ -423,6 +435,7 @@ export default function PdfToolsTab() {
                         size="sm"
                         variant="outline"
                         onClick={() => removeFile(file.id)}
+                        aria-label={`Remove ${file.name}`}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
