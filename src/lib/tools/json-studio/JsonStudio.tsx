@@ -178,7 +178,6 @@ function JsonStudioContent({
         manifest={JSON_STUDIO_MANIFEST}
         componentProps={{ input, onInputChange: setInput }}
         defaultTab={defaultTab}
-        listClassName="grid w-full grid-cols-4"
         contentClassName="mt-2"
       />
     </div>

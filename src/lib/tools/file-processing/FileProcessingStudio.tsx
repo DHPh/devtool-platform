@@ -10,7 +10,6 @@ export default function FileProcessingStudio() {
       <StudioTabs
         manifest={FILE_PROCESSING_STUDIO_MANIFEST}
         componentProps={{}}
-        listClassName="grid h-auto w-full grid-cols-2 p-1 md:grid-cols-4 lg:grid-cols-8"
       />
 
       {/* Footer */}

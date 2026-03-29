@@ -28,7 +28,6 @@ export default function ColorStudio() {
         <StudioTabs
           manifest={COLOR_STUDIO_MANIFEST}
           componentProps={{}}
-          listClassName="grid h-auto w-full grid-cols-2 p-1 md:grid-cols-3 lg:grid-cols-8"
         />
 
         {/* Footer */}

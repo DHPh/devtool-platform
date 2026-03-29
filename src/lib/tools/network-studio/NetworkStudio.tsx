@@ -11,7 +11,6 @@ export default function NetworkStudio() {
         <StudioTabs
           manifest={NETWORK_STUDIO_MANIFEST}
           componentProps={{}}
-          listClassName="grid h-auto w-full grid-cols-2 p-1 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9"
         />
 
         {/* Footer */}

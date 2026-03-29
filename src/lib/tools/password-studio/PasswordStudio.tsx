@@ -31,7 +31,6 @@ export function PasswordStudio({
           manifest={PASSWORD_STUDIO_MANIFEST}
           componentProps={{}}
           defaultTab={initialTab}
-          listClassName="grid h-auto w-full grid-cols-2 p-1 lg:grid-cols-3"
           contentClassName="mt-0 pt-6"
         />
       </Card>

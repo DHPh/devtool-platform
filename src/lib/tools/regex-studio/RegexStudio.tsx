@@ -38,7 +38,6 @@ export function RegexStudio({
           defaultTab={initialTab}
           activeTab={activeTab}
           onTabChange={setActiveTab}
-          listClassName="grid w-full grid-cols-3"
           contentClassName="mt-6 space-y-6"
         />
       </Card>
