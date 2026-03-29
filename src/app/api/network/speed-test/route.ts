@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { readBoundedJson } from "@/lib/server/bounded-json";
 import {
   getSafeOutboundError,
   requestOutbound,
@@ -37,6 +38,13 @@ export async function POST(request: NextRequest) {
     return networkRateLimitResponse(rateLimit);
   }
   const startedAt = Date.now();
+  const parsed = await readBoundedJson<{
+    downloadUrl?: unknown;
+    uploadUrl?: unknown;
+    testType?: unknown;
+    duration?: unknown;
+  }>(request);
+  if (!parsed.ok) return parsed.response;
 
   try {
     const {
@@ -44,9 +52,15 @@ export async function POST(request: NextRequest) {
       uploadUrl = "https://httpbin.org/post",
       testType = "download",
       duration = 10,
-    } = await request.json();
+    } = parsed.data;
     if (testType !== "download" && testType !== "upload") {
       return NextResponse.json({ error: "Invalid test type. Use 'download' or 'upload'" }, { status: 400 });
+    }
+    if (
+      typeof downloadUrl !== "string" ||
+      typeof uploadUrl !== "string"
+    ) {
+      return NextResponse.json({ error: "Invalid test URL" }, { status: 400 });
     }
     const timeoutMs = boundedNetworkNumber(Number(duration) * 1_000, 10_000, 1_000, 10_000);
 

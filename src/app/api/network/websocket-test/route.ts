@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { readBoundedJson } from "@/lib/server/bounded-json";
 import { WebSocket } from "ws";
 import {
   getSafeOutboundError,
@@ -37,9 +38,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return networkRateLimitResponse(rateLimit);
   }
   const startedAt = Date.now();
+  const parsed = await readBoundedJson<{ url?: unknown; timeout?: unknown }>(
+    request,
+  );
+  if (!parsed.ok) return parsed.response;
 
   try {
-    const { url: input, timeout = 10 } = await request.json();
+    const { url: input, timeout = 10 } = parsed.data;
     if (typeof input !== "string" || !input.trim()) {
       return NextResponse.json({ error: "WebSocket URL is required" }, { status: 400 });
     }

@@ -10,8 +10,8 @@ import {
 
 afterEach(cleanup);
 
-function expectCompressionCopyActions(outputName: string) {
-  expect(screen.getByRole("button", { name: outputName })).toBeVisible();
+async function expectCompressionCopyActions(outputName: string) {
+  expect(await screen.findByRole("button", { name: outputName })).toBeVisible();
   expect(screen.getByRole("button", { name: "Copy original bytes" })).toBeVisible();
   expect(screen.getByRole("button", { name: "Copy output bytes" })).toBeVisible();
   expect(screen.getByRole("button", { name: "Copy saved bytes" })).toBeVisible();
@@ -23,13 +23,13 @@ describe("Phase 4 advanced web-tool UX", () => {
     const user = userEvent.setup();
     render(<JavaScriptMinifierTool />);
     await user.click(screen.getByRole("button", { name: "Minify JavaScript" }));
-    expectCompressionCopyActions("Copy minified JavaScript");
+    await expectCompressionCopyActions("Copy minified JavaScript");
   });
 
   it("optimizes SVG and exposes independent output metrics", async () => {
     const user = userEvent.setup();
     render(<SvgOptimizerTool />);
     await user.click(screen.getByRole("button", { name: "Optimize SVG" }));
-    expectCompressionCopyActions("Copy optimized SVG");
+    await expectCompressionCopyActions("Copy optimized SVG");
   });
 });

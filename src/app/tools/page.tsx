@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Zap, Shield, Globe } from "lucide-react";
+import { serializeJsonForHtml } from "@/lib/security/safe-json";
 import {
   TOOL_REGISTRY,
   TOOL_COUNT,
@@ -119,7 +120,7 @@ export default function ToolsPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(structuredData),
+          __html: serializeJsonForHtml(structuredData),
         }}
       />
       <div className="mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8 max-w-7xl ">

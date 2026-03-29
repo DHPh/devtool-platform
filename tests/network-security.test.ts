@@ -5,6 +5,7 @@ import {
   checkNetworkRateLimit,
   logNetworkSecurityEvent,
   networkRateLimitResponse,
+  resolveRateLimitClientAddress,
   resetNetworkRateLimits,
 } from "@/lib/server/network-security";
 import {
@@ -32,16 +33,19 @@ describe("network endpoint security controls", () => {
       limit: 2,
       windowMs: 60_000,
       now: 1_000,
+      trustedProxyHeaders: true,
     });
     const second = checkNetworkRateLimit(request(), "url-test", {
       limit: 2,
       windowMs: 60_000,
       now: 1_001,
+      trustedProxyHeaders: true,
     });
     const third = checkNetworkRateLimit(request(), "url-test", {
       limit: 2,
       windowMs: 60_000,
       now: 1_002,
+      trustedProxyHeaders: true,
     });
 
     expect(first.clientId).toMatch(/^[a-f0-9]{16}$/);
@@ -53,6 +57,14 @@ describe("network endpoint security controls", () => {
     expect(response.status).toBe(429);
     expect(response.headers.get("retry-after")).toBe("60");
     expect(await response.json()).toMatchObject({ errorCode: "RATE_LIMITED" });
+  });
+
+  it("ignores spoofable proxy headers unless the deployment trusts them", () => {
+    expect(resolveRateLimitClientAddress(request(), false)).toBe("unknown");
+    expect(resolveRateLimitClientAddress(request(), true)).toBe("203.0.113.10");
+    expect(resolveRateLimitClientAddress(request("not-an-ip"), true)).toBe(
+      "unknown",
+    );
   });
 
   it("uses structured logs with no destination or payload field", () => {

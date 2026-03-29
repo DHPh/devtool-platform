@@ -8,8 +8,14 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // The development server compiles routes on demand; serial smoke tests avoid
+  // competing cold compilations and make navigation assertions deterministic.
+  workers: 1,
   reporter: process.env.CI ? "github" : "list",
+  timeout: 90_000,
+  expect: {
+    timeout: 60_000,
+  },
   use: {
     baseURL,
     trace: "on-first-retry",

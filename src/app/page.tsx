@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Zap, Shield, Globe, ArrowRight } from "lucide-react";
 import { TOOL_COUNT, TOOL_REGISTRY } from "@/lib/tool-registry";
 import { ToolClassificationView } from "@/components/tool-classification-view";
+import { serializeJsonForHtml } from "@/lib/security/safe-json";
 
 // Enhanced SEO metadata
 export const metadata: Metadata = {
@@ -151,7 +152,7 @@ export default function HomePage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(structuredData),
+          __html: serializeJsonForHtml(structuredData),
         }}
       />
       <div className="space-y-16">

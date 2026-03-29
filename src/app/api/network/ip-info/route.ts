@@ -1,5 +1,6 @@
 import { isIP } from "node:net";
 import { NextRequest, NextResponse } from "next/server";
+import { readBoundedJson } from "@/lib/server/bounded-json";
 import {
   getSafeOutboundError,
   isPublicAddress,
@@ -77,14 +78,8 @@ export async function POST(request: NextRequest) {
   }
 
   const startedAt = Date.now();
-  let input: unknown;
-  try {
-    const body: unknown = await request.json();
-    input =
-      typeof body === "object" && body !== null && "ip" in body
-        ? (body as { ip?: unknown }).ip
-        : undefined;
-  } catch {
+  const parsed = await readBoundedJson<{ ip?: unknown }>(request);
+  if (!parsed.ok) {
     logNetworkSecurityEvent({
       endpoint: ENDPOINT,
       operation: OPERATION,
@@ -92,11 +87,9 @@ export async function POST(request: NextRequest) {
       clientId: rateLimit.clientId,
       errorCode: "INVALID_REQUEST",
     });
-    return NextResponse.json(
-      { error: "Invalid request body", errorCode: "INVALID_REQUEST" },
-      { status: 400 },
-    );
+    return parsed.response;
   }
+  const input = parsed.data.ip;
 
   if (typeof input !== "string" || !input.trim()) {
     return invalidInput("IP address is required", "INVALID_IP");

@@ -1,4 +1,5 @@
 import type { ProcessorResult } from "./devops-config-core";
+import { validateSafeSvg } from "@/lib/security/svg-security";
 
 export interface CompressionResult {
   output: string;
@@ -62,19 +63,20 @@ export async function optimizeSvg(
   input: string,
   options: SvgOptimizeOptions = {},
 ): Promise<ProcessorResult<CompressionResult>> {
-  const normalized = input.trim();
-  if (!/^<svg(?:\s|>)/i.test(normalized) || !/<\/svg>\s*$/i.test(normalized)) return { ok: false, error: "Input must be a complete SVG document." };
   if (byteLength(input) > 2_000_000) return { ok: false, error: "SVG input exceeds the 2 MB browser limit." };
-  if (/<script(?:\s|\/?>)/i.test(normalized) || /\son\w+\s*=/i.test(normalized)) return { ok: false, error: "Scripts and inline event handlers are not allowed." };
+  const validated = validateSafeSvg(input);
+  if (!validated.ok) return validated;
   try {
     const { optimize } = await import("svgo/browser");
-    const result = optimize(normalized, {
+    const result = optimize(validated.value, {
       multipass: options.multipass ?? true,
       plugins: options.preserveViewBox === false
         ? ["preset-default", "removeViewBox"]
         : ["preset-default"],
     });
-    return { ok: true, value: compressionResult(input, result.data) };
+    const optimized = validateSafeSvg(result.data);
+    if (!optimized.ok) return optimized;
+    return { ok: true, value: compressionResult(input, optimized.value) };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "SVG could not be optimized." };
   }

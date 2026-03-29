@@ -1,5 +1,6 @@
 import { isIP, Socket } from "node:net";
 import { NextRequest, NextResponse } from "next/server";
+import { readBoundedJson } from "@/lib/server/bounded-json";
 import {
   getSafeOutboundError,
   resolvePublicAddresses,
@@ -109,8 +110,15 @@ export async function POST(request: NextRequest) {
     return networkRateLimitResponse(rateLimit);
   }
   const startedAt = Date.now();
+  const parsed = await readBoundedJson<{
+    host?: unknown;
+    ports?: unknown;
+    timeout?: unknown;
+  }>(request);
+  if (!parsed.ok) return parsed.response;
+
   try {
-    const { host, ports, timeout = 3_000 } = await request.json();
+    const { host, ports, timeout = 3_000 } = parsed.data;
     if (typeof host !== "string") throw new Error("Host is required");
     const hostname = normalizeHostname(host);
     const validatedPorts = validatePortScanInput(ports);

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { readBoundedJson } from "@/lib/server/bounded-json";
 import {
   getSafeOutboundError,
   requestOutbound,
@@ -18,10 +19,13 @@ export async function POST(request: NextRequest) {
     return networkRateLimitResponse(rateLimit);
   }
   const startedAt = Date.now();
-  try {
-    const { url } = await request.json();
+  const parsed = await readBoundedJson<{ url?: unknown }>(request);
+  if (!parsed.ok) return parsed.response;
 
-    if (!url) {
+  try {
+    const { url } = parsed.data;
+
+    if (typeof url !== "string" || !url.trim()) {
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
     }
 

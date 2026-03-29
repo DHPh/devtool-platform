@@ -2,6 +2,7 @@ import * as prettier from "prettier/standalone";
 import * as babelPlugin from "prettier/plugins/babel";
 import * as estreePlugin from "prettier/plugins/estree";
 import * as typescriptPlugin from "prettier/plugins/typescript";
+import { validateSafeSvg } from "@/lib/security/svg-security";
 import type { ProcessorResult } from "./devops-config-core";
 
 export type JavaScriptLanguage = "javascript" | "typescript";
@@ -42,19 +43,8 @@ function base64ToUtf8(value: string): string {
   return new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(binary, (char) => char.charCodeAt(0)));
 }
 
-function validateSvg(svg: string): ProcessorResult<string> {
-  const normalized = svg.trim();
-  if (!/^<svg(?:\s|>)/i.test(normalized) || !/<\/svg>\s*$/i.test(normalized)) {
-    return { ok: false, error: "Input must be a complete SVG document." };
-  }
-  if (/<script(?:\s|\/?>)/i.test(normalized) || /\son\w+\s*=/i.test(normalized)) {
-    return { ok: false, error: "Scripts and inline event handlers are not allowed." };
-  }
-  return { ok: true, value: normalized };
-}
-
 export function svgToDataUri(svg: string, encoding: "percent" | "base64" = "percent"): ProcessorResult<string> {
-  const validated = validateSvg(svg);
+  const validated = validateSafeSvg(svg);
   if (!validated.ok) return validated;
   const value = encoding === "base64"
     ? `data:image/svg+xml;base64,${utf8ToBase64(validated.value)}`
@@ -68,7 +58,7 @@ export function dataUriToSvg(uri: string): ProcessorResult<string> {
   if (!match) return { ok: false, error: "Enter an SVG data URI." };
   try {
     const decoded = match[2] ? base64ToUtf8(match[3]) : decodeURIComponent(match[3]);
-    return validateSvg(decoded);
+    return validateSafeSvg(decoded);
   } catch {
     return { ok: false, error: "The SVG data URI is malformed." };
   }

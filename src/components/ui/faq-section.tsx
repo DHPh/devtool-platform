@@ -5,6 +5,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
+import { serializeJsonForHtml } from "@/lib/security/safe-json";
 
 interface FAQItem {
   question: string;
@@ -34,7 +35,7 @@ export function FAQSection({ items }: FAQSectionProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(structuredData),
+          __html: serializeJsonForHtml(structuredData),
         }}
       />
       <div className="space-y-4">

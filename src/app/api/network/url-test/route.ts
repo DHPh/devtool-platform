@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { readBoundedJson } from "@/lib/server/bounded-json";
 import {
   getSafeOutboundError,
   requestOutbound,
@@ -17,21 +18,18 @@ export async function POST(request: NextRequest) {
     logNetworkSecurityEvent({ endpoint: ENDPOINT, operation: "http_probe", outcome: "rate_limited", clientId: rateLimit.clientId });
     return networkRateLimitResponse(rateLimit);
   }
+  const parsed = await readBoundedJson<{ url?: unknown; timeout?: unknown }>(
+    request,
+  );
+  if (!parsed.ok) {
+    logNetworkSecurityEvent({ endpoint: ENDPOINT, operation: "http_probe", outcome: "failed", clientId: rateLimit.clientId, errorCode: "INVALID_REQUEST" });
+    return parsed.response;
+  }
+
   try {
-    let body;
-    try {
-      body = await request.json();
-    } catch {
-      logNetworkSecurityEvent({ endpoint: ENDPOINT, operation: "http_probe", outcome: "failed", clientId: rateLimit.clientId, errorCode: "INVALID_REQUEST" });
-      return NextResponse.json(
-        { error: "Invalid JSON in request body" },
-        { status: 400 }
-      );
-    }
+    const { url, timeout = 30 } = parsed.data;
 
-    const { url, timeout = 30 } = body;
-
-    if (!url) {
+    if (typeof url !== "string" || !url.trim()) {
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
     }
 

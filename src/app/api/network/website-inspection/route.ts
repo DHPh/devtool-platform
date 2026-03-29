@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { readBoundedJson } from "@/lib/server/bounded-json";
 import { getSafeOutboundError, OutboundRequestError } from "@/lib/server/outbound-request-policy";
 import {
   analyzeCors,
@@ -30,8 +31,14 @@ export async function POST(request: NextRequest) {
   const rateLimit = checkNetworkRateLimit(request, ENDPOINT, { limit: 20 });
   if (!rateLimit.allowed) return networkRateLimitResponse(rateLimit);
   const startedAt = Date.now();
+  const parsed = await readBoundedJson<{
+    operation?: unknown;
+    url?: unknown;
+  }>(request);
+  if (!parsed.ok) return parsed.response;
+
   try {
-    const body = await request.json() as { operation?: unknown; url?: unknown };
+    const body = parsed.data;
     if (typeof body.operation !== "string" || !(body.operation in OPERATIONS)) {
       return NextResponse.json({ error: "A supported website inspection operation is required.", errorCode: "INVALID_OPERATION" }, { status: 400 });
     }

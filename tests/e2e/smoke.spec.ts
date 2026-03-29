@@ -24,6 +24,7 @@ test("navigates from the homepage through the catalog to a standalone tool", asy
 test("navigates from the homepage to a studio sub-tool", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: "Browse All Tools" }).click();
+  await expect(page).toHaveURL(/\/tools$/);
 
   await page
     .locator('a[href="/tools/network-studio?tab=dns-lookup"]')

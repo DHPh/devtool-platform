@@ -10,6 +10,19 @@ Registry metadata labels every tool as `client`, `server`, or `hybrid`:
 
 Network tools necessarily disclose requested destinations or lookup subjects to the deployment server and relevant remote service. UI and product copy must not claim that all processing is local.
 
+## Browser and input boundaries
+
+All routes receive a restrictive browser-security header baseline, including
+Content Security Policy, HSTS, MIME sniffing protection, frame denial, and a
+limited Permissions Policy. Structured-data scripts must use the shared
+HTML-safe JSON serializer.
+
+Network POST routes accept JSON bodies up to 16 KiB and reject unsupported
+content types before parsing. SVG data-URI and optimizer tools accept only a
+self-contained element and attribute allowlist; scripts, event handlers,
+embedded HTML or CSS, document types, entities, and external references are
+rejected.
+
 ## Outbound-request policy
 
 User-controlled HTTP destinations pass through `src/lib/server/outbound-request-policy.ts`. It:
@@ -41,7 +54,9 @@ Queries validate normalized ASCII domain labels and a bounded record-type allowl
 
 - Keep Node.js, Next.js, WebSocket, and lockfile dependencies patched.
 - Never expose internal-only destinations by weakening address classification.
-- Treat forwarded client-IP headers as trusted only when the edge overwrites them.
+- Forwarded client-IP headers are ignored unless `VERCEL=1` or
+  `TRUST_PROXY_HEADERS=true`. Enable the latter only when the edge overwrites
+  incoming forwarding headers.
 - Configure distributed rate limiting before horizontal scaling.
 - Review external services used by network and IP-information tools and disclose them where appropriate.
 - Keep errors user-safe and preserve detailed diagnostics only in protected infrastructure telemetry.

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { readBoundedJson } from "@/lib/server/bounded-json";
 import { DnsLookupError } from "@/lib/server/dns-resolver";
 import {
   analyzeEmailDns,
@@ -16,12 +17,15 @@ export async function POST(request: NextRequest) {
   const rateLimit = checkNetworkRateLimit(request, ENDPOINT, { limit: 15 });
   if (!rateLimit.allowed) return networkRateLimitResponse(rateLimit);
   const startedAt = Date.now();
+  const parsed = await readBoundedJson<{
+    operation?: unknown;
+    domain?: unknown;
+    recordType?: unknown;
+  }>(request);
+  if (!parsed.ok) return parsed.response;
+
   try {
-    const body = (await request.json()) as {
-      operation?: unknown;
-      domain?: unknown;
-      recordType?: unknown;
-    };
+    const body = parsed.data;
     if (typeof body.domain !== "string")
       return NextResponse.json(
         { error: "Domain is required.", errorCode: "DNS_INVALID_DOMAIN" },

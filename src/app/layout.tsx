@@ -5,6 +5,7 @@ import { Navigation } from "@/components/navigation";
 import { Toaster } from "sonner";
 import { siteConfig, validateConfig } from "@/config/site";
 import { TOOL_COUNT } from "@/lib/tool-registry";
+import { serializeJsonForHtml } from "@/lib/security/safe-json";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -190,7 +191,7 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify(structuredData),
+            __html: serializeJsonForHtml(structuredData),
           }}
         />
       </head>

@@ -1,4 +1,5 @@
 import { ToolMetadata } from "@/lib/tool-registry";
+import { serializeJsonForHtml } from "@/lib/security/safe-json";
 
 interface ToolSEOProps {
   tool: ToolMetadata;
@@ -75,13 +76,13 @@ export function ToolSEO({ tool, slug }: ToolSEOProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(structuredData),
+          __html: serializeJsonForHtml(structuredData),
         }}
       />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(breadcrumbStructuredData),
+          __html: serializeJsonForHtml(breadcrumbStructuredData),
         }}
       />
 

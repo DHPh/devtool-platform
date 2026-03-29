@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { isIP } from "node:net";
 import { NextRequest, NextResponse } from "next/server";
 
 const DEFAULT_WINDOW_MS = 60_000;
@@ -14,6 +15,7 @@ export interface NetworkRateLimitOptions {
   limit?: number;
   windowMs?: number;
   now?: number;
+  trustedProxyHeaders?: boolean;
 }
 
 export interface NetworkRateLimitDecision {
@@ -62,12 +64,28 @@ function boundedPositiveInteger(value: number | undefined, fallback: number) {
     : fallback;
 }
 
-function getClientAddress(request: NextRequest): string {
-  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+function validClientAddress(value: string | null | undefined): string | undefined {
+  const candidate = value?.trim();
+  return candidate && candidate.length <= 45 && isIP(candidate) !== 0
+    ? candidate
+    : undefined;
+}
+
+export function resolveRateLimitClientAddress(
+  request: NextRequest,
+  trustedProxyHeaders =
+    process.env.VERCEL === "1" ||
+    process.env.TRUST_PROXY_HEADERS?.toLowerCase() === "true",
+): string {
+  if (!trustedProxyHeaders) return "unknown";
+
+  const forwarded = request.headers
+    .get("x-forwarded-for")
+    ?.split(",", 1)[0];
   return (
-    forwarded ||
-    request.headers.get("x-real-ip")?.trim() ||
-    request.headers.get("cf-connecting-ip")?.trim() ||
+    validClientAddress(forwarded) ||
+    validClientAddress(request.headers.get("cf-connecting-ip")) ||
+    validClientAddress(request.headers.get("x-real-ip")) ||
     "unknown"
   );
 }
@@ -96,7 +114,9 @@ export function checkNetworkRateLimit(
   const now = options.now ?? Date.now();
   const limit = boundedPositiveInteger(options.limit, DEFAULT_LIMIT);
   const windowMs = boundedPositiveInteger(options.windowMs, DEFAULT_WINDOW_MS);
-  const clientId = anonymizeClient(getClientAddress(request));
+  const clientId = anonymizeClient(
+    resolveRateLimitClientAddress(request, options.trustedProxyHeaders),
+  );
   const key = `${endpoint}:${clientId}`;
 
   pruneExpiredBuckets(now);

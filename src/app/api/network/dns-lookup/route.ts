@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { readBoundedJson } from "@/lib/server/bounded-json";
 import {
   DnsLookupError,
   normalizeDnsDomain,
@@ -20,9 +21,15 @@ export async function POST(request: NextRequest) {
     return networkRateLimitResponse(rateLimit);
   }
   const startedAt = Date.now();
+  const parsed = await readBoundedJson<{
+    domain?: unknown;
+    recordType?: unknown;
+    recordTypes?: unknown;
+  }>(request);
+  if (!parsed.ok) return parsed.response;
 
   try {
-    const { domain: inputDomain, recordType, recordTypes } = await request.json();
+    const { domain: inputDomain, recordType, recordTypes } = parsed.data;
     const domain = normalizeDnsDomain(inputDomain);
     const requestedTypes = normalizeDnsRecordTypes(
       recordTypes ?? [recordType ?? "A"],

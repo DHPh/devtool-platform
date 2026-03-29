@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { ChevronRight, Home } from "lucide-react";
+import { serializeJsonForHtml } from "@/lib/security/safe-json";
 
 interface BreadcrumbItem {
   label: string;
@@ -38,7 +39,7 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(structuredData),
+          __html: serializeJsonForHtml(structuredData),
         }}
       />
       <nav

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { readBoundedJson } from "@/lib/server/bounded-json";
 import {
   getSafeOutboundError,
   requestOutbound,
@@ -25,8 +26,13 @@ export async function POST(request: NextRequest) {
   }
 
   const startedAt = Date.now();
+  const parsed = await readBoundedJson<{ host?: unknown; timeout?: unknown }>(
+    request,
+  );
+  if (!parsed.ok) return parsed.response;
+
   try {
-    const { host, timeout = 5_000 } = await request.json();
+    const { host, timeout = 5_000 } = parsed.data;
     if (typeof host !== "string" || !host.trim()) {
       return NextResponse.json({ error: "Host is required" }, { status: 400 });
     }
