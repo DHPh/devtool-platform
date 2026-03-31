@@ -128,4 +128,22 @@ describe("security architecture", () => {
       expect(action, action).toMatch(/^[^@\s]+@[a-f0-9]{40}$/);
     }
   });
+
+  it("keeps local, CI, and deployment Node runtimes aligned", async () => {
+    const [workflow, versionFile, packageSource] = await Promise.all([
+      readFile(".github/workflows/ci.yml", "utf8"),
+      readFile(".nvmrc", "utf8"),
+      readFile("package.json", "utf8"),
+    ]);
+    const packageJson = JSON.parse(packageSource) as {
+      engines?: { node?: string };
+    };
+    const ciVersions = [
+      ...workflow.matchAll(/^\s*node-version:\s*(\d+)\s*$/gm),
+    ].map((match) => match[1]);
+
+    expect(ciVersions).toEqual(["22", "22"]);
+    expect(versionFile.trim()).toBe("22");
+    expect(packageJson.engines?.node).toBe("22.x");
+  });
 });

@@ -247,7 +247,7 @@ Implementation note (2026-01-24): Registry tests now prove every registered path
 - [x] Run browser smoke tests on an appropriate CI environment.
 - [x] Cache dependencies without caching generated output that could hide failures.
 
-Implementation note (2026-01-24): GitHub Actions uses Node 20 and lockfile installs. The quality job runs the maintained ESLint command, TypeScript, Vitest, registry validation, and a production build; a dependent browser job installs Chromium and runs Playwright. `actions/setup-node` caches npm's package download cache, while generated `.next`, test results, and browser reports are neither restored nor uploaded as build caches.
+Implementation note (2026-03-28): GitHub Actions and Vercel use Node 22 with lockfile installs. This keeps browser-crypto component tests on the same supported LTS runtime as local and production builds. The quality job runs the maintained ESLint command, TypeScript, Vitest, registry validation, and a production build; a dependent browser job installs Chromium and runs Playwright. `actions/setup-node` caches npm's package download cache, while generated `.next`, test results, and browser reports are neither restored nor uploaded as build caches.
 
 Acceptance criteria:
 
