@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   JwtSignatureVerifierTool,
   JwtGeneratorTool,
+  HashHmacGeneratorTool,
   CertificateDecoderTool,
   KeypairSignatureTool,
   SriGeneratorTool,
@@ -18,6 +19,20 @@ beforeEach(() => vi.stubGlobal("crypto", webcrypto));
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe("Phase 4 security-tool UX", () => {
+  it("lets users reveal and hide the HMAC secret key", async () => {
+    const user = userEvent.setup();
+    render(<HashHmacGeneratorTool />);
+    const operation = screen.getByRole("combobox", { name: "Operation" });
+    fireEvent.keyDown(operation, { key: "ArrowDown" });
+    fireEvent.keyDown(screen.getByRole("option", { name: "HMAC" }), { key: "Enter" });
+    const secret = screen.getByLabelText("Secret key");
+    expect(secret).toHaveAttribute("type", "password");
+    await user.click(screen.getByRole("button", { name: "Show" }));
+    expect(secret).toHaveAttribute("type", "text");
+    await user.click(screen.getByRole("button", { name: "Hide" }));
+    expect(secret).toHaveAttribute("type", "password");
+  });
+
   it("generates and exposes a copyable signed JWT", async () => {
     const user = userEvent.setup();
     render(<JwtGeneratorTool />);
