@@ -1,4 +1,4 @@
-import type { DigestAlgorithm } from "./crypto-core";
+import { inspectJwt, type DigestAlgorithm } from "./crypto-core";
 import type { ProcessorResult } from "./devops-config-core";
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -37,25 +37,278 @@ function parseJwk(input: string): JsonWebKey | null {
 export interface JwtVerificationResult {
   verified: boolean;
   algorithm: string;
+  keyType: Exclude<JwtVerificationKeyType, "auto">;
+  claimValidation: JwtClaimValidation | null;
   warning: string;
 }
 
-export async function verifyJwtSignature(token: string, keyInput: string): Promise<ProcessorResult<JwtVerificationResult>> {
+export type JwtVerificationKeyType = "auto" | "hmac" | "jwk" | "jwks" | "pem";
+
+export interface JwtVerificationOptions {
+  keyType?: JwtVerificationKeyType;
+  expectedAlgorithm?: string;
+  validateClaims?: boolean;
+  expectedIssuer?: string;
+  expectedAudience?: string;
+  clockToleranceSeconds?: number;
+  now?: Date;
+}
+
+export interface JwtClaimCheck {
+  claim: "exp" | "nbf" | "iss" | "aud";
+  valid: boolean;
+  message: string;
+}
+
+export interface JwtClaimValidation {
+  valid: boolean;
+  checks: JwtClaimCheck[];
+}
+
+export type JwtSigningAlgorithm = "HS256" | "HS384" | "HS512" | "RS256" | "RS384" | "RS512" | "ES256" | "ES384";
+export type JwtSigningKeyType = "hmac" | "jwk" | "pem";
+
+export interface JwtGenerationOptions {
+  algorithm: JwtSigningAlgorithm;
+  keyType: JwtSigningKeyType;
+}
+
+export interface JwtGenerationResult {
+  token: string;
+  algorithm: JwtSigningAlgorithm;
+  header: Record<string, unknown>;
+  payload: Record<string, unknown>;
+  warning: string;
+}
+
+export interface GeneratedJwtSigningKeyPair {
+  publicJwk: JsonWebKey;
+  privateJwk: JsonWebKey;
+}
+
+function isJwk(value: unknown): value is JsonWebKey {
+  return Boolean(value && !Array.isArray(value) && typeof value === "object" && "kty" in value);
+}
+
+function parseJwks(input: string, kid: unknown): JsonWebKey {
+  const value = JSON.parse(input) as unknown;
+  if (!value || Array.isArray(value) || typeof value !== "object" || !("keys" in value) || !Array.isArray(value.keys)) {
+    throw new Error("JWKS must be a JSON object containing a keys array.");
+  }
+  const keys = value.keys.filter(isJwk);
+  if (keys.length === 0) throw new Error("JWKS does not contain any usable keys.");
+  if (typeof kid === "string") {
+    const match = keys.find((key) => (key as JsonWebKey & { kid?: string }).kid === kid);
+    if (!match) throw new Error(`JWKS does not contain a key with kid "${kid}".`);
+    return match;
+  }
+  if (keys.length !== 1) throw new Error("JWT header has no kid. Provide a JWKS containing exactly one key.");
+  return keys[0];
+}
+
+function inferJwtKeyType(input: string): Exclude<JwtVerificationKeyType, "auto"> {
+  const trimmed = input.trimStart();
+  if (trimmed.startsWith("-----BEGIN")) return "pem";
+  if (trimmed.startsWith("{")) {
+    const value = JSON.parse(input) as unknown;
+    return Boolean(value && !Array.isArray(value) && typeof value === "object" && "keys" in value) ? "jwks" : "jwk";
+  }
+  return "hmac";
+}
+
+function validateJwtClaims(
+  payload: Record<string, unknown>,
+  options: JwtVerificationOptions,
+): JwtClaimValidation {
+  const checks: JwtClaimCheck[] = [];
+  const nowSeconds = (options.now ?? new Date()).valueOf() / 1000;
+  const tolerance = options.clockToleranceSeconds ?? 0;
+  if (!Number.isFinite(tolerance) || tolerance < 0 || tolerance > 3600) {
+    throw new Error("Clock tolerance must be from 0 to 3600 seconds.");
+  }
+  if ("exp" in payload) {
+    const valid = typeof payload.exp === "number" && Number.isFinite(payload.exp) && nowSeconds < payload.exp + tolerance;
+    checks.push({ claim: "exp", valid, message: valid ? "Token has not expired." : "Token is expired or exp is invalid." });
+  }
+  if ("nbf" in payload) {
+    const valid = typeof payload.nbf === "number" && Number.isFinite(payload.nbf) && nowSeconds + tolerance >= payload.nbf;
+    checks.push({ claim: "nbf", valid, message: valid ? "Token is active." : "Token is not active yet or nbf is invalid." });
+  }
+  const expectedIssuer = options.expectedIssuer?.trim();
+  if (expectedIssuer) {
+    const valid = payload.iss === expectedIssuer;
+    checks.push({ claim: "iss", valid, message: valid ? "Issuer matches." : "Issuer does not match." });
+  }
+  const expectedAudience = options.expectedAudience?.trim();
+  if (expectedAudience) {
+    const audiences = typeof payload.aud === "string"
+      ? [payload.aud]
+      : Array.isArray(payload.aud) && payload.aud.every((value) => typeof value === "string")
+        ? payload.aud
+        : [];
+    const valid = audiences.includes(expectedAudience);
+    checks.push({ claim: "aud", valid, message: valid ? "Audience matches." : "Audience does not match." });
+  }
+  return { valid: checks.every((check) => check.valid), checks };
+}
+
+function parseJsonObject(input: string, label: string): Record<string, unknown> {
+  const value = JSON.parse(input) as unknown;
+  if (!value || Array.isArray(value) || typeof value !== "object") throw new Error(`${label} must be a JSON object.`);
+  return value as Record<string, unknown>;
+}
+
+function bytesToBase64Url(bytes: Uint8Array): string {
+  return bytesToBase64(bytes).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+export function generateJwtHmacSecret(byteCount = 32): ProcessorResult<string> {
+  if (!Number.isInteger(byteCount) || byteCount < 32 || byteCount > 128) {
+    return { ok: false, error: "JWT HMAC secret size must be from 32 to 128 bytes." };
+  }
+  return { ok: true, value: bytesToBase64Url(crypto.getRandomValues(new Uint8Array(byteCount))) };
+}
+
+export async function generateJwtSigningKeyPair(
+  algorithm: Exclude<JwtSigningAlgorithm, `HS${number}`>,
+): Promise<ProcessorResult<GeneratedJwtSigningKeyPair>> {
+  if (!/^(?:RS(?:256|384|512)|ES(?:256|384))$/.test(algorithm)) {
+    return { ok: false, error: "Generate an RS or ES JWT signing keypair." };
+  }
+  try {
+    const pair = algorithm.startsWith("RS")
+      ? await crypto.subtle.generateKey(
+        {
+          name: "RSASSA-PKCS1-v1_5",
+          modulusLength: 2048,
+          publicExponent: new Uint8Array([1, 0, 1]),
+          hash: `SHA-${algorithm.slice(2)}`,
+        },
+        true,
+        ["sign", "verify"],
+      )
+      : await crypto.subtle.generateKey(
+        { name: "ECDSA", namedCurve: algorithm === "ES256" ? "P-256" : "P-384" },
+        true,
+        ["sign", "verify"],
+      );
+    return {
+      ok: true,
+      value: {
+        publicJwk: await crypto.subtle.exportKey("jwk", pair.publicKey),
+        privateJwk: await crypto.subtle.exportKey("jwk", pair.privateKey),
+      },
+    };
+  } catch {
+    return { ok: false, error: `${algorithm} key generation is not available in this environment.` };
+  }
+}
+
+export async function generateJwt(
+  headerInput: string,
+  payloadInput: string,
+  keyInput: string,
+  options: JwtGenerationOptions,
+): Promise<ProcessorResult<JwtGenerationResult>> {
+  if (!/^(?:HS|RS)(?:256|384|512)$|^ES(?:256|384)$/.test(options.algorithm)) {
+    return { ok: false, error: `Unsupported JWT signing algorithm: ${options.algorithm}.` };
+  }
+  if (headerInput.length + payloadInput.length > 100_000) return { ok: false, error: "JWT header and payload exceed the 100 KB limit." };
+  if (!keyInput) return { ok: false, error: "Enter or generate a signing key." };
+  try {
+    const header: Record<string, unknown> = { ...parseJsonObject(headerInput, "JWT header"), alg: options.algorithm };
+    if (!("typ" in header)) header.typ = "JWT";
+    const payload = parseJsonObject(payloadInput, "JWT payload");
+    const headerSegment = bytesToBase64Url(new TextEncoder().encode(JSON.stringify(header)));
+    const payloadSegment = bytesToBase64Url(new TextEncoder().encode(JSON.stringify(payload)));
+    const data = new TextEncoder().encode(`${headerSegment}.${payloadSegment}`);
+    const jwk = options.keyType === "jwk" ? parseJwk(keyInput) : null;
+    if (options.keyType === "jwk" && !jwk) throw new Error("Enter a private or symmetric JWK JSON object.");
+    let key: CryptoKey;
+    let signAlgorithm: AlgorithmIdentifier | EcdsaParams;
+    if (options.algorithm.startsWith("HS")) {
+      if (!["hmac", "jwk"].includes(options.keyType)) throw new Error(`${options.algorithm} requires an HMAC secret or symmetric JWK.`);
+      if (jwk && jwk.kty !== "oct") throw new Error(`${options.algorithm} requires a symmetric oct JWK.`);
+      const importAlgorithm = { name: "HMAC", hash: `SHA-${options.algorithm.slice(2)}` };
+      key = jwk
+        ? await crypto.subtle.importKey("jwk", jwk, importAlgorithm, false, ["sign"])
+        : await crypto.subtle.importKey("raw", new TextEncoder().encode(keyInput), importAlgorithm, false, ["sign"]);
+      signAlgorithm = "HMAC";
+    } else if (options.algorithm.startsWith("RS")) {
+      if (options.keyType === "hmac") throw new Error(`${options.algorithm} requires a private JWK or PKCS#8 PEM key.`);
+      if (jwk && jwk.kty !== "RSA") throw new Error(`${options.algorithm} requires an RSA private JWK.`);
+      const importAlgorithm = { name: "RSASSA-PKCS1-v1_5", hash: `SHA-${options.algorithm.slice(2)}` };
+      key = jwk
+        ? await crypto.subtle.importKey("jwk", jwk, importAlgorithm, false, ["sign"])
+        : await crypto.subtle.importKey("pkcs8", asArrayBuffer(pemToBytes(keyInput)), importAlgorithm, false, ["sign"]);
+      signAlgorithm = "RSASSA-PKCS1-v1_5";
+    } else {
+      if (options.keyType === "hmac") throw new Error(`${options.algorithm} requires a private JWK or PKCS#8 PEM key.`);
+      if (jwk && jwk.kty !== "EC") throw new Error(`${options.algorithm} requires an EC private JWK.`);
+      const namedCurve = options.algorithm === "ES256" ? "P-256" : "P-384";
+      key = jwk
+        ? await crypto.subtle.importKey("jwk", jwk, { name: "ECDSA", namedCurve }, false, ["sign"])
+        : await crypto.subtle.importKey("pkcs8", asArrayBuffer(pemToBytes(keyInput)), { name: "ECDSA", namedCurve }, false, ["sign"]);
+      signAlgorithm = { name: "ECDSA", hash: options.algorithm === "ES256" ? "SHA-256" : "SHA-384" };
+    }
+    const signature = new Uint8Array(await crypto.subtle.sign(signAlgorithm, key, data));
+    return {
+      ok: true,
+      value: {
+        token: `${headerSegment}.${payloadSegment}.${bytesToBase64Url(signature)}`,
+        algorithm: options.algorithm,
+        header,
+        payload,
+        warning: "Generated locally for development and testing. Protect signing secrets and private keys; do not paste production keys into shared environments.",
+      },
+    };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "JWT could not be generated." };
+  }
+}
+
+export async function verifyJwtSignature(
+  token: string,
+  keyInput: string,
+  options: JwtVerificationOptions = {},
+): Promise<ProcessorResult<JwtVerificationResult>> {
   const segments = token.trim().split(".");
   if (segments.length !== 3 || segments.some((segment) => !segment)) return { ok: false, error: "A signed JWT must contain three non-empty segments." };
   if (!keyInput.trim()) return { ok: false, error: "Enter a verification key or HMAC secret." };
   try {
-    const header = JSON.parse(new TextDecoder().decode(base64UrlToBytes(segments[0]))) as Record<string, unknown>;
+    const inspection = inspectJwt(token, options.now);
+    if (!inspection.ok) return inspection;
+    const { header, payload } = inspection.value;
     const algorithm = typeof header.alg === "string" ? header.alg : "";
     if (!algorithm || algorithm === "none") return { ok: false, error: "JWT must declare a supported signing algorithm." };
+    if (options.expectedAlgorithm && algorithm !== options.expectedAlgorithm) {
+      return { ok: false, error: `Algorithm mismatch: expected ${options.expectedAlgorithm}, but JWT declares ${algorithm}.` };
+    }
+    const keyType = options.keyType && options.keyType !== "auto" ? options.keyType : inferJwtKeyType(keyInput);
+    if (/^HS/.test(algorithm) && !["hmac", "jwk", "jwks"].includes(keyType)) {
+      return { ok: false, error: `${algorithm} requires an HMAC secret or symmetric JWK, not a PEM key.` };
+    }
+    if (/^(?:RS|ES)/.test(algorithm) && keyType === "hmac") {
+      return { ok: false, error: `${algorithm} requires a public JWK, JWKS, or SPKI PEM key, not an HMAC secret.` };
+    }
     const data = new TextEncoder().encode(`${segments[0]}.${segments[1]}`);
     const signature = base64UrlToBytes(segments[2]);
     let key: CryptoKey;
     let verifyAlgorithm: AlgorithmIdentifier | RsaPssParams | EcdsaParams;
-    const jwk = parseJwk(keyInput);
+    const jwk = keyType === "jwk"
+      ? parseJwk(keyInput)
+      : keyType === "jwks"
+        ? parseJwks(keyInput, header.kid)
+        : null;
+    if (keyType === "jwk" && !jwk) throw new Error("Enter a JWK JSON object.");
+    if (/^HS/.test(algorithm) && jwk && jwk.kty !== "oct") throw new Error(`${algorithm} requires a symmetric oct JWK.`);
+    if (/^RS/.test(algorithm) && jwk && jwk.kty !== "RSA") throw new Error(`${algorithm} requires an RSA JWK.`);
+    if (/^ES/.test(algorithm) && jwk && jwk.kty !== "EC") throw new Error(`${algorithm} requires an EC JWK.`);
     if (/^HS(?:256|384|512)$/.test(algorithm)) {
       const hash = `SHA-${algorithm.slice(2)}`;
-      key = await crypto.subtle.importKey("raw", new TextEncoder().encode(keyInput), { name: "HMAC", hash }, false, ["verify"]);
+      key = jwk
+        ? await crypto.subtle.importKey("jwk", jwk, { name: "HMAC", hash }, false, ["verify"])
+        : await crypto.subtle.importKey("raw", new TextEncoder().encode(keyInput), { name: "HMAC", hash }, false, ["verify"]);
       verifyAlgorithm = "HMAC";
     } else if (/^RS(?:256|384|512)$/.test(algorithm)) {
       const importAlgorithm = { name: "RSASSA-PKCS1-v1_5", hash: `SHA-${algorithm.slice(2)}` };
@@ -71,7 +324,21 @@ export async function verifyJwtSignature(token: string, keyInput: string): Promi
       verifyAlgorithm = { name: "ECDSA", hash: algorithm === "ES256" ? "SHA-256" : "SHA-384" };
     } else return { ok: false, error: `Unsupported JWT algorithm: ${algorithm}.` };
     const verified = await crypto.subtle.verify(verifyAlgorithm, key, asArrayBuffer(signature), data);
-    return { ok: true, value: { verified, algorithm, warning: "Signature only. Issuer, audience, expiry, and other claims were not validated." } };
+    const claimValidation = options.validateClaims && verified ? validateJwtClaims(payload, options) : null;
+    return {
+      ok: true,
+      value: {
+        verified,
+        algorithm,
+        keyType,
+        claimValidation,
+        warning: !verified
+          ? "Signature did not verify. Claims were not validated or trusted."
+          : claimValidation
+          ? "Signature and configured claims are reported separately. Unconfigured claims were not validated."
+          : "Signature only. Issuer, audience, expiry, and other claims were not validated.",
+      },
+    };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "JWT signature could not be verified." };
   }

@@ -5,6 +5,7 @@ export const SECURITY_IDENTITY_STUDIO_MANIFEST = defineStudioManifest(
   "security-identity-studio",
   [
     { id: "jwt-inspector", shortLabel: "JWT", icon: "Eye", loadComponent: () => import("./tabs/JwtInspectorTab").then((module) => ({ default: module.JwtInspectorTab })) },
+    { id: "jwt-generator", shortLabel: "JWT create", icon: "Key", loadComponent: () => import("./tabs/JwtGeneratorTab").then((module) => ({ default: module.JwtGeneratorTab })) },
     { id: "hash-hmac-generator", shortLabel: "Hash/HMAC", icon: "Hash", loadComponent: () => import("./tabs/HashHmacGeneratorTab").then((module) => ({ default: module.HashHmacGeneratorTab })) },
     { id: "jwt-signature-verifier", shortLabel: "JWT verify", icon: "CheckCircle", loadComponent: () => import("./tabs/JwtSignatureVerifierTab").then((module) => ({ default: module.JwtSignatureVerifierTab })) },
     { id: "symmetric-encryption", shortLabel: "Encrypt", icon: "Key", loadComponent: () => import("./tabs/SymmetricEncryptionTab").then((module) => ({ default: module.SymmetricEncryptionTab })) },

@@ -6,6 +6,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   JwtSignatureVerifierTool,
+  JwtGeneratorTool,
   CertificateDecoderTool,
   KeypairSignatureTool,
   SriGeneratorTool,
@@ -17,13 +18,49 @@ beforeEach(() => vi.stubGlobal("crypto", webcrypto));
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe("Phase 4 security-tool UX", () => {
+  it("generates and exposes a copyable signed JWT", async () => {
+    const user = userEvent.setup();
+    render(<JwtGeneratorTool />);
+    await user.click(screen.getByRole("button", { name: "Generate signed JWT" }));
+    expect(await screen.findByRole("button", { name: "Copy signed JWT" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Copy generator security note" })).toBeVisible();
+  });
+
+  it("adds current issue and expiry claims to a generator payload", async () => {
+    const user = userEvent.setup();
+    render(<JwtGeneratorTool />);
+    await user.click(screen.getByRole("button", { name: "Set iat and 1-hour expiry" }));
+    const payload = screen.getByRole("textbox", { name: "Payload JSON" }) as HTMLTextAreaElement;
+    expect(JSON.parse(payload.value)).toMatchObject({ sub: "123", iat: expect.any(Number), exp: expect.any(Number) });
+  });
+
   it("shows separate JWT verification outputs", async () => {
     const user = userEvent.setup();
     render(<JwtSignatureVerifierTool />);
+    expect(screen.getByRole("button", { name: "Copy verifier header" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Copy verifier payload" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Verify signature" }));
     expect(await screen.findByRole("button", { name: "Copy signature result" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Copy algorithm" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Copy limitation" })).toBeVisible();
+  });
+
+  it("clears a stale JWT verification result when inputs change", async () => {
+    const user = userEvent.setup();
+    render(<JwtSignatureVerifierTool />);
+    await user.click(screen.getByRole("button", { name: "Verify signature" }));
+    expect(await screen.findByRole("button", { name: "Copy signature result" })).toBeVisible();
+    await user.type(screen.getByRole("textbox", { name: "JWT" }), "changed");
+    expect(screen.queryByRole("button", { name: "Copy signature result" })).not.toBeInTheDocument();
+  });
+
+  it("reveals optional JWT claim-validation controls", async () => {
+    const user = userEvent.setup();
+    render(<JwtSignatureVerifierTool />);
+    await user.click(screen.getByRole("switch", { name: "Validate standard claims" }));
+    expect(screen.getByRole("textbox", { name: "Expected issuer (optional)" })).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "Expected audience (optional)" })).toBeVisible();
+    expect(screen.getByRole("spinbutton", { name: "Clock tolerance (seconds)" })).toBeVisible();
   });
 
   it("encrypts and copies an authenticated envelope", async () => {

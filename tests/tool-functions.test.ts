@@ -44,6 +44,7 @@ import {
   flattenJson,
   generateDigest,
   generateHmac,
+  generateJwt,
   generateGitignore,
   generateLoremIpsum,
   generateOpenGraphTags,
@@ -730,6 +731,18 @@ const cases: FunctionalCase[] = [
         value: { algorithm: "HS256", status: "active" },
       });
       expect(inspectJwt("not-a-jwt").ok).toBe(false);
+    },
+  },
+  {
+    id: "jwt-generator",
+    run: async () => {
+      const result = await generateJwt(
+        '{"typ":"JWT"}',
+        '{"sub":"123"}',
+        "development-only-secret-change-me",
+        { algorithm: "HS256", keyType: "hmac" },
+      );
+      expect(result).toMatchObject({ ok: true, value: { algorithm: "HS256" } });
     },
   },
   {

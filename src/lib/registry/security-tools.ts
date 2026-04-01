@@ -69,9 +69,9 @@ export const SECURITY_TOOLS = [
   },
   {
     id: "security-identity-studio", kind: "studio", studioDirectory: "security-identity-studio", processing: "client",
-    name: "Security and Identity Studio", description: "Inspect tokens and generate cryptographic hashes locally",
+    name: "Security and Identity Studio", description: "Inspect, generate, and verify tokens and cryptographic values locally",
     category: TOOL_CATEGORIES.SECURITY_TOOLS.id, type: TOOL_TYPES.SECURITY,
-    tags: ["security", "jwt", "hash", "hmac"], path: "/tools/security-identity-studio", icon: "🛡️", complexity: "intermediate",
+    tags: ["security", "jwt", "token", "signature", "hash", "hmac"], path: "/tools/security-identity-studio", icon: "🛡️", complexity: "intermediate",
   },
   {
     id: "jwt-inspector", kind: "studio-subtool", processing: "client", name: "JWT Inspector",
@@ -79,6 +79,13 @@ export const SECURITY_TOOLS = [
     type: TOOL_TYPES.ANALYZER, tags: ["jwt", "token", "claims", "decode"],
     path: "/tools/security-identity-studio?tab=jwt-inspector", icon: "🪪", complexity: "intermediate",
     parent: "security-identity-studio", tab: "jwt-inspector",
+  },
+  {
+    id: "jwt-generator", kind: "studio-subtool", processing: "client", name: "JWT Generator",
+    description: "Create and sign development JWTs locally with HMAC secrets or private keys", category: TOOL_CATEGORIES.SECURITY_TOOLS.id,
+    type: TOOL_TYPES.SECURITY, types: [TOOL_TYPES.GENERATOR], tags: ["jwt", "token", "sign", "hmac", "jwk", "pem"],
+    path: "/tools/security-identity-studio?tab=jwt-generator", icon: "🪪", complexity: "advanced",
+    parent: "security-identity-studio", tab: "jwt-generator",
   },
   {
     id: "hash-hmac-generator", kind: "studio-subtool", processing: "client", name: "Hash and HMAC Generator",
@@ -89,7 +96,7 @@ export const SECURITY_TOOLS = [
   },
   {
     id: "jwt-signature-verifier", kind: "studio-subtool", processing: "client", name: "JWT Signature Verifier",
-    description: "Verify HS, RS, and ES JWT signatures without claiming claim validation", category: TOOL_CATEGORIES.SECURITY_TOOLS.id,
+    description: "Verify HS, RS, and ES JWT signatures and optionally validate standard claims", category: TOOL_CATEGORIES.SECURITY_TOOLS.id,
     type: TOOL_TYPES.SECURITY, types: [TOOL_TYPES.VALIDATOR], tags: ["jwt", "signature", "jwk", "pem", "verify"],
     path: "/tools/security-identity-studio?tab=jwt-signature-verifier", icon: "✅", complexity: "advanced",
     parent: "security-identity-studio", tab: "jwt-signature-verifier",

@@ -121,6 +121,7 @@ const TOOL_ORDER = [
   "fake-data-generator",
   "security-identity-studio",
   "jwt-inspector",
+  "jwt-generator",
   "hash-hmac-generator",
   "jwt-signature-verifier",
   "symmetric-encryption",

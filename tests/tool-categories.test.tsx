@@ -10,7 +10,7 @@ const EXPECTED_CATEGORY_COUNTS: Record<string, number> = {
   "data-conversion": 10,
   generators: 8,
   validators: 13,
-  "security-tools": 10,
+  "security-tools": 11,
   "web-development": 15,
   "api-testing": 13,
   utilities: 16,
