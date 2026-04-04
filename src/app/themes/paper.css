@@ -1,0 +1,58 @@
+/*
+ * Paper theme — a warm editorial look with amber accents.
+ * HSL triples consumed by tailwind.config.ts.
+ */
+:root[data-theme="paper"] {
+  --background: 40 33% 98%;
+  --foreground: 20 10% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 20 10% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 20 10% 10%;
+  --primary: 32 95% 44%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 40 44% 94%;
+  --secondary-foreground: 20 10% 10%;
+  --muted: 40 44% 94%;
+  --muted-foreground: 25 5% 45%;
+  --accent: 32 95% 44%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 40 20% 88%;
+  --input: 40 20% 88%;
+  --ring: 32 95% 44%;
+  --radius: 0.5rem;
+  --chart-1: 32 95% 44%;
+  --chart-2: 142 71% 45%;
+  --chart-3: 199 89% 48%;
+  --chart-4: 48 96% 53%;
+  --chart-5: 330 81% 60%;
+}
+
+:root[data-theme="paper"].dark {
+  --background: 35 18% 9%;
+  --foreground: 40 44% 94%;
+  --card: 35 18% 12%;
+  --card-foreground: 40 44% 94%;
+  --popover: 35 18% 12%;
+  --popover-foreground: 40 44% 94%;
+  --primary: 38 92% 50%;
+  --primary-foreground: 35 18% 9%;
+  --secondary: 35 17% 15%;
+  --secondary-foreground: 40 44% 94%;
+  --muted: 35 17% 15%;
+  --muted-foreground: 30 6% 64%;
+  --accent: 38 92% 50%;
+  --accent-foreground: 35 18% 9%;
+  --destructive: 0 91% 71%;
+  --destructive-foreground: 35 18% 9%;
+  --border: 35 14% 20%;
+  --input: 35 14% 20%;
+  --ring: 38 92% 50%;
+  --chart-1: 38 92% 50%;
+  --chart-2: 142 71% 55%;
+  --chart-3: 199 89% 58%;
+  --chart-4: 48 96% 53%;
+  --chart-5: 330 81% 60%;
+}

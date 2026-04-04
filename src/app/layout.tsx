@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import "./themes/classic.css";
+import "./themes/neon.css";
+import "./themes/paper.css";
 import { Navigation } from "@/components/navigation";
 import { Toaster } from "sonner";
 import { siteConfig, validateConfig } from "@/config/site";
@@ -153,36 +156,27 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                try {
-                  // Get theme from localStorage (Zustand persist format)
-                  var stored = localStorage.getItem('devtool-theme');
-                  var theme = stored ? JSON.parse(stored).state?.theme : 'system';
+                function systemDark() {
+                  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+                }
+                function apply(themeId, mode) {
                   var root = document.documentElement;
-                  
-                  // Clear any existing theme classes first
-                  root.classList.remove('light', 'dark');
-                  
-                  // Apply theme immediately
-                  if (theme === 'system') {
-                    var systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                    root.classList.add(systemTheme);
-                  } else if (theme === 'dark' || theme === 'light') {
-                    root.classList.add(theme);
-                  } else {
-                    // Fallback to system if unknown theme
-                    var systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                    root.classList.add(systemTheme);
-                  }
-                  
-                  // Set flag to indicate theme was applied and make content visible
+                  root.setAttribute('data-theme', themeId);
+                  var dark = mode === 'dark' || (mode === 'system' && systemDark());
+                  root.classList.toggle('dark', dark);
+                  root.classList.remove('light');
                   root.setAttribute('data-theme-applied', 'true');
-                  
+                }
+                try {
+                  // Read theme + mode from localStorage (Zustand persist format)
+                  var stored = localStorage.getItem('devtool-theme');
+                  var state = stored ? (JSON.parse(stored).state || {}) : {};
+                  var themeId = typeof state.activeTheme === 'string' ? state.activeTheme : 'legacy';
+                  var mode = state.theme === 'dark' || state.theme === 'light' ? state.theme : 'system';
+                  apply(themeId, mode);
                 } catch (e) {
-                  // Fallback to system preference on any error
-                  var systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                  document.documentElement.classList.remove('light', 'dark');
-                  document.documentElement.classList.add(systemTheme);
-                  document.documentElement.setAttribute('data-theme-applied', 'true');
+                  // Fallback to the default theme and system preference on any error
+                  apply('legacy', 'system');
                 }
               })();
             `,

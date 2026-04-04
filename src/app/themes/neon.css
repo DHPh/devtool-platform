@@ -1,0 +1,59 @@
+/*
+ * Neon theme — the creative look with vivid green/pink accents.
+ * Dark tokens mirror docs/ui-proposal.html; light tokens mirror
+ * docs/ui-proposal-light.html. HSL triples consumed by tailwind.config.ts.
+ */
+:root[data-theme="neon"] {
+  --background: 60 0% 98%;
+  --foreground: 0 0% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 10%;
+  --primary: 151 100% 40%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 60 21% 95%;
+  --secondary-foreground: 0 0% 10%;
+  --muted: 60 21% 95%;
+  --muted-foreground: 0 0% 42%;
+  --accent: 151 100% 40%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 334 100% 45%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 151 100% 40%;
+  --radius: 0.5rem;
+  --chart-1: 152 100% 40%;
+  --chart-2: 334 100% 45%;
+  --chart-3: 190 100% 40%;
+  --chart-4: 60 100% 40%;
+  --chart-5: 280 70% 50%;
+}
+
+:root[data-theme="neon"].dark {
+  --background: 0 0% 4%;
+  --foreground: 0 0% 96%;
+  --card: 0 0% 8%;
+  --card-foreground: 0 0% 96%;
+  --popover: 0 0% 8%;
+  --popover-foreground: 0 0% 96%;
+  --primary: 152 100% 50%;
+  --primary-foreground: 0 0% 4%;
+  --secondary: 0 0% 10%;
+  --secondary-foreground: 0 0% 96%;
+  --muted: 0 0% 10%;
+  --muted-foreground: 0 0% 53%;
+  --accent: 152 100% 50%;
+  --accent-foreground: 0 0% 4%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 4%;
+  --border: 0 0% 16%;
+  --input: 0 0% 16%;
+  --ring: 152 100% 50%;
+  --chart-1: 152 100% 50%;
+  --chart-2: 334 100% 60%;
+  --chart-3: 190 100% 50%;
+  --chart-4: 60 100% 50%;
+  --chart-5: 280 100% 60%;
+}
