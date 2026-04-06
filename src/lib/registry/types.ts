@@ -3,6 +3,11 @@ import type { ToolType } from "@/lib/tool-classification";
 
 export type ProcessingMode = "client" | "server" | "hybrid";
 
+export interface ToolExample {
+  input: string;
+  output: string;
+}
+
 interface ToolMetadataBase {
   id: string;
   name: string;
@@ -15,6 +20,9 @@ interface ToolMetadataBase {
   icon?: string;
   featured?: boolean;
   complexity?: "simple" | "intermediate" | "advanced";
+  inputDescription?: string;
+  outputDescription?: string;
+  example?: ToolExample;
 }
 
 export interface StandaloneToolMetadata extends ToolMetadataBase {

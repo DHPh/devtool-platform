@@ -29,11 +29,19 @@ export const SECURITY_TOOLS = [
     type: TOOL_TYPES.GENERATOR,
     tags: ["password", "generator", "security"],
     path: "/tools/password-studio?tab=generator",
-    icon: "�",
+    icon: "🔑",
     featured: false,
     complexity: "simple",
     parent: "password-studio",
     tab: "generator",
+    inputDescription:
+      "Choose length and character sets (uppercase, lowercase, numbers, symbols, exclusions).",
+    outputDescription:
+      "Secure random passwords satisfying the selected constraints.",
+    example: {
+      input: "Length: 24 · all character sets",
+      output: "p9#Kd7!mQ2@vR5%nB8$cL4&wT6*xF3 (example)",
+    },
   },
   {
     id: "passphrase-generator",
@@ -45,11 +53,18 @@ export const SECURITY_TOOLS = [
     type: TOOL_TYPES.GENERATOR,
     tags: ["passphrase", "generator", "security", "words"],
     path: "/tools/password-studio?tab=passphrase",
-    icon: "�",
+    icon: "📝",
     featured: false,
     complexity: "simple",
     parent: "password-studio",
     tab: "passphrase",
+    inputDescription:
+      "Choose word count, separator, and optional numbers or symbols.",
+    outputDescription: "A memorable passphrase of random words.",
+    example: {
+      input: "4 words · separator '-'",
+      output: "correct-horse-battery-staple (example)",
+    },
   },
   {
     id: "password-analysis",
@@ -61,11 +76,19 @@ export const SECURITY_TOOLS = [
     type: TOOL_TYPES.ANALYZER,
     tags: ["password", "analysis", "security", "entropy", "breach"],
     path: "/tools/password-studio?tab=analysis",
-    icon: "�️",
+    icon: "🔍",
     featured: false,
     complexity: "intermediate",
     parent: "password-studio",
     tab: "analysis",
+    inputDescription:
+      "Enter a password to analyze (the breach check sends only a hash prefix to HaveIBeenPwned).",
+    outputDescription:
+      "A strength score with entropy and feedback, plus an optional breach count.",
+    example: {
+      input: "correct-horse-battery-staple-42!",
+      output: "Strong (high entropy)",
+    },
   },
   {
     id: "security-identity-studio", kind: "studio", studioDirectory: "security-identity-studio", processing: "client",
@@ -79,6 +102,13 @@ export const SECURITY_TOOLS = [
     type: TOOL_TYPES.ANALYZER, tags: ["jwt", "token", "claims", "decode"],
     path: "/tools/security-identity-studio?tab=jwt-inspector", icon: "🪪", complexity: "intermediate",
     parent: "security-identity-studio", tab: "jwt-inspector",
+    inputDescription: "Paste a JWT to decode.",
+    outputDescription:
+      "The decoded header and claims (and expiry status), without verifying the signature.",
+    example: {
+      input: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMifQ.signature",
+      output: 'Header: {"alg":"HS256"} · Claims: {"sub":"123"}',
+    },
   },
   {
     id: "jwt-generator", kind: "studio-subtool", processing: "client", name: "JWT Generator",
@@ -86,6 +116,13 @@ export const SECURITY_TOOLS = [
     type: TOOL_TYPES.SECURITY, types: [TOOL_TYPES.GENERATOR], tags: ["jwt", "token", "sign", "hmac", "jwk", "pem"],
     path: "/tools/security-identity-studio?tab=jwt-generator", icon: "🪪", complexity: "advanced",
     parent: "security-identity-studio", tab: "jwt-generator",
+    inputDescription:
+      "Enter header/claims JSON, choose an algorithm (HS/RS/ES), and provide a secret or key.",
+    outputDescription: "A signed JWT string.",
+    example: {
+      input: 'Header {"typ":"JWT"} · Claims {"sub":"123"} · HS256',
+      output: "eyJhbGciOiJIUzI1NiIs… (signed JWT)",
+    },
   },
   {
     id: "hash-hmac-generator", kind: "studio-subtool", processing: "client", name: "Hash and HMAC Generator",
@@ -93,6 +130,12 @@ export const SECURITY_TOOLS = [
     type: TOOL_TYPES.SECURITY, types: [TOOL_TYPES.GENERATOR], tags: ["hash", "hmac", "sha-256", "sha-512"],
     path: "/tools/security-identity-studio?tab=hash-hmac-generator", icon: "#️⃣", complexity: "intermediate",
     parent: "security-identity-studio", tab: "hash-hmac-generator",
+    inputDescription: "Enter text and choose a SHA-2 algorithm; add a key for HMAC.",
+    outputDescription: "The SHA-2 digest or HMAC hex value.",
+    example: {
+      input: "abc · SHA-256",
+      output: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+    },
   },
   {
     id: "jwt-signature-verifier", kind: "studio-subtool", processing: "client", name: "JWT Signature Verifier",
@@ -100,6 +143,12 @@ export const SECURITY_TOOLS = [
     type: TOOL_TYPES.SECURITY, types: [TOOL_TYPES.VALIDATOR], tags: ["jwt", "signature", "jwk", "pem", "verify"],
     path: "/tools/security-identity-studio?tab=jwt-signature-verifier", icon: "✅", complexity: "advanced",
     parent: "security-identity-studio", tab: "jwt-signature-verifier",
+    inputDescription: "Paste a JWT and its secret or public key.",
+    outputDescription: "A verified/not-verified result with the algorithm used.",
+    example: {
+      input: "JWT + secret 'your-256-bit-secret'",
+      output: "Verified · HS256",
+    },
   },
   {
     id: "symmetric-encryption", kind: "studio-subtool", processing: "client", name: "Authenticated Text Encryption",
@@ -107,6 +156,12 @@ export const SECURITY_TOOLS = [
     type: TOOL_TYPES.SECURITY, types: [TOOL_TYPES.CONVERTER], tags: ["aes-gcm", "encryption", "decrypt", "pbkdf2"],
     path: "/tools/security-identity-studio?tab=symmetric-encryption", icon: "🔒", complexity: "advanced",
     parent: "security-identity-studio", tab: "symmetric-encryption",
+    inputDescription: "Enter a password and the text to encrypt or decrypt.",
+    outputDescription: "The encrypted (or recovered plaintext) text.",
+    example: {
+      input: 'Password + "secret text" (encrypt)',
+      output: "v1:AES-GCM:… (ciphertext)",
+    },
   },
   {
     id: "keypair-signature-tool", kind: "studio-subtool", processing: "client", name: "Keypair and Signature Tool",
@@ -114,6 +169,14 @@ export const SECURITY_TOOLS = [
     type: TOOL_TYPES.SECURITY, types: [TOOL_TYPES.GENERATOR, TOOL_TYPES.VALIDATOR], tags: ["ecdsa", "keypair", "signature", "jwk"],
     path: "/tools/security-identity-studio?tab=keypair-signature-tool", icon: "🔑", complexity: "advanced",
     parent: "security-identity-studio", tab: "keypair-signature-tool",
+    inputDescription:
+      "Generate an ECDSA keypair, then sign text with the private key or verify with the public key.",
+    outputDescription:
+      "A JWK keypair and a signature, or a verified/not-verified result.",
+    example: {
+      input: 'Sign "message" with generated private key',
+      output: "Signature (base64) created",
+    },
   },
   {
     id: "sri-generator", kind: "studio-subtool", processing: "client", name: "Subresource Integrity Generator",
@@ -121,6 +184,12 @@ export const SECURITY_TOOLS = [
     type: TOOL_TYPES.SECURITY, types: [TOOL_TYPES.GENERATOR], tags: ["sri", "integrity", "sha-384", "cdn"],
     path: "/tools/security-identity-studio?tab=sri-generator", icon: "🔗", complexity: "intermediate",
     parent: "security-identity-studio", tab: "sri-generator",
+    inputDescription: "Enter the exact resource content and choose a hash algorithm.",
+    outputDescription: "A Subresource Integrity value for use in script/link integrity attributes.",
+    example: {
+      input: "hello · SHA-256",
+      output: "sha-256-2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+    },
   },
   {
     id: "totp-tool", kind: "studio-subtool", processing: "client", name: "TOTP Generator and Validator",
@@ -128,6 +197,13 @@ export const SECURITY_TOOLS = [
     type: TOOL_TYPES.SECURITY, types: [TOOL_TYPES.GENERATOR, TOOL_TYPES.VALIDATOR], tags: ["totp", "2fa", "otp", "base32"],
     path: "/tools/security-identity-studio?tab=totp-tool", icon: "⏱️", complexity: "advanced",
     parent: "security-identity-studio", tab: "totp-tool",
+    inputDescription:
+      "Enter a Base32 secret (and optional digits/period) to generate or validate a TOTP code.",
+    outputDescription: "A 6–8 digit one-time code, or a valid/invalid result.",
+    example: {
+      input: 'Secret GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ',
+      output: "94287082 (example)",
+    },
   },
   {
     id: "certificate-decoder", kind: "studio-subtool", processing: "client", name: "X.509 Certificate Decoder",
@@ -135,5 +211,12 @@ export const SECURITY_TOOLS = [
     type: TOOL_TYPES.SECURITY, types: [TOOL_TYPES.ANALYZER], tags: ["x509", "certificate", "pem", "tls", "fingerprint"],
     path: "/tools/security-identity-studio?tab=certificate-decoder", icon: "📜", complexity: "advanced",
     parent: "security-identity-studio", tab: "certificate-decoder",
+    inputDescription: "Paste a PEM-encoded X.509 certificate.",
+    outputDescription:
+      "Decoded subject, issuer, validity, key details, and fingerprint.",
+    example: {
+      input: "-----BEGIN CERTIFICATE-----\n…",
+      output: "Subject: CN=Example · Valid",
+    },
   },
 ] satisfies ToolMetadata[];

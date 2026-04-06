@@ -139,6 +139,56 @@ export function ToolFrame({ tool, children }: ToolFrameProps) {
           </div>
         </CardHeader>
         <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+          {(tool.inputDescription ||
+            tool.outputDescription ||
+            tool.example) && (
+            <div className="mb-6 rounded-lg border bg-muted/30 p-4 space-y-3">
+              {(tool.inputDescription || tool.outputDescription) && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {tool.inputDescription && (
+                    <div>
+                      <h3 className="text-sm font-semibold mb-1">Input</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {tool.inputDescription}
+                      </p>
+                    </div>
+                  )}
+                  {tool.outputDescription && (
+                    <div>
+                      <h3 className="text-sm font-semibold mb-1">Output</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {tool.outputDescription}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+              {tool.example && (
+                <div className="space-y-2">
+                  {tool.example.input && (
+                    <div>
+                      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+                        Example input
+                      </h4>
+                      <pre className="whitespace-pre-wrap rounded-md border bg-background p-3 text-xs font-mono break-all">
+                        {tool.example.input}
+                      </pre>
+                    </div>
+                  )}
+                  {tool.example.output && (
+                    <div>
+                      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+                        Expected output
+                      </h4>
+                      <pre className="whitespace-pre-wrap rounded-md border bg-background p-3 text-xs font-mono break-all">
+                        {tool.example.output}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           {children}
           <ToolGlossary toolId={tool.id} />
         </CardContent>

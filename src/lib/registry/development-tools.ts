@@ -14,6 +14,9 @@ export const DEVELOPMENT_TOOLS = [
     type: TOOL_TYPES.GENERATOR, types: [TOOL_TYPES.PARSER], tags: ["cron", "schedule", "devops"],
     path: "/tools/devops-configuration-studio?tab=cron-expression-builder", icon: "⏱️", complexity: "intermediate",
     parent: "devops-configuration-studio", tab: "cron-expression-builder",
+    inputDescription: "Enter a five-field cron expression (and optional timezone).",
+    outputDescription: "A plain-English explanation and the next run times.",
+    example: { input: "0 9 * * 1-5", output: "Next: 09:00 on weekdays" },
   },
   {
     id: "chmod-calculator", kind: "studio-subtool", processing: "client", name: "Chmod Calculator",
@@ -21,6 +24,9 @@ export const DEVELOPMENT_TOOLS = [
     type: TOOL_TYPES.CALCULATOR, types: [TOOL_TYPES.CONVERTER], tags: ["chmod", "permissions", "unix"],
     path: "/tools/devops-configuration-studio?tab=chmod-calculator", icon: "🔐", complexity: "simple",
     parent: "devops-configuration-studio", tab: "chmod-calculator",
+    inputDescription: "Enter numeric (e.g. 755) or symbolic (e.g. rwxr-xr-x) permissions.",
+    outputDescription: "The permissions converted between octal and symbolic forms.",
+    example: { input: "755", output: "rwxr-xr-x" },
   },
   {
     id: "env-file-manager", kind: "studio-subtool", processing: "client", name: ".env File Manager",
@@ -28,6 +34,9 @@ export const DEVELOPMENT_TOOLS = [
     type: TOOL_TYPES.EDITOR, types: [TOOL_TYPES.PARSER], tags: ["env", "configuration", "secrets", "redact"],
     path: "/tools/devops-configuration-studio?tab=env-file-manager", icon: "⚙️", complexity: "intermediate",
     parent: "devops-configuration-studio", tab: "env-file-manager",
+    inputDescription: "Paste .env content to parse, redact, or compare with another.",
+    outputDescription: "Parsed entries, a redacted copy, or a comparison of two files.",
+    example: { input: "API_TOKEN=secret", output: "API_TOKEN=[REDACTED]" },
   },
   {
     id: "semver-comparator", kind: "studio-subtool", processing: "client", name: "Semantic Version Comparator",
@@ -35,6 +44,9 @@ export const DEVELOPMENT_TOOLS = [
     type: TOOL_TYPES.ANALYZER, tags: ["semver", "version", "range", "npm"],
     path: "/tools/devops-configuration-studio?tab=semver-comparator", icon: "🔢", complexity: "simple",
     parent: "devops-configuration-studio", tab: "semver-comparator",
+    inputDescription: "Enter two versions and an optional range.",
+    outputDescription: "Their ordering and whether the version satisfies the range.",
+    example: { input: "v1.5.0 vs 2.0.0 · range ^1.0.0", output: "older · satisfies range" },
   },
   {
     id: "dockerfile-linter", kind: "studio-subtool", processing: "client", name: "Dockerfile Linter",
@@ -42,6 +54,9 @@ export const DEVELOPMENT_TOOLS = [
     type: TOOL_TYPES.VALIDATOR, types: [TOOL_TYPES.ANALYZER], tags: ["dockerfile", "docker", "container", "lint"],
     path: "/tools/devops-configuration-studio?tab=dockerfile-linter", icon: "🐳", complexity: "intermediate",
     parent: "devops-configuration-studio", tab: "dockerfile-linter",
+    inputDescription: "Paste a Dockerfile to lint.",
+    outputDescription: "A list of detected issues with severity.",
+    example: { input: "FROM node:22-alpine", output: "1 stage · no issues" },
   },
   {
     id: "docker-compose-validator", kind: "studio-subtool", processing: "client", name: "Docker Compose Validator",
@@ -49,6 +64,9 @@ export const DEVELOPMENT_TOOLS = [
     type: TOOL_TYPES.VALIDATOR, types: [TOOL_TYPES.PARSER], tags: ["docker", "compose", "yaml", "container"],
     path: "/tools/devops-configuration-studio?tab=docker-compose-validator", icon: "📦", complexity: "intermediate",
     parent: "devops-configuration-studio", tab: "docker-compose-validator",
+    inputDescription: "Paste a Compose YAML document to validate.",
+    outputDescription: "Detected services and any issues.",
+    example: { input: "services:\n  web:\n    image: nginx:1.27", output: "Services: web · no issues" },
   },
   {
     id: "kubernetes-manifest-validator", kind: "studio-subtool", processing: "client", name: "Kubernetes Manifest Validator",
@@ -56,6 +74,9 @@ export const DEVELOPMENT_TOOLS = [
     type: TOOL_TYPES.VALIDATOR, types: [TOOL_TYPES.PARSER], tags: ["kubernetes", "k8s", "yaml", "manifest"],
     path: "/tools/devops-configuration-studio?tab=kubernetes-manifest-validator", icon: "☸️", complexity: "intermediate",
     parent: "devops-configuration-studio", tab: "kubernetes-manifest-validator",
+    inputDescription: "Paste one or more Kubernetes YAML documents.",
+    outputDescription: "Each resource's kind/name and any missing required fields.",
+    example: { input: "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: app-config", output: "ConfigMap app-config · no issues" },
   },
   {
     id: "gitignore-generator", kind: "studio-subtool", processing: "client", name: ".gitignore Generator",
@@ -63,5 +84,8 @@ export const DEVELOPMENT_TOOLS = [
     type: TOOL_TYPES.GENERATOR, tags: ["gitignore", "git", "generator", "repository"],
     path: "/tools/devops-configuration-studio?tab=gitignore-generator", icon: "🙈", complexity: "simple",
     parent: "devops-configuration-studio", tab: "gitignore-generator",
+    inputDescription: "Choose technology and editor presets (and optional extra entries).",
+    outputDescription: "A combined, de-duplicated .gitignore file.",
+    example: { input: "Presets: Node, Next.js", output: "node_modules/\n.next/" },
   },
 ] satisfies ToolMetadata[];

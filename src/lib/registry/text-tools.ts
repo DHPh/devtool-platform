@@ -16,6 +16,13 @@ export const TEXT_TOOLS = [
     icon: "📄",
     featured: false,
     complexity: "simple",
+    inputDescription: "Paste JSON text to format, minify, or validate.",
+    outputDescription:
+      "Indented (pretty-printed) or minified JSON, or a validation result with line/column error details.",
+    example: {
+      input: '{"b":2,"a":1}',
+      output: '{\n  "b": 2,\n  "a": 1\n}',
+    },
   },
   {
     id: "html-formatter",
@@ -29,6 +36,13 @@ export const TEXT_TOOLS = [
     path: "/tools/html-formatter",
     icon: "🌐",
     complexity: "simple",
+    inputDescription: "Paste HTML markup (with embedded CSS/JS) to beautify.",
+    outputDescription:
+      "Consistently indented HTML with syntax errors reported by line and column.",
+    example: {
+      input: "<main><p>Hello</p></main>",
+      output: "<main><p>Hello</p></main>",
+    },
   },
   {
     id: "css-formatter",
@@ -42,6 +56,13 @@ export const TEXT_TOOLS = [
     path: "/tools/css-formatter",
     icon: "🎨",
     complexity: "simple",
+    inputDescription: "Paste CSS to format or minify.",
+    outputDescription:
+      "Indented CSS with each declaration on its own line, or a minified version.",
+    example: {
+      input: "a { color: red; }",
+      output: "a {\n  color: red;\n}",
+    },
   },
   {
     id: "markdown-preview",
@@ -56,6 +77,12 @@ export const TEXT_TOOLS = [
     path: "/tools/markdown-preview",
     icon: "📝",
     complexity: "intermediate",
+    inputDescription: "Type or paste Markdown source text.",
+    outputDescription: "Rendered HTML preview of the Markdown.",
+    example: {
+      input: "# Title\n\n**bold**",
+      output: "<h1>Title</h1>\n<p><strong>bold</strong></p>",
+    },
   },
   {
     id: "word-counter",
@@ -69,6 +96,13 @@ export const TEXT_TOOLS = [
     path: "/tools/word-counter",
     icon: "📊",
     complexity: "simple",
+    inputDescription: "Paste any text to count.",
+    outputDescription:
+      "Counts of words, characters, lines, and paragraphs.",
+    example: {
+      input: "one two\n\nthree",
+      output: "Words: 3 · Lines: 3 · Paragraphs: 2",
+    },
   },
   {
     id: "case-converter",
@@ -83,6 +117,13 @@ export const TEXT_TOOLS = [
     path: "/tools/case-converter",
     icon: "🔠",
     complexity: "simple",
+    inputDescription: "Type or paste text to convert.",
+    outputDescription:
+      "The text converted into one or all of 12 cases (camelCase, snake_case, kebab-case, etc.).",
+    example: {
+      input: "hello world",
+      output: "helloWorld",
+    },
   },
   {
     id: "diff-checker",
@@ -96,6 +137,13 @@ export const TEXT_TOOLS = [
     path: "/tools/diff-checker",
     icon: "🔍",
     complexity: "intermediate",
+    inputDescription: "Paste the original text and the modified text.",
+    outputDescription:
+      "A line-by-line diff highlighting added, removed, and unchanged lines.",
+    example: {
+      input: "Original:\nsame\nold\n\nModified:\nsame\nnew",
+      output: "  same\n- old\n+ new",
+    },
   },
   {
     id: "base64-encoder",
@@ -112,6 +160,13 @@ export const TEXT_TOOLS = [
     icon: "🔤",
     featured: false,
     complexity: "simple",
+    inputDescription:
+      "Enter text (or upload a file) to encode, or a Base64 string to decode.",
+    outputDescription: "The Base64-encoded string or the decoded text.",
+    example: {
+      input: "Hello",
+      output: "SGVsbG8=",
+    },
   },
   {
     id: "url-encoder",
@@ -127,6 +182,13 @@ export const TEXT_TOOLS = [
     icon: "🔗",
     featured: false,
     complexity: "simple",
+    inputDescription: "Enter a URL or text to encode or decode.",
+    outputDescription:
+      "The percent-encoded string, or the decoded URL/text.",
+    example: {
+      input: "a b+c",
+      output: "a%20b%2Bc",
+    },
   },
   {
     id: "html-entities",
@@ -141,5 +203,12 @@ export const TEXT_TOOLS = [
     path: "/tools/html-entities",
     icon: "🏷️",
     complexity: "simple",
+    inputDescription: "Enter text to convert to or from HTML entities.",
+    outputDescription:
+      "Text with special characters replaced by HTML entities, or the reverse.",
+    example: {
+      input: '<a title="x">&</a>',
+      output: "&lt;a title=&quot;x&quot;&gt;&amp;&lt;/a&gt;",
+    },
   },
 ] satisfies ToolMetadata[];

@@ -177,6 +177,57 @@ export function StudioTabs<Props extends object>({
         if (!TabComponent) return null;
         return (
           <TabsContent key={tab.id} value={tab.id} className={contentClassName}>
+            {(tab.metadata.inputDescription ||
+              tab.metadata.outputDescription ||
+              tab.metadata.example) && (
+              <div className="mb-6 rounded-lg border bg-muted/30 p-4 space-y-3">
+                {(tab.metadata.inputDescription ||
+                  tab.metadata.outputDescription) && (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {tab.metadata.inputDescription && (
+                      <div>
+                        <h3 className="text-sm font-semibold mb-1">Input</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {tab.metadata.inputDescription}
+                        </p>
+                      </div>
+                    )}
+                    {tab.metadata.outputDescription && (
+                      <div>
+                        <h3 className="text-sm font-semibold mb-1">Output</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {tab.metadata.outputDescription}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {tab.metadata.example && (
+                  <div className="space-y-2">
+                    {tab.metadata.example.input && (
+                      <div>
+                        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+                          Example input
+                        </h4>
+                        <pre className="whitespace-pre-wrap rounded-md border bg-background p-3 text-xs font-mono break-all">
+                          {tab.metadata.example.input}
+                        </pre>
+                      </div>
+                    )}
+                    {tab.metadata.example.output && (
+                      <div>
+                        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+                          Expected output
+                        </h4>
+                        <pre className="whitespace-pre-wrap rounded-md border bg-background p-3 text-xs font-mono break-all">
+                          {tab.metadata.example.output}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             <Suspense
               fallback={
                 <div role="status" aria-live="polite" className="py-8 text-center">

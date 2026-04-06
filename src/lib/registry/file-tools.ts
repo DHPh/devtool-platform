@@ -47,6 +47,9 @@ export const FILE_TOOLS = [
     complexity: "simple",
     parent: "file-processing-studio",
     tab: "image-resizer",
+    inputDescription: "Upload one or more images and choose target dimensions and format.",
+    outputDescription: "Resized image files, downloadable individually or in batch.",
+    example: { input: "photo.png → width 640", output: "photo-resized.png (640×360)" },
   },
   {
     id: "pdf-tools",
@@ -64,6 +67,9 @@ export const FILE_TOOLS = [
     complexity: "intermediate",
     parent: "file-processing-studio",
     tab: "pdf-tools",
+    inputDescription: "Upload PDF files and choose an operation (merge, split, rotate).",
+    outputDescription: "A new PDF file with the requested change.",
+    example: { input: "a.pdf + b.pdf (merge)", output: "merged.pdf (2 pages)" },
   },
   {
     id: "file-converter",
@@ -81,6 +87,9 @@ export const FILE_TOOLS = [
     complexity: "intermediate",
     parent: "file-processing-studio",
     tab: "file-converter",
+    inputDescription: "Upload a file and choose the target format.",
+    outputDescription: "The converted file, ready to download.",
+    example: { input: "image.png → webp", output: "image.webp" },
   },
   {
     id: "archive-manager",
@@ -99,6 +108,9 @@ export const FILE_TOOLS = [
     complexity: "intermediate",
     parent: "file-processing-studio",
     tab: "archive-manager",
+    inputDescription: "Upload a ZIP to inspect/extract, or select files to create a ZIP.",
+    outputDescription: "A file listing, extracted files, or a new ZIP archive.",
+    example: { input: "archive.zip (inspect)", output: "hello.txt · 5 bytes" },
   },
   {
     id: "file-hasher",
@@ -117,6 +129,9 @@ export const FILE_TOOLS = [
     complexity: "simple",
     parent: "file-processing-studio",
     tab: "file-hasher",
+    inputDescription: "Upload a file and choose a hash algorithm.",
+    outputDescription: "The file's checksum, plus optional verification against an expected value.",
+    example: { input: "notes.txt · SHA-256", output: "ba7816bf…20015ad" },
   },
   {
     id: "metadata-viewer",
@@ -135,6 +150,9 @@ export const FILE_TOOLS = [
     complexity: "simple",
     parent: "file-processing-studio",
     tab: "metadata-viewer",
+    inputDescription: "Upload a file to inspect.",
+    outputDescription: "Name, type, size, and any readable image/audio/video properties.",
+    example: { input: "report.pdf", output: "Type pdf · 42 bytes" },
   },
   {
     id: "duplicate-finder",
@@ -152,6 +170,9 @@ export const FILE_TOOLS = [
     complexity: "intermediate",
     parent: "file-processing-studio",
     tab: "duplicate-finder",
+    inputDescription: "Upload multiple files to compare.",
+    outputDescription: "Groups of files that share identical content.",
+    example: { input: "a.txt + b.txt (same content)", output: "1 duplicate group: [a.txt, b.txt]" },
   },
   {
     id: "file-organizer",
@@ -170,5 +191,8 @@ export const FILE_TOOLS = [
     complexity: "simple",
     parent: "file-processing-studio",
     tab: "file-organizer",
+    inputDescription: "Upload files and choose an organization rule.",
+    outputDescription: "Files grouped into category folders with a preview.",
+    example: { input: "photo.jpg", output: "Category: images" },
   },
 ] satisfies ToolMetadata[];

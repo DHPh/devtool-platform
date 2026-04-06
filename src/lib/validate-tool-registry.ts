@@ -112,6 +112,28 @@ export function validateToolRegistry(
   return errors;
 }
 
+export function validateToolIoDescriptions(
+  tools: readonly ToolMetadata[],
+): string[] {
+  const errors: string[] = [];
+  for (const tool of tools) {
+    if (tool.kind === "studio") continue;
+    if (!tool.inputDescription?.trim()) {
+      errors.push(`[${tool.id}] inputDescription: missing`);
+    }
+    if (!tool.outputDescription?.trim()) {
+      errors.push(`[${tool.id}] outputDescription: missing`);
+    }
+    if (!tool.example?.input?.trim()) {
+      errors.push(`[${tool.id}] example.input: missing`);
+    }
+    if (!tool.example?.output?.trim()) {
+      errors.push(`[${tool.id}] example.output: missing`);
+    }
+  }
+  return errors;
+}
+
 export function assertValidToolRegistry(
   tools: readonly ToolMetadata[],
   componentIds: readonly string[],

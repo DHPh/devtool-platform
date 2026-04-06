@@ -25,6 +25,14 @@ export const DATA_TOOLS = [
     icon: "⏰",
     featured: true,
     complexity: "simple",
+    inputDescription:
+      "Enter a Unix timestamp or an ISO 8601 date-time, then choose the unit and timezone.",
+    outputDescription:
+      "The converted timestamp or date-time in the selected unit and timezone.",
+    example: {
+      input: "2024-01-15T10:30:00Z",
+      output: "Unix seconds: 1705314600",
+    },
   },
   {
     id: "json-studio",
@@ -66,6 +74,13 @@ export const DATA_TOOLS = [
     complexity: "simple",
     parent: "json-studio",
     tab: "formatter",
+    inputDescription:
+      "Paste JSON to format or minify, with indentation and sorting options.",
+    outputDescription: "Pretty-printed or minified JSON.",
+    example: {
+      input: '{"x":1}',
+      output: '{\n  "x": 1\n}',
+    },
   },
   {
     id: "json-validator",
@@ -79,6 +94,13 @@ export const DATA_TOOLS = [
     path: "/tools/json-validator",
     icon: "✅",
     complexity: "simple",
+    inputDescription: "Paste JSON text to validate.",
+    outputDescription:
+      "A validity result with line/column error details and suggestions for invalid JSON.",
+    example: {
+      input: '{"valid":true}',
+      output: "Valid JSON",
+    },
   },
   {
     id: "json-path-query",
@@ -105,6 +127,13 @@ export const DATA_TOOLS = [
     complexity: "intermediate",
     parent: "json-studio",
     tab: "path",
+    inputDescription:
+      "Paste JSON data and a JSONPath expression (for example $.user.name).",
+    outputDescription: "The values selected by the JSONPath expression.",
+    example: {
+      input: '{"user":{"name":"Ada"}} with path $.user.name',
+      output: "Ada",
+    },
   },
   {
     id: "json-schema-validator",
@@ -122,6 +151,12 @@ export const DATA_TOOLS = [
     complexity: "advanced",
     parent: "json-studio",
     tab: "schema",
+    inputDescription: "Paste JSON data and a JSON Schema to validate against.",
+    outputDescription: "A validity result with a list of schema violations.",
+    example: {
+      input: '{"id":3} against {"type":"object","required":["id"],"properties":{"id":{"type":"integer"}}}',
+      output: "Valid",
+    },
   },
   {
     id: "json-diff-compare",
@@ -139,6 +174,13 @@ export const DATA_TOOLS = [
     complexity: "intermediate",
     parent: "json-studio",
     tab: "diff",
+    inputDescription: "Paste two JSON values (original and modified).",
+    outputDescription:
+      "A list of differences and a JSON Patch describing the changes.",
+    example: {
+      input: '{"a":1} vs {"a":2}',
+      output: "1 difference",
+    },
   },
   {
     id: "email-validator",
@@ -153,6 +195,13 @@ export const DATA_TOOLS = [
     path: "/tools/email-validator",
     icon: "📧",
     complexity: "simple",
+    inputDescription: "Enter a single email address or a list to validate.",
+    outputDescription:
+      "A syntax-only validity result (with IDN normalization); deliverability is not checked.",
+    example: {
+      input: "dev@example.com",
+      output: "Valid (syntax checked)",
+    },
   },
   {
     id: "csv-viewer",
@@ -167,6 +216,12 @@ export const DATA_TOOLS = [
     path: "/tools/csv-viewer",
     icon: "📊",
     complexity: "intermediate",
+    inputDescription: "Paste CSV text or upload a .csv file.",
+    outputDescription: "An interactive sortable table of the CSV rows.",
+    example: {
+      input: "name,age\nAda,36",
+      output: "1 row with columns: name, age",
+    },
   },
   {
     id: "json-table-viewer",
@@ -182,6 +237,13 @@ export const DATA_TOOLS = [
     path: "/tools/json-table-viewer",
     icon: "🗂️",
     complexity: "intermediate",
+    inputDescription: "Paste JSON (array of objects) or upload a .json file.",
+    outputDescription:
+      "An interactive table with inferred column types, sorting, and filtering.",
+    example: {
+      input: '[{"name":"Ada"}]',
+      output: "1 row with column: name",
+    },
   },
   {
     id: "data-explorer",
@@ -197,6 +259,14 @@ export const DATA_TOOLS = [
     path: "/tools/data-explorer",
     icon: "🔍",
     complexity: "advanced",
+    inputDescription:
+      "Paste CSV or JSON data (or upload a file) and choose a delimiter.",
+    outputDescription:
+      "Summary statistics, filters, and visualizations of the dataset.",
+    example: {
+      input: "name,score\nAda,42",
+      output: "1 row with columns: name, score",
+    },
   },
   {
     id: "encoding-serialization-studio",
@@ -227,6 +297,12 @@ export const DATA_TOOLS = [
     complexity: "simple",
     parent: "encoding-serialization-studio",
     tab: "yaml-formatter",
+    inputDescription: "Paste YAML text and choose indentation.",
+    outputDescription: "Re-indented YAML.",
+    example: {
+      input: "service:\n name: api",
+      output: "service:\n  name: api",
+    },
   },
   {
     id: "yaml-validator",
@@ -242,6 +318,13 @@ export const DATA_TOOLS = [
     complexity: "simple",
     parent: "encoding-serialization-studio",
     tab: "yaml-validator",
+    inputDescription: "Paste YAML text to validate.",
+    outputDescription:
+      "A validity result with line/column details for invalid YAML.",
+    example: {
+      input: "enabled: true",
+      output: "Valid YAML",
+    },
   },
   {
     id: "xml-formatter",
@@ -257,6 +340,12 @@ export const DATA_TOOLS = [
     complexity: "simple",
     parent: "encoding-serialization-studio",
     tab: "xml-formatter",
+    inputDescription: "Paste XML text to format.",
+    outputDescription: "Indented, normalized XML.",
+    example: {
+      input: '<root><item>value</item></root>',
+      output: '<root>\n  <item>value</item>\n</root>',
+    },
   },
   {
     id: "xml-validator",
@@ -272,6 +361,12 @@ export const DATA_TOOLS = [
     complexity: "simple",
     parent: "encoding-serialization-studio",
     tab: "xml-validator",
+    inputDescription: "Paste XML text to validate.",
+    outputDescription: "A validity result with error locations for invalid XML.",
+    example: {
+      input: "<root />",
+      output: "Valid XML",
+    },
   },
   {
     id: "toml-formatter",
@@ -287,6 +382,12 @@ export const DATA_TOOLS = [
     complexity: "simple",
     parent: "encoding-serialization-studio",
     tab: "toml-formatter",
+    inputDescription: "Paste TOML text to format and validate.",
+    outputDescription: "Normalized TOML, or a validation error.",
+    example: {
+      input: "[server]\nport=3000",
+      output: "[server]\nport = 3000",
+    },
   },
   {
     id: "json-yaml-converter",
@@ -302,6 +403,12 @@ export const DATA_TOOLS = [
     complexity: "simple",
     parent: "encoding-serialization-studio",
     tab: "json-yaml-converter",
+    inputDescription: "Paste JSON or YAML and choose the conversion direction.",
+    outputDescription: "The converted YAML or JSON.",
+    example: {
+      input: '{"name":"Ada","active":true}',
+      output: "name: Ada\nactive: true",
+    },
   },
   {
     id: "csv-json-converter",
@@ -317,6 +424,12 @@ export const DATA_TOOLS = [
     complexity: "simple",
     parent: "encoding-serialization-studio",
     tab: "csv-json-converter",
+    inputDescription: "Paste CSV or JSON and choose the conversion direction.",
+    outputDescription: "The converted JSON or CSV.",
+    example: {
+      input: "name,age\nAda,36",
+      output: '[{"name":"Ada","age":36}]',
+    },
   },
   {
     id: "number-base-converter",
@@ -332,6 +445,12 @@ export const DATA_TOOLS = [
     complexity: "simple",
     parent: "encoding-serialization-studio",
     tab: "number-base-converter",
+    inputDescription: "Enter an integer and choose its base (2, 8, 10, or 16).",
+    outputDescription: "The value in all four bases.",
+    example: {
+      input: "FF (base 16)",
+      output: "Decimal: 255 · Binary: 11111111 · Octal: 377",
+    },
   },
   {
     id: "data-api-studio", kind: "studio", studioDirectory: "data-api-studio", processing: "client",
@@ -345,6 +464,12 @@ export const DATA_TOOLS = [
     type: TOOL_TYPES.GENERATOR, tags: ["json", "typescript", "types", "interface"],
     path: "/tools/data-api-studio?tab=json-to-typescript", icon: "TS", complexity: "intermediate",
     parent: "data-api-studio", tab: "json-to-typescript",
+    inputDescription: "Paste JSON and an optional root type name.",
+    outputDescription: "An inferred TypeScript interface for the JSON shape.",
+    example: {
+      input: '{"display-name":"Ada","roles":["admin"]}',
+      output: 'interface User {\n  "display-name": string;\n  roles: string[];\n}',
+    },
   },
   {
     id: "json-flatten-unflatten", kind: "studio-subtool", processing: "client", name: "JSON Flatten and Unflatten",
@@ -352,6 +477,12 @@ export const DATA_TOOLS = [
     type: TOOL_TYPES.CONVERTER, tags: ["json", "flatten", "unflatten", "paths"],
     path: "/tools/data-api-studio?tab=json-flatten-unflatten", icon: "↔️", complexity: "intermediate",
     parent: "data-api-studio", tab: "json-flatten-unflatten",
+    inputDescription: "Paste nested JSON to flatten, or flattened key-path JSON to restore.",
+    outputDescription: "Flattened key-path JSON, or the original nested JSON.",
+    example: {
+      input: '{"user":{"name":"Ada"}}',
+      output: '{"user.name":"Ada"}',
+    },
   },
   {
     id: "sql-formatter", kind: "studio-subtool", processing: "client", name: "SQL Formatter",
@@ -359,6 +490,12 @@ export const DATA_TOOLS = [
     type: TOOL_TYPES.FORMATTER, tags: ["sql", "formatter", "database", "query"],
     path: "/tools/data-api-studio?tab=sql-formatter", icon: "🗄️", complexity: "intermediate",
     parent: "data-api-studio", tab: "sql-formatter",
+    inputDescription: "Paste a SQL statement to format.",
+    outputDescription: "Formatted SQL with normalized keywords.",
+    example: {
+      input: "select id from users where active=true;",
+      output: "SELECT id\nFROM users\nWHERE active = TRUE;",
+    },
   },
   {
     id: "sql-query-builder", kind: "studio-subtool", processing: "client", name: "SQL Query Builder",
@@ -366,6 +503,13 @@ export const DATA_TOOLS = [
     type: TOOL_TYPES.GENERATOR, types: [TOOL_TYPES.EDITOR], tags: ["sql", "query", "builder", "select"],
     path: "/tools/data-api-studio?tab=sql-query-builder", icon: "🏗️", complexity: "intermediate",
     parent: "data-api-studio", tab: "sql-query-builder",
+    inputDescription:
+      "Enter a table, columns, optional conditions, and a limit via the form fields.",
+    outputDescription: "A sanitized SELECT statement with escaped literals.",
+    example: {
+      input: "table: users · columns: id · limit: 5",
+      output: "SELECT id\nFROM users\nLIMIT 5;",
+    },
   },
   {
     id: "data-sql-generator", kind: "studio-subtool", processing: "client", name: "Data to SQL Generator",
@@ -373,6 +517,12 @@ export const DATA_TOOLS = [
     type: TOOL_TYPES.CONVERTER, types: [TOOL_TYPES.GENERATOR], tags: ["json", "sql", "insert", "database"],
     path: "/tools/data-api-studio?tab=data-sql-generator", icon: "🔁", complexity: "intermediate",
     parent: "data-api-studio", tab: "data-sql-generator",
+    inputDescription: "Paste JSON rows and enter the target table name.",
+    outputDescription: "An escaped SQL INSERT statement for each row.",
+    example: {
+      input: '[{"id":1,"name":"Ada"}] into table users',
+      output: 'INSERT INTO "users" ("id", "name")\nVALUES\n  (1, \'Ada\');',
+    },
   },
   {
     id: "openapi-validator", kind: "studio-subtool", processing: "client", name: "OpenAPI Validator",
@@ -380,6 +530,13 @@ export const DATA_TOOLS = [
     type: TOOL_TYPES.VALIDATOR, types: [TOOL_TYPES.PARSER], tags: ["openapi", "swagger", "api", "yaml"],
     path: "/tools/data-api-studio?tab=openapi-validator", icon: "✅", complexity: "intermediate",
     parent: "data-api-studio", tab: "openapi-validator",
+    inputDescription: "Paste an OpenAPI 3.x document (YAML or JSON).",
+    outputDescription:
+      "Document metadata (version, title, path/operation counts) and any issues.",
+    example: {
+      input: "openapi: 3.1.0\ninfo:\n  title: API\n  version: 1.0.0\npaths: {}",
+      output: "Version 3.1.0 · 0 paths · 0 issues",
+    },
   },
   {
     id: "graphql-formatter", kind: "studio-subtool", processing: "client", name: "GraphQL Formatter",
@@ -387,6 +544,12 @@ export const DATA_TOOLS = [
     type: TOOL_TYPES.FORMATTER, types: [TOOL_TYPES.VALIDATOR], tags: ["graphql", "formatter", "query", "schema"],
     path: "/tools/data-api-studio?tab=graphql-formatter", icon: "◈", complexity: "intermediate",
     parent: "data-api-studio", tab: "graphql-formatter",
+    inputDescription: "Paste a GraphQL query or schema to format.",
+    outputDescription: "Formatted GraphQL, or a parse error.",
+    example: {
+      input: "query{viewer{id}}",
+      output: "query {\n  viewer {\n    id\n  }\n}",
+    },
   },
   {
     id: "fake-data-generator", kind: "studio-subtool", processing: "client", name: "Fake Data Generator",
@@ -394,5 +557,11 @@ export const DATA_TOOLS = [
     type: TOOL_TYPES.GENERATOR, tags: ["fake", "mock", "json", "seed", "test data"],
     path: "/tools/data-api-studio?tab=fake-data-generator", icon: "🎭", complexity: "simple",
     parent: "data-api-studio", tab: "fake-data-generator",
+    inputDescription: "Choose the number of records and an optional seed.",
+    outputDescription: "Deterministic fake JSON records (same seed → same data).",
+    example: {
+      input: "Count: 3 · Seed: 1",
+      output: "[ {…}, {…}, {…} ] (3 records)",
+    },
   },
 ] satisfies ToolMetadata[];

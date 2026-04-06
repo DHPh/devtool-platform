@@ -136,14 +136,31 @@ describe("tool accessibility architecture", () => {
   });
 
   it("keeps destructive foreground contrast at WCAG AA", () => {
-    const css = readFileSync(join(process.cwd(), "src", "app", "globals.css"), "utf8");
-    const lightBlock = css.match(/:root\s*\{([\s\S]*?)\}/)?.[1] ?? "";
-    const darkBlock = css.match(/\.dark\s*\{([\s\S]*?)\}/)?.[1] ?? "";
+    const themeDir = join(process.cwd(), "src", "app", "themes");
+    const themeFiles = readdirSync(themeDir).filter((file) =>
+      file.endsWith(".css"),
+    );
 
-    expect(tokenContrast(lightBlock, "--destructive", "--destructive-foreground"))
-      .toBeGreaterThanOrEqual(4.5);
-    expect(tokenContrast(darkBlock, "--destructive", "--destructive-foreground"))
-      .toBeGreaterThanOrEqual(4.5);
+    expect(themeFiles.length).toBeGreaterThan(0);
+
+    for (const file of themeFiles) {
+      const css = readFileSync(join(themeDir, file), "utf8");
+      const lightBlock =
+        css.match(/:root\[data-theme="[^"]+"\]\s*\{([\s\S]*?)\}/)?.[1] ?? "";
+      const darkBlock = css.match(/\.dark\s*\{([\s\S]*?)\}/)?.[1] ?? "";
+
+      expect(lightBlock, `${file} light tokens`).not.toBe("");
+      expect(darkBlock, `${file} dark tokens`).not.toBe("");
+
+      expect(
+        tokenContrast(lightBlock, "--destructive", "--destructive-foreground"),
+        `${file} light`,
+      ).toBeGreaterThanOrEqual(4.5);
+      expect(
+        tokenContrast(darkBlock, "--destructive", "--destructive-foreground"),
+        `${file} dark`,
+      ).toBeGreaterThanOrEqual(4.5);
+    }
   });
 });
 

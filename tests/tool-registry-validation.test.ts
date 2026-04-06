@@ -12,6 +12,7 @@ import {
 } from "@/lib/tool-registry";
 import {
   assertValidToolRegistry,
+  validateToolIoDescriptions,
   validateToolRegistry,
 } from "@/lib/validate-tool-registry";
 import { getStudioTabMetadata } from "@/lib/tool-registry";
@@ -222,5 +223,22 @@ describe("tool registry validation", () => {
     expect(errors).toContain(
       "[unknown-component] component: mapping has no registry entry",
     );
+  });
+
+  it("reports missing input/output descriptions and examples", () => {
+    const complete = tool({
+      inputDescription: "Input",
+      outputDescription: "Output",
+      example: { input: "in", output: "out" },
+    });
+    const missing = tool({ id: "missing-io" });
+
+    expect(validateToolIoDescriptions([complete])).toEqual([]);
+    expect(validateToolIoDescriptions([missing])).toEqual([
+      "[missing-io] inputDescription: missing",
+      "[missing-io] outputDescription: missing",
+      "[missing-io] example.input: missing",
+      "[missing-io] example.output: missing",
+    ]);
   });
 });

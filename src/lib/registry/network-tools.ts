@@ -35,6 +35,10 @@ export const NETWORK_TOOLS = [
     complexity: "intermediate",
     parent: "network-studio",
     tab: "api-tester",
+    inputDescription:
+      "Enter a URL, method, headers, and body (or paste a cURL command). Requests run in your browser.",
+    outputDescription: "Status, headers, body, size, and timing of the response.",
+    example: { input: "GET https://api.example.com/items", output: "200 · {\"items\":[…]}" },
   },
   {
     id: "http-client",
@@ -51,6 +55,9 @@ export const NETWORK_TOOLS = [
     complexity: "intermediate",
     parent: "network-studio",
     tab: "http-client",
+    inputDescription: "Enter a URL, method, headers, and body. Requests run in your browser.",
+    outputDescription: "Status, headers, body, size, and timing of the response.",
+    example: { input: "POST https://api.example.com/items", output: "201 Created · response body" },
   },
   {
     id: "websocket-tester",
@@ -68,6 +75,9 @@ export const NETWORK_TOOLS = [
     complexity: "intermediate",
     parent: "network-studio",
     tab: "websocket",
+    inputDescription: "Enter a ws:// or wss:// endpoint. The handshake runs on the server.",
+    outputDescription: "Connection success and response time.",
+    example: { input: "wss://echo.example.com/socket", output: "Connected · 18ms" },
   },
   {
     id: "dns-lookup",
@@ -84,6 +94,9 @@ export const NETWORK_TOOLS = [
     complexity: "intermediate",
     parent: "network-studio",
     tab: "dns-lookup",
+    inputDescription: "Enter a domain and one or more record types.",
+    outputDescription: "The resolved DNS records (A, AAAA, MX, TXT, NS, SOA, CNAME, PTR).",
+    example: { input: "example.com · AAAA", output: "2001:db8::1" },
   },
   {
     id: "ip-info",
@@ -100,6 +113,9 @@ export const NETWORK_TOOLS = [
     complexity: "simple",
     parent: "network-studio",
     tab: "ip-info",
+    inputDescription: "Enter a public IPv4 or IPv6 address.",
+    outputDescription: "Country, city, coordinates, and ISP for the address.",
+    example: { input: "8.8.8.8", output: "US · Mountain View · Google" },
   },
   {
     id: "port-scanner",
@@ -117,6 +133,9 @@ export const NETWORK_TOOLS = [
     complexity: "advanced",
     parent: "network-studio",
     tab: "port-scanner",
+    inputDescription: "Enter a host and up to 20 ports (or choose a profile).",
+    outputDescription: "Open/closed status for each port with service names.",
+    example: { input: "example.com · ports 80,443", output: "443 open (HTTPS) · 80 closed" },
   },
   {
     id: "network-monitor",
@@ -133,6 +152,9 @@ export const NETWORK_TOOLS = [
     complexity: "intermediate",
     parent: "network-studio",
     tab: "network-monitor",
+    inputDescription: "Enter a host to ping or run a download/upload speed test.",
+    outputDescription: "Ping latency or bandwidth in Mbps.",
+    example: { input: "Ping example.com", output: "Alive · 24ms" },
   },
   {
     id: "url-tester",
@@ -149,6 +171,9 @@ export const NETWORK_TOOLS = [
     complexity: "simple",
     parent: "network-studio",
     tab: "url-tester",
+    inputDescription: "Enter a URL and an optional timeout.",
+    outputDescription: "Accessibility, status code, headers, and response time.",
+    example: { input: "https://example.com/resource", output: "200 OK · 57ms" },
   },
   {
     id: "on-air-checker",
@@ -164,6 +189,9 @@ export const NETWORK_TOOLS = [
     complexity: "simple",
     parent: "network-studio",
     tab: "on-air-checker",
+    inputDescription: "Enter a host or URL to check.",
+    outputDescription: "Whether the target is online, with response time.",
+    example: { input: "example.com", output: "Online · 31ms" },
   },
   {
     id: "file-link-checker",
@@ -181,6 +209,9 @@ export const NETWORK_TOOLS = [
     complexity: "simple",
     parent: "network-studio",
     tab: "file-link-check",
+    inputDescription: "Enter a file URL to check.",
+    outputDescription: "Existence, content type, size, and last-modified date.",
+    example: { input: "https://cdn.example.com/file.zip", output: "Exists · application/zip · 1024 bytes" },
   },
   {
     id: "website-diagnostics-studio",
@@ -214,6 +245,9 @@ export const NETWORK_TOOLS = [
     complexity: "intermediate",
     parent: "website-diagnostics-studio",
     tab: "redirect-tracer",
+    inputDescription: "Enter a public URL. The destination is sent to the serverless endpoint.",
+    outputDescription: "Each redirect hop and the final URL.",
+    example: { input: "https://example.com", output: "example.com → www.example.com (1 redirect)" },
   },
   {
     id: "security-header-analyzer",
@@ -231,6 +265,9 @@ export const NETWORK_TOOLS = [
     complexity: "intermediate",
     parent: "website-diagnostics-studio",
     tab: "security-header-analyzer",
+    inputDescription: "Enter a public URL.",
+    outputDescription: "A 0–100 score with missing or misconfigured headers.",
+    example: { input: "https://example.com", output: "Score 83 · missing: content-security-policy" },
   },
   {
     id: "cors-analyzer",
@@ -248,6 +285,9 @@ export const NETWORK_TOOLS = [
     complexity: "intermediate",
     parent: "website-diagnostics-studio",
     tab: "cors-analyzer",
+    inputDescription: "Enter a public endpoint URL.",
+    outputDescription: "Allowed origins, credentials flag, and CORS issues.",
+    example: { input: "https://api.example.com", output: "Allow-Origin: * · credentials: false" },
   },
   {
     id: "robots-inspector",
@@ -264,6 +304,9 @@ export const NETWORK_TOOLS = [
     complexity: "simple",
     parent: "website-diagnostics-studio",
     tab: "robots-inspector",
+    inputDescription: "Enter a public website URL.",
+    outputDescription: "Parsed user-agent groups, allow/disallow rules, and sitemaps.",
+    example: { input: "https://example.com", output: "1 group · sitemap: /map.xml" },
   },
   {
     id: "sitemap-validator",
@@ -281,6 +324,9 @@ export const NETWORK_TOOLS = [
     complexity: "intermediate",
     parent: "website-diagnostics-studio",
     tab: "sitemap-validator",
+    inputDescription: "Enter a public XML sitemap URL.",
+    outputDescription: "Validity and the list of locations in the sitemap.",
+    example: { input: "https://example.com/sitemap.xml", output: "Valid · 1 location" },
   },
   {
     id: "open-graph-inspector",
@@ -298,6 +344,9 @@ export const NETWORK_TOOLS = [
     complexity: "simple",
     parent: "website-diagnostics-studio",
     tab: "open-graph-inspector",
+    inputDescription: "Enter a public page URL.",
+    outputDescription: "Extracted Open Graph and Twitter Card tags.",
+    example: { input: "https://example.com", output: 'og:title "Example" · og:type website' },
   },
   {
     id: "email-dns-analyzer",
@@ -314,6 +363,9 @@ export const NETWORK_TOOLS = [
     complexity: "intermediate",
     parent: "website-diagnostics-studio",
     tab: "email-dns-analyzer",
+    inputDescription: "Enter a domain name.",
+    outputDescription: "MX records plus SPF and DMARC records and gaps.",
+    example: { input: "example.com", output: "MX: 10 mail.example.com · SPF: v=spf1 -all" },
   },
   {
     id: "dns-propagation-checker",
@@ -331,5 +383,8 @@ export const NETWORK_TOOLS = [
     complexity: "intermediate",
     parent: "website-diagnostics-studio",
     tab: "dns-propagation-checker",
+    inputDescription: "Enter a domain and record type.",
+    outputDescription: "Record sets from three resolvers and whether they agree.",
+    example: { input: "example.com · AAAA", output: "Consistent across 3 resolvers" },
   },
 ] satisfies ToolMetadata[];
