@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Search, Menu, X, Star, Home } from "lucide-react";
 import { TOOL_REGISTRY, searchTools } from "@/lib/tool-registry";
@@ -67,29 +68,29 @@ export function Navigation() {
               <Image
                 src="/logo-icon.png"
                 alt="DevTool Platform"
-                width={32}
-                height={32}
+                width={128}
+                height={128}
+                sizes="32px"
                 className="h-8 w-8 flex-shrink-0"
                 priority
-                unoptimized
               />
               <Image
                 src="/logo-text.png"
                 alt="DevTool Platform"
-                width={2048}
-                height={272}
+                width={560}
+                height={74}
+                sizes="(max-width: 640px) 180px, 240px"
                 className="h-6 sm:h-7 w-auto max-w-[180px] sm:max-w-[240px] dark:hidden"
                 priority
-                unoptimized
               />
               <Image
                 src="/logo-text-darkmode.png"
                 alt="DevTool Platform"
-                width={2048}
-                height={272}
+                width={560}
+                height={74}
+                sizes="(max-width: 640px) 180px, 240px"
                 className="hidden h-6 sm:h-7 w-auto max-w-[180px] sm:max-w-[240px] dark:block"
                 priority
-                unoptimized
               />
             </Link>
 
@@ -158,6 +159,7 @@ export function Navigation() {
                 </DialogContent>
               </Dialog>
 
+              <ThemeSwitcher />
               <ThemeToggle />
             </div>
 
@@ -177,6 +179,7 @@ export function Navigation() {
                 </div>
               </div>
 
+              <ThemeSwitcher />
               <ThemeToggle />
               <Button
                 variant="outline"
