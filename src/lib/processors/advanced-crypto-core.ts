@@ -1,5 +1,5 @@
 import { inspectJwt, type DigestAlgorithm } from "./crypto-core";
-import type { ProcessorResult } from "./devops-config-core";
+import type { ProcessorResult } from "./result";
 
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = "";

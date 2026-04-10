@@ -18,7 +18,7 @@ import {
   Package,
   HelpCircle,
 } from "lucide-react";
-import JSZip from "jszip";
+import { toast } from "sonner";
 import {
   Collapsible,
   CollapsibleContent,
@@ -111,7 +111,7 @@ export default function IconPackGenerator() {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Please select a valid image file");
+      toast.error("Please select a valid image file");
       return;
     }
 
@@ -158,6 +158,7 @@ export default function IconPackGenerator() {
   };
 
   const generateAndroidIcons = async (img: HTMLImageElement): Promise<Blob> => {
+    const { default: JSZip } = await import("jszip");
     const zip = new JSZip();
     let completed = 0;
 
@@ -246,6 +247,7 @@ export default function IconPackGenerator() {
   };
 
   const generateIOSIcons = async (img: HTMLImageElement): Promise<Blob> => {
+    const { default: JSZip } = await import("jszip");
     const zip = new JSZip();
     let completed = 0;
 

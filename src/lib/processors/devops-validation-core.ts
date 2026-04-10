@@ -1,5 +1,5 @@
 import { parseAllDocuments } from "yaml";
-import type { ProcessorResult } from "./devops-config-core";
+import type { ProcessorResult } from "./result";
 
 export interface ValidationIssue {
   severity: "error" | "warning";

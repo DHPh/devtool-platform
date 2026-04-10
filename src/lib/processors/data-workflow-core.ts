@@ -1,5 +1,5 @@
 import { parse as parseYaml } from "yaml";
-import type { ProcessorResult } from "./devops-config-core";
+import type { ProcessorResult } from "./result";
 
 const SQL_KEYWORDS = new Set([
   "SELECT", "FROM", "WHERE", "JOIN", "LEFT", "RIGHT", "INNER", "OUTER", "FULL", "CROSS", "ON",

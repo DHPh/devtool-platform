@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 import {
   groupDuplicateFiles,
   hashFileForDuplicateDetection,
-} from "@/lib/processors";
+} from "@/lib/processors/file-core";
 
 interface DuplicateFile {
   id: string;

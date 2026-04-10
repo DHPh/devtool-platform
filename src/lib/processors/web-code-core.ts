@@ -1,9 +1,5 @@
-import * as prettier from "prettier/standalone";
-import * as babelPlugin from "prettier/plugins/babel";
-import * as estreePlugin from "prettier/plugins/estree";
-import * as typescriptPlugin from "prettier/plugins/typescript";
 import { validateSafeSvg } from "@/lib/security/svg-security";
-import type { ProcessorResult } from "./devops-config-core";
+import type { ProcessorResult } from "./result";
 
 export type JavaScriptLanguage = "javascript" | "typescript";
 
@@ -18,9 +14,16 @@ export async function formatJavaScript(
     return { ok: false, error: "Indent size must be from 1 to 8." };
   }
   try {
+    const [prettier, estreePlugin, languagePlugin] = await Promise.all([
+      import("prettier/standalone"),
+      import("prettier/plugins/estree"),
+      language === "typescript"
+        ? import("prettier/plugins/typescript")
+        : import("prettier/plugins/babel"),
+    ]);
     const value = await prettier.format(input, {
       parser: language === "typescript" ? "typescript" : "babel",
-      plugins: [babelPlugin, estreePlugin, typescriptPlugin],
+      plugins: [languagePlugin, estreePlugin],
       tabWidth: indentSize,
       singleQuote: options.singleQuote ?? false,
       semi: options.semicolons ?? true,

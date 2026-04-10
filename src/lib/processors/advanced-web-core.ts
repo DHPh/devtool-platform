@@ -1,4 +1,4 @@
-import type { ProcessorResult } from "./devops-config-core";
+import type { ProcessorResult } from "./result";
 import { validateSafeSvg } from "@/lib/security/svg-security";
 
 export interface CompressionResult {

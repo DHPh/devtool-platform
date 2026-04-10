@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import JSZip from "jszip";
+import { toast } from "sonner";
 import {
   extractZip,
   inspectZip,
@@ -158,6 +158,7 @@ export default function ArchiveManagerTab() {
 
     try {
       // Create a new JSZip instance
+      const { default: JSZip } = await import("jszip");
       const zip = new JSZip();
 
       // Add each file to the zip
@@ -202,12 +203,12 @@ export default function ArchiveManagerTab() {
       setArchiveName("archive");
 
       // Show success message
-      alert(
+      toast.success(
         `Archive "${archiveName}.zip" created successfully and downloaded!`
       );
     } catch (error) {
       console.error("Error creating archive:", error);
-      alert("Error creating archive. Please try again.");
+      toast.error("Error creating archive. Please try again.");
     }
 
     setIsProcessing(false);

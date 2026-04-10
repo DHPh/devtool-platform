@@ -1,4 +1,4 @@
-import JSZip from "jszip";
+import type JSZip from "jszip";
 
 export const ZIP_LIMITS = {
   maxCompressedBytes: 50 * 1024 * 1024,
@@ -78,7 +78,8 @@ async function readZip(
   try {
     // Do not enable JSZip's CRC pass here: it expands every entry before we can
     // enforce the archive's declared uncompressed sizes.
-    zip = await JSZip.loadAsync(input);
+    const { default: JSZipRuntime } = await import("jszip");
+    zip = await JSZipRuntime.loadAsync(input);
   } catch (error) {
     throw new ZipValidationError(errorMessage(error));
   }

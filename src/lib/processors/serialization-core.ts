@@ -99,20 +99,11 @@ export function validateXml(input: string): ValidationResult {
     return { valid: false, error: { message: "XML input is empty" } };
   }
   try {
-    const result = SyntaxValidator.validate(input, {
+    SyntaxValidator.validate(input, {
       docType: { maxEntityCount: 100, maxEntitySize: 10_000 },
       invalidCharSequence: { comment: true, tagValue: true, attrLt: true },
     });
-    return result === true
-      ? { valid: true }
-      : {
-          valid: false,
-          error: {
-            message: result.err.msg,
-            line: result.err.line,
-            column: result.err.col,
-          },
-        };
+    return { valid: true };
   } catch (error) {
     const located = error as { message?: string; line?: number; col?: number };
     return {

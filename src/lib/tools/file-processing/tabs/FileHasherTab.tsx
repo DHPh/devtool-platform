@@ -33,7 +33,7 @@ import { cn } from "@/lib/utils";
 import {
   hashFileContent,
   type FileHashAlgorithm,
-} from "@/lib/processors";
+} from "@/lib/processors/file-core";
 
 interface HashedFile {
   id: string;

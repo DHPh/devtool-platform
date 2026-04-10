@@ -1,4 +1,4 @@
-import type { ProcessorResult } from "./devops-config-core";
+import type { ProcessorResult } from "./result";
 
 export interface JwtInspection {
   header: Record<string, unknown>;

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { PDFDocument, degrees } from "pdf-lib";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -97,6 +97,7 @@ export default function PdfToolsTab() {
 
     setIsProcessing(true);
     try {
+      const { PDFDocument } = await import("pdf-lib");
       // Create a new PDF document for the merged result
       const mergedPdf = await PDFDocument.create();
 
@@ -137,9 +138,10 @@ export default function PdfToolsTab() {
 
       // Cleanup
       URL.revokeObjectURL(url);
+      toast.success("Merged PDF downloaded successfully.");
     } catch (error) {
       console.error("Error merging PDFs:", error);
-      alert(
+      toast.error(
         "Error merging PDFs. Please make sure all files are valid PDF documents."
       );
     }
@@ -152,6 +154,7 @@ export default function PdfToolsTab() {
 
     setIsProcessing(true);
     try {
+      const { PDFDocument } = await import("pdf-lib");
       // Load the PDF document
       const pdfBytes = await file.file.arrayBuffer();
       const pdf = await PDFDocument.load(pdfBytes);
@@ -181,10 +184,10 @@ export default function PdfToolsTab() {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
 
-      alert(`Successfully split PDF into ${totalPages} separate files.`);
+      toast.success(`Successfully split PDF into ${totalPages} separate files.`);
     } catch (error) {
       console.error("Error splitting PDF:", error);
-      alert("Error splitting PDF. Please make sure it's a valid PDF document.");
+      toast.error("Error splitting PDF. Please make sure it's a valid PDF document.");
     }
     setIsProcessing(false);
   };
@@ -195,6 +198,7 @@ export default function PdfToolsTab() {
 
     setIsProcessing(true);
     try {
+      const { PDFDocument, degrees } = await import("pdf-lib");
       // Load the PDF document
       const pdfBytes = await file.file.arrayBuffer();
       const pdf = await PDFDocument.load(pdfBytes);
@@ -221,9 +225,10 @@ export default function PdfToolsTab() {
       link.click();
 
       URL.revokeObjectURL(url);
+      toast.success("Rotated PDF downloaded successfully.");
     } catch (error) {
       console.error("Error rotating PDF:", error);
-      alert("Error rotating PDF. Please make sure it's a valid PDF document.");
+      toast.error("Error rotating PDF. Please make sure it's a valid PDF document.");
     }
     setIsProcessing(false);
   };

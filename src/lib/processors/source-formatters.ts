@@ -1,9 +1,4 @@
 import postcss, { type ChildNode } from "postcss";
-import * as prettier from "prettier/standalone";
-import * as babelPlugin from "prettier/plugins/babel";
-import * as estreePlugin from "prettier/plugins/estree";
-import * as htmlPlugin from "prettier/plugins/html";
-import * as postcssPlugin from "prettier/plugins/postcss";
 
 export type FormatterLanguage = "html" | "css";
 
@@ -51,6 +46,14 @@ export async function formatHtmlSource(input: string, formatOptions: SourceForma
   if (!input.trim()) return "";
   const indentation = options(formatOptions);
   try {
+    const [prettier, htmlPlugin, babelPlugin, estreePlugin, postcssPlugin] =
+      await Promise.all([
+        import("prettier/standalone"),
+        import("prettier/plugins/html"),
+        import("prettier/plugins/babel"),
+        import("prettier/plugins/estree"),
+        import("prettier/plugins/postcss"),
+      ]);
     return await prettier.format(input, {
       parser: "html",
       plugins: [htmlPlugin, babelPlugin, estreePlugin, postcssPlugin],
@@ -65,6 +68,10 @@ export async function formatCssSource(input: string, formatOptions: SourceFormat
   if (!input.trim()) return "";
   const indentation = options(formatOptions);
   try {
+    const [prettier, postcssPlugin] = await Promise.all([
+      import("prettier/standalone"),
+      import("prettier/plugins/postcss"),
+    ]);
     return await prettier.format(input, {
       parser: "css",
       plugins: [postcssPlugin],
