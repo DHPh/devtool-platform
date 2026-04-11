@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { minifyJavaScript, optimizeSvg } from "@/lib/processors";
+import { minifyJavaScript, optimizeSvg } from "@/lib/processors/advanced-web-core";
 
 describe("Phase 4 advanced web processors", () => {
   it("minifies modern JavaScript and reports exact UTF-8 sizes", async () => {

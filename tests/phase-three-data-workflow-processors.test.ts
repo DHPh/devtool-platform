@@ -6,7 +6,7 @@ import {
   formatSql,
   generateFakeData,
   validateOpenApi,
-} from "@/lib/processors";
+} from "@/lib/processors/data-workflow-core";
 
 describe("Phase 3 data workflow processors", () => {
   it("formats SQL tokens without changing literals", () => {

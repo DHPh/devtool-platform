@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { convertCssUnit, createCssClamp, dataUriToSvg, formatJavaScript, generateOpenGraphTags, generateWebManifest, svgToDataUri } from "@/lib/processors";
+import { convertCssUnit, createCssClamp, dataUriToSvg, formatJavaScript, generateOpenGraphTags, generateWebManifest, svgToDataUri } from "@/lib/processors/web-code-core";
 
 describe("Phase 3 web-code processors", () => {
   it("formats JavaScript and TypeScript with parser errors", async () => {

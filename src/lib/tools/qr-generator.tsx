@@ -16,17 +16,7 @@ import {
   validateQrOutputSize,
   type QrCodeModel,
   type QrErrorCorrectionLevel,
-} from "@/lib/processors";
-
-export const metadata = {
-  id: "qr-generator",
-  name: "QR Code Generator",
-  description: "Generate QR codes locally in your browser",
-  category: "Utilities",
-  tags: ["qr", "code", "generator", "local", "png", "svg"],
-  path: "/tools/qr-generator",
-  icon: "📱",
-};
+} from "@/lib/processors/qr-code";
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);

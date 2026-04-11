@@ -12,17 +12,10 @@ import {
   ModeTabs,
 } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { decodeHtmlEntities, encodeHtmlEntities } from "@/lib/processors";
-
-export const metadata = {
-  id: "html-entities",
-  name: "HTML Entities",
-  description: "Encode and decode HTML entities",
-  category: "Encoding & Decoding",
-  tags: ["html", "entities", "encode", "decode"],
-  path: "/tools/html-entities",
-  icon: "🏷️",
-};
+import {
+  decodeHtmlEntities,
+  encodeHtmlEntities,
+} from "@/lib/processors/tool-core";
 
 export default function HtmlEntities() {
   const [input, setInput] = useState(

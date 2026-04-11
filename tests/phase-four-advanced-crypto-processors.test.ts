@@ -14,7 +14,7 @@ import {
   validateTotp,
   verifyJwtSignature,
   verifyTextSignature,
-} from "@/lib/processors";
+} from "@/lib/processors/advanced-crypto-core";
 
 beforeAll(() => { if (!globalThis.crypto) Object.defineProperty(globalThis, "crypto", { value: webcrypto }); });
 
@@ -185,7 +185,7 @@ describe("Phase 4 advanced crypto processors", () => {
     const algorithm = { name: "ECDSA", namedCurve: "P-256", hash: "SHA-256" };
     const keys = await crypto.subtle.generateKey(algorithm, true, ["sign", "verify"]);
     const certificate = await x509.X509CertificateGenerator.createSelfSigned({ serialNumber: "01", name: "CN=Processor Test", notBefore: new Date("2026-01-01T00:00:00Z"), notAfter: new Date("2027-01-01T00:00:00Z"), signingAlgorithm: algorithm, keys });
-    const result = await decodeCertificate(certificate.toString("pem"), new Date("2026-02-19T00:00:00Z"));
+    const result = await decodeCertificate(certificate.toString("pem"), new Date("2026-03-15T00:00:00Z"));
     expect(result).toMatchObject({ ok: true, value: { subject: "CN=Processor Test", issuer: "CN=Processor Test", serialNumber: "01", status: "valid", selfSigned: true } });
     await expect(decodeCertificate("not a certificate")).resolves.toMatchObject({ ok: false });
   });

@@ -24,17 +24,7 @@ import {
   FormatterSyntaxError,
   formatCssSource,
   minifyCssSource,
-} from "@/lib/processors";
-
-export const metadata = {
-  id: "css-formatter",
-  name: "CSS Formatter",
-  description: "Format or conservatively minify CSS with a syntax-aware parser",
-  category: "Text & Format",
-  tags: ["css", "formatter", "beautify", "minify"],
-  path: "/tools/css-formatter",
-  icon: "🎨",
-};
+} from "@/lib/processors/source-formatters";
 
 export default function CssFormatter() {
   const [input, setInput] = useState(

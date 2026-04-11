@@ -4,7 +4,7 @@ import {
   lintDockerfile,
   validateDockerCompose,
   validateKubernetesManifest,
-} from "@/lib/processors";
+} from "@/lib/processors/devops-validation-core";
 
 describe("Phase 3 DevOps validation processors", () => {
   it("lints Dockerfile structure and risky instructions", () => {

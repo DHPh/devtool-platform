@@ -4,20 +4,14 @@ import { webcrypto } from "node:crypto";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  ChmodCalculator,
-  CronExpressionBuilder,
-  EnvFileManager,
-  SemverComparator,
-} from "@/lib/tools/devops-configuration-studio/DevOpsTool";
-import {
-  JsonFlattenTool,
-  JsonToTypeScriptTool,
-} from "@/lib/tools/data-api-studio/DataTool";
-import {
-  HashHmacGeneratorTool,
-  JwtInspectorTool,
-} from "@/lib/tools/security-identity-studio/SecurityTool";
+import { ChmodCalculatorTab as ChmodCalculator } from "@/lib/tools/devops-configuration-studio/tabs/ChmodCalculatorTab";
+import { CronExpressionBuilderTab as CronExpressionBuilder } from "@/lib/tools/devops-configuration-studio/tabs/CronExpressionBuilderTab";
+import { EnvFileManagerTab as EnvFileManager } from "@/lib/tools/devops-configuration-studio/tabs/EnvFileManagerTab";
+import { SemverComparatorTab as SemverComparator } from "@/lib/tools/devops-configuration-studio/tabs/SemverComparatorTab";
+import { JsonFlattenTab as JsonFlattenTool } from "@/lib/tools/data-api-studio/tabs/JsonFlattenTab";
+import { JsonToTypeScriptTab as JsonToTypeScriptTool } from "@/lib/tools/data-api-studio/tabs/JsonToTypeScriptTab";
+import { HashHmacGeneratorTab as HashHmacGeneratorTool } from "@/lib/tools/security-identity-studio/tabs/HashHmacGeneratorTab";
+import { JwtInspectorTab as JwtInspectorTool } from "@/lib/tools/security-identity-studio/tabs/JwtInspectorTab";
 
 afterEach(() => {
   cleanup();

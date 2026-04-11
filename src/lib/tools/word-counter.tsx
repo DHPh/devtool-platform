@@ -9,17 +9,7 @@ import {
   QuickActions,
   ResultCard,
 } from "@/components/layout";
-import { countText } from "@/lib/processors";
-
-export const metadata = {
-  id: "word-counter",
-  name: "Word Counter",
-  description: "Count words, characters, lines, and paragraphs in text",
-  category: "Utilities",
-  tags: ["word", "count", "character", "text", "analysis"],
-  path: "/tools/word-counter",
-  icon: "📊",
-};
+import { countText } from "@/lib/processors/tool-core";
 
 export default function WordCounter() {
   const [text, setText] = useState("");

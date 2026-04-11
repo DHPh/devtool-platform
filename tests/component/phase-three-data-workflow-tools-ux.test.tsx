@@ -3,14 +3,12 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  DataToSqlTool,
-  FakeDataGeneratorTool,
-  GraphqlFormatterTool,
-  OpenApiValidatorTool,
-  SqlFormatterTool,
-  SqlQueryBuilderTool,
-} from "@/lib/tools/data-api-studio/DataTool";
+import { DataToSqlTab as DataToSqlTool } from "@/lib/tools/data-api-studio/tabs/DataToSqlTab";
+import { FakeDataGeneratorTab as FakeDataGeneratorTool } from "@/lib/tools/data-api-studio/tabs/FakeDataGeneratorTab";
+import { GraphqlFormatterTab as GraphqlFormatterTool } from "@/lib/tools/data-api-studio/tabs/GraphqlFormatterTab";
+import { OpenApiValidatorTab as OpenApiValidatorTool } from "@/lib/tools/data-api-studio/tabs/OpenApiValidatorTab";
+import { SqlFormatterTab as SqlFormatterTool } from "@/lib/tools/data-api-studio/tabs/SqlFormatterTab";
+import { SqlQueryBuilderTab as SqlQueryBuilderTool } from "@/lib/tools/data-api-studio/tabs/SqlQueryBuilderTab";
 
 afterEach(cleanup);
 

@@ -20,18 +20,7 @@ import {
   formatIsoInstant,
   type UnixTimestampUnit,
   unixToDateTime,
-} from "@/lib/processors";
-
-export const metadata = {
-  id: "timestamp-converter",
-  name: "Timestamp Converter",
-  description:
-    "Convert exact Unix timestamps and strict RFC 3339 or timezone-local date-times",
-  category: "Utilities",
-  tags: ["timestamp", "date", "time", "unix", "rfc3339", "iana", "dst"],
-  path: "/tools/timestamp-converter",
-  icon: "🕐",
-};
+} from "@/lib/processors/timestamp";
 
 const COMMON_TIMESTAMPS = [
   { name: "Unix Epoch", value: "0", description: "1970-01-01T00:00:00Z" },

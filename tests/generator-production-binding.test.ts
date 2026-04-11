@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  generateLoremIpsum,
-  generateUuidBatch,
-} from "@/lib/processors";
+import { generateLoremIpsum } from "@/lib/processors/lorem";
+import { generateUuidBatch } from "@/lib/processors/uuid";
 import { convertTextToAllCases } from "@/lib/processors/text";
 import {
   generateInterpolatedGradientCSS,

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createQrCodeModel, qrSvgDataUrl, renderQrCodeSvg } from "@/lib/processors";
+import {
+  createQrCodeModel,
+  qrSvgDataUrl,
+  renderQrCodeSvg,
+} from "@/lib/processors/qr-code";
 import { TOOL_REGISTRY } from "@/lib/registry";
 
 function tool(id: string) {

@@ -3,16 +3,20 @@ import {
   compareEnvFiles,
   compareSemanticVersions,
   convertChmod,
-  flattenJson,
-  generateDigest,
-  generateHmac,
   inspectCronExpression,
-  inspectJwt,
-  jsonToTypeScript,
   parseEnvFile,
   redactEnvFile,
+} from "@/lib/processors/devops-config-core";
+import {
+  flattenJson,
+  jsonToTypeScript,
   unflattenJson,
-} from "@/lib/processors";
+} from "@/lib/processors/data-api-core";
+import {
+  generateDigest,
+  generateHmac,
+  inspectJwt,
+} from "@/lib/processors/crypto-core";
 
 describe("DevOps quick-tool processors", () => {
   it("previews cron runs deterministically and rejects malformed fields", () => {

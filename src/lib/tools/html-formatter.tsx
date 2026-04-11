@@ -15,17 +15,10 @@ import {
   ToolHeader,
   ValidationMessages,
 } from "@/components/layout";
-import { FormatterSyntaxError, formatHtmlSource } from "@/lib/processors";
-
-export const metadata = {
-  id: "html-formatter",
-  name: "HTML Formatter",
-  description: "Format HTML with parser-aware embedded CSS and JavaScript handling",
-  category: "Text & Format",
-  tags: ["html", "formatter", "beautify", "parser"],
-  path: "/tools/html-formatter",
-  icon: "🌐",
-};
+import {
+  FormatterSyntaxError,
+  formatHtmlSource,
+} from "@/lib/processors/source-formatters";
 
 const SAMPLES = {
   basic: `<div><h1>Title</h1><!-- keep --><p>This is <strong>parser-aware</strong> HTML.</p></div>`,

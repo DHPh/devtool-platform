@@ -3,12 +3,10 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  DockerComposeValidator,
-  DockerfileLinter,
-  GitignoreGenerator,
-  KubernetesManifestValidator,
-} from "@/lib/tools/devops-configuration-studio/DevOpsTool";
+import { DockerComposeValidatorTab as DockerComposeValidator } from "@/lib/tools/devops-configuration-studio/tabs/DockerComposeValidatorTab";
+import { DockerfileLinterTab as DockerfileLinter } from "@/lib/tools/devops-configuration-studio/tabs/DockerfileLinterTab";
+import { GitignoreGeneratorTab as GitignoreGenerator } from "@/lib/tools/devops-configuration-studio/tabs/GitignoreGeneratorTab";
+import { KubernetesManifestValidatorTab as KubernetesManifestValidator } from "@/lib/tools/devops-configuration-studio/tabs/KubernetesManifestValidatorTab";
 
 afterEach(cleanup);
 
