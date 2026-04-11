@@ -5,7 +5,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import type { JsonStats } from "@/lib/utils/json";
+import type { JsonStats } from "@/lib/processors/json";
 
 interface JsonStatsDisplayProps {
   stats: JsonStats;

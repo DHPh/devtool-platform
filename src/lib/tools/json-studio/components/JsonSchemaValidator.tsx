@@ -26,7 +26,7 @@ import {
   JSON_SCHEMA_DRAFT_2020_12,
   type JsonSchema,
   type SchemaValidationResult,
-} from "@/lib/utils/json";
+} from "@/lib/utils/json/json-schema";
 
 interface JsonSchemaValidatorProps {
   data: unknown;

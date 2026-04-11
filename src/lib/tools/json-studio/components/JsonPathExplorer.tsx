@@ -26,7 +26,7 @@ import {
   validateJsonPath,
   type JsonPathResult,
   type QueryResult,
-} from "@/lib/utils/json";
+} from "@/lib/utils/json/json-path";
 
 interface JsonPathExplorerProps {
   data: unknown;

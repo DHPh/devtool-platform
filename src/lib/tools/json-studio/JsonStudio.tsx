@@ -5,12 +5,12 @@
 
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useMemo, Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileCode, Download } from "lucide-react";
 import { ResponsiveTextArea, FileUploadZone } from "@/components/layout";
 import { StudioTabs } from "@/components/studio-tabs";
-import { validateJson } from "@/lib/utils/json";
+import { validateJson } from "@/lib/processors/json";
 import { JSON_STUDIO_MANIFEST } from "./manifest";
 
 interface JsonStudioProps {
@@ -23,21 +23,14 @@ function JsonStudioContent({
   className,
 }: JsonStudioProps) {
   const [input, setInput] = useState("");
-  const [isValid, setIsValid] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Validate JSON on input change
-  useEffect(() => {
+  const validation = useMemo(() => {
     if (!input.trim()) {
-      setIsValid(false);
-      setError(null);
-      return;
+      return { isValid: false, error: null };
     }
-
-    const validation = validateJson(input);
-    setIsValid(validation.isValid);
-    setError(validation.error || null);
+    const result = validateJson(input);
+    return { isValid: result.isValid, error: result.error || null };
   }, [input]);
+  const { isValid, error } = validation;
 
   // Handle file upload
   const handleFileSelect = (content: string) => {

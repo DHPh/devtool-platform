@@ -8,8 +8,9 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GitCompare, Code } from "lucide-react";
-import { JsonDiffViewer, JsonStatsDisplay } from "./components";
-import { validateJson, type JsonStats } from "@/lib/utils/json";
+import { JsonDiffViewer } from "./components/JsonDiffViewer";
+import { JsonStatsDisplay } from "./components/JsonStatsDisplay";
+import { validateJson, type JsonStats } from "@/lib/processors/json";
 
 interface JsonDiffTabProps {
   input: string;

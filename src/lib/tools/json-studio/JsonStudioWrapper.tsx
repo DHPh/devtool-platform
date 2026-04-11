@@ -8,10 +8,6 @@ interface JsonStudioProps {
   className?: string;
 }
 
-function JsonStudioContent(props: JsonStudioProps) {
-  return <JsonStudio {...props} />;
-}
-
 export function JsonStudioWithSuspense(props: JsonStudioProps) {
   return (
     <Suspense
@@ -21,7 +17,15 @@ export function JsonStudioWithSuspense(props: JsonStudioProps) {
         </div>
       }
     >
-      <JsonStudioContent {...props} />
+      <JsonStudio {...props} />
     </Suspense>
   );
+}
+
+export function JsonStudioFormatterView() {
+  return <JsonStudioWithSuspense defaultTab="formatter" />;
+}
+
+export function JsonStudioValidatorView() {
+  return <JsonStudioWithSuspense defaultTab="schema" />;
 }

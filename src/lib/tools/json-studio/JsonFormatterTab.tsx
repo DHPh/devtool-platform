@@ -21,13 +21,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { CopyableResult } from "@/components/layout";
-import { JsonStatsDisplay } from "./components";
+import { JsonStatsDisplay } from "./components/JsonStatsDisplay";
 import {
   formatJson,
   minifyJson,
   type JsonFormatOptions,
   type JsonStats,
-} from "@/lib/utils/json";
+} from "@/lib/processors/json";
 
 interface JsonFormatterTabProps {
   input: string;
@@ -191,7 +191,7 @@ export function JsonFormatterTab({
                   className="flex-1 min-w-32"
                 >
                   <Wand2 className="h-4 w-4 mr-2" />
-                  {isProcessing ? "Formatting..." : "Format"}
+                  {isProcessing ? "Formatting..." : "Format JSON"}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Format and beautify JSON</TooltipContent>

@@ -8,8 +8,9 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, FileCheck, Code } from "lucide-react";
-import { JsonSchemaValidator, JsonStatsDisplay } from "./components";
-import { validateJson, type JsonStats } from "@/lib/utils/json";
+import { JsonSchemaValidator } from "./components/JsonSchemaValidator";
+import { JsonStatsDisplay } from "./components/JsonStatsDisplay";
+import { validateJson, type JsonStats } from "@/lib/processors/json";
 
 interface JsonSchemaTabProps {
   input: string;

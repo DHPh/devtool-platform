@@ -35,7 +35,7 @@ import {
   generateDiffSummary,
   type JsonDiffResult,
   type DiffEntry,
-} from "@/lib/utils/json";
+} from "@/lib/utils/json/json-diff";
 
 interface JsonDiffViewerProps {
   data: unknown;

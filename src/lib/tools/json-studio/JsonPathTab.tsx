@@ -8,8 +8,9 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, Map, Code } from "lucide-react";
-import { JsonPathExplorer, JsonStatsDisplay } from "./components";
-import { validateJson, type JsonStats } from "@/lib/utils/json";
+import { JsonPathExplorer } from "./components/JsonPathExplorer";
+import { JsonStatsDisplay } from "./components/JsonStatsDisplay";
+import { validateJson, type JsonStats } from "@/lib/processors/json";
 
 interface JsonPathTabProps {
   input: string;
