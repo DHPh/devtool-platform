@@ -3,14 +3,12 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  CssClampCalculatorTool,
-  CssUnitConverterTool,
-  JavaScriptFormatterTool,
-  OpenGraphGeneratorTool,
-  SvgDataUriConverterTool,
-  WebManifestGeneratorTool,
-} from "@/lib/tools/web-development-studio/WebDevelopmentTool";
+import { CssClampCalculatorTab as CssClampCalculatorTool } from "@/lib/tools/web-development-studio/tabs/CssClampCalculatorTab";
+import { CssUnitConverterTab as CssUnitConverterTool } from "@/lib/tools/web-development-studio/tabs/CssUnitConverterTab";
+import { JavaScriptFormatterTab as JavaScriptFormatterTool } from "@/lib/tools/web-development-studio/tabs/JavaScriptFormatterTab";
+import { OpenGraphGeneratorTab as OpenGraphGeneratorTool } from "@/lib/tools/web-development-studio/tabs/OpenGraphGeneratorTab";
+import { SvgDataUriConverterTab as SvgDataUriConverterTool } from "@/lib/tools/web-development-studio/tabs/SvgDataUriConverterTab";
+import { WebManifestGeneratorTab as WebManifestGeneratorTool } from "@/lib/tools/web-development-studio/tabs/WebManifestGeneratorTab";
 
 afterEach(cleanup);
 

@@ -4,16 +4,14 @@ import { webcrypto } from "node:crypto";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  JwtSignatureVerifierTool,
-  JwtGeneratorTool,
-  HashHmacGeneratorTool,
-  CertificateDecoderTool,
-  KeypairSignatureTool,
-  SriGeneratorTool,
-  SymmetricEncryptionTool,
-  TotpTool,
-} from "@/lib/tools/security-identity-studio/SecurityTool";
+import { CertificateDecoderTab as CertificateDecoderTool } from "@/lib/tools/security-identity-studio/tabs/CertificateDecoderTab";
+import { HashHmacGeneratorTab as HashHmacGeneratorTool } from "@/lib/tools/security-identity-studio/tabs/HashHmacGeneratorTab";
+import { JwtGeneratorTab as JwtGeneratorTool } from "@/lib/tools/security-identity-studio/tabs/JwtGeneratorTab";
+import { JwtSignatureVerifierTab as JwtSignatureVerifierTool } from "@/lib/tools/security-identity-studio/tabs/JwtSignatureVerifierTab";
+import { KeypairSignatureTab as KeypairSignatureTool } from "@/lib/tools/security-identity-studio/tabs/KeypairSignatureTab";
+import { SriGeneratorTab as SriGeneratorTool } from "@/lib/tools/security-identity-studio/tabs/SriGeneratorTab";
+import { SymmetricEncryptionTab as SymmetricEncryptionTool } from "@/lib/tools/security-identity-studio/tabs/SymmetricEncryptionTab";
+import { TotpTab as TotpTool } from "@/lib/tools/security-identity-studio/tabs/TotpTab";
 
 beforeEach(() => vi.stubGlobal("crypto", webcrypto));
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });

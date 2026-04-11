@@ -3,10 +3,8 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  JavaScriptMinifierTool,
-  SvgOptimizerTool,
-} from "@/lib/tools/web-development-studio/WebDevelopmentTool";
+import { JavaScriptMinifierTab as JavaScriptMinifierTool } from "@/lib/tools/web-development-studio/tabs/JavaScriptMinifierTab";
+import { SvgOptimizerTab as SvgOptimizerTool } from "@/lib/tools/web-development-studio/tabs/SvgOptimizerTab";
 
 afterEach(cleanup);
 
