@@ -37,6 +37,8 @@ const TOOL_ORDER = [
   "password-analysis",
   "lorem-ipsum",
   "qr-generator",
+  "name-generator",
+  "number-generator",
   "timestamp-converter",
   "color-studio",
   "color-converter",

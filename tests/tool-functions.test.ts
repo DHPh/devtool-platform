@@ -4,88 +4,117 @@ import { inspectZip } from "@/lib/processors/archive-core";
 import JSZip from "jszip";
 import { TOOL_REGISTRY } from "@/lib/registry";
 import { isExecutableTool } from "@/lib/tool-registry";
+import { createQrCodeModel } from "@/lib/processors/qr-code";
 import {
-  createQrCodeModel,
+  ANDROID_ICON_SPECS,
   calculateConstrainedImageSize,
   calculateTextDiff,
+  getWheelWinner,
+} from "@/lib/processors/ui-primitives";
+import {
   categorizeFile,
-  convertFileContent,
-  convertCsvJson,
-  convertIntegerBase,
-  compareEnvFiles,
-  compareSemanticVersions,
-  buildSelectQuery,
-  convertChmod,
-  convertCssUnit,
-  convertJsonYaml,
-  convertTextToAllCases,
-  countText,
-  dateTimeInputToUnix,
-  dataToSql,
-  decodeBase64,
-  decodeHtmlEntities,
-  decodeUrlComponent,
-  decryptText,
-  decodeCertificate,
-  encodeBase64,
-  encodeHtmlEntities,
-  encodeUrlComponent,
-  encryptText,
-  extractFileMetadata,
-  formatCss,
-  formatHtml,
-  formatJavaScript,
-  formatGraphql,
-  formatJson,
-  formatToml,
-  formatXml,
-  formatSql,
-  formatYaml,
-  flattenJson,
-  generateDigest,
-  generateHmac,
-  generateJwt,
-  generateGitignore,
-  generateLoremIpsum,
-  generateOpenGraphTags,
-  generateFakeData,
-  generateSigningKeyPair,
-  generateSri,
-  generateTotp,
-  generateUuidBatch,
-  generateWebManifest,
   groupDuplicateFiles,
   hashFileContent,
   hashFileForDuplicateDetection,
-  ANDROID_ICON_SPECS,
-  markdownToHtml,
-  minifyJavaScript,
-  minifyCss,
-  parseCSV,
-  optimizeSvg,
-  getWheelWinner,
-  inspectCronExpression,
-  inspectJwt,
-  lintDockerfile,
-  jsonToTypeScript,
-  redactEnvFile,
-  signText,
-  createCssClamp,
-  dataUriToSvg,
-  svgToDataUri,
-  unflattenJson,
-  unixToDateTime,
-  validateEmail,
-  validateDockerCompose,
-  validateJson,
-  validateKubernetesManifest,
-  validateOpenApi,
-  validateTotp,
+} from "@/lib/processors/file-core";
+import {
+  convertFileContent,
+  extractFileMetadata,
+} from "@/lib/processors/file-capabilities";
+import {
+  convertCsvJson,
+  convertIntegerBase,
+  convertJsonYaml,
+  formatToml,
+  formatXml,
+  formatYaml,
   validateXml,
   validateYaml,
+} from "@/lib/processors/serialization-core";
+import {
+  compareEnvFiles,
+  compareSemanticVersions,
+  convertChmod,
+  inspectCronExpression,
+  redactEnvFile,
+} from "@/lib/processors/devops-config-core";
+import {
+  flattenJson,
+  jsonToTypeScript,
+  unflattenJson,
+} from "@/lib/processors/data-api-core";
+import {
+  convertCssUnit,
+  createCssClamp,
+  dataUriToSvg,
+  formatJavaScript,
+  generateOpenGraphTags,
+  generateWebManifest,
+  svgToDataUri,
+} from "@/lib/processors/web-code-core";
+import { convertTextToAllCases } from "@/lib/processors/text";
+import {
+  countText,
+  decodeHtmlEntities,
+  encodeHtmlEntities,
+  formatCss,
+  formatHtml,
+  markdownToHtml,
+  minifyCss,
+  validateEmail,
+} from "@/lib/processors/tool-core";
+import {
+  dateTimeInputToUnix,
+  unixToDateTime,
+} from "@/lib/processors/timestamp";
+import {
+  buildSelectQuery,
+  dataToSql,
+  formatGraphql,
+  formatSql,
+  generateFakeData,
+  validateOpenApi,
+} from "@/lib/processors/data-workflow-core";
+import { decodeBase64, encodeBase64 } from "@/lib/processors/base64";
+import { decodeUrlComponent, encodeUrlComponent } from "@/lib/processors/url";
+import {
+  decodeCertificate,
+  decryptText,
+  encryptText,
+  generateJwt,
+  generateSigningKeyPair,
+  generateSri,
+  generateTotp,
+  signText,
+  validateTotp,
   verifyJwtSignature,
   verifyTextSignature,
-} from "@/lib/processors";
+} from "@/lib/processors/advanced-crypto-core";
+import { formatJson, validateJson } from "@/lib/processors/json";
+import {
+  generateDigest,
+  generateHmac,
+  inspectJwt,
+} from "@/lib/processors/crypto-core";
+import {
+  generateGitignore,
+  lintDockerfile,
+  validateDockerCompose,
+  validateKubernetesManifest,
+} from "@/lib/processors/devops-validation-core";
+import { generateLoremIpsum } from "@/lib/processors/lorem";
+import {
+  calculateNumberStats,
+  formatGeneratedNumber,
+  generateNameBatch,
+  generateNumberBatch,
+} from "@/lib/processors/random-generators";
+import { generateUuidBatch } from "@/lib/processors/uuid";
+import {
+  minifyJavaScript,
+  optimizeSvg,
+} from "@/lib/processors/advanced-web-core";
+import { parseCSV } from "@/lib/processors/csv";
 import { parseJSON } from "@/lib/utils/json-parser";
 import {
   analyzePasswordStrength,
@@ -104,11 +133,9 @@ import {
 } from "@/lib/utils/color";
 import { generateColorBlindnessPalette } from "@/lib/utils/color/color-blindness-palette";
 import { generateOklchPalette } from "@/lib/utils/color/palette-generator";
-import {
-  compareJsonObjects,
-  queryJsonPath,
-  validateJsonSchema,
-} from "@/lib/utils/json";
+import { compareJsonObjects } from "@/lib/utils/json/json-diff";
+import { queryJsonPath } from "@/lib/utils/json/json-path";
+import { validateJsonSchema } from "@/lib/utils/json/json-schema";
 import { makeHttpRequest, parseCurlCommand } from "@/lib/utils/network";
 import {
   serverDnsLookup,
@@ -852,7 +879,7 @@ const cases: FunctionalCase[] = [
       await expect(
         decodeCertificate(
           certificate.toString("pem"),
-          new Date("2026-02-19T00:00:00Z"),
+          new Date("2026-03-15T00:00:00Z"),
         ),
       ).resolves.toMatchObject({
         ok: true,
@@ -1552,6 +1579,41 @@ const cases: FunctionalCase[] = [
           { name: "b", hash },
         ])[0].map((entry) => entry.name),
       ).toEqual(["a", "b"]);
+    },
+  },
+  {
+    id: "name-generator",
+    run: () => {
+      const result = generateNameBatch({
+        type: "person",
+        gender: "unisex",
+        count: 3,
+        random: () => 0,
+      });
+      expect(result).toEqual({
+        ok: true,
+        value: ["Alex Smith", "Alex Smith", "Alex Smith"],
+      });
+    },
+  },
+  {
+    id: "number-generator",
+    run: () => {
+      const result = generateNumberBatch({
+        min: 1,
+        max: 100,
+        count: 2,
+        allowDuplicates: true,
+        random: () => 0.5,
+      });
+      expect(result).toEqual({ ok: true, value: [51, 51] });
+      expect(formatGeneratedNumber(255, "hex")).toBe("0xFF");
+      expect(calculateNumberStats([10, 20, 30])).toMatchObject({
+        count: 3,
+        sum: "60",
+        average: "20",
+        median: "20",
+      });
     },
   },
   {

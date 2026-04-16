@@ -25,7 +25,7 @@ describe("semantic output policies", () => {
       .sort();
 
     expect(Object.keys(OUTPUT_POLICY_BY_TOOL_ID).sort()).toEqual(executableIds);
-    expect(executableIds).toHaveLength(106);
+    expect(executableIds).toHaveLength(108);
     for (const id of executableIds) {
       expect(OUTPUT_POLICY_VALUES).toContain(OUTPUT_POLICY_BY_TOOL_ID[id]);
     }

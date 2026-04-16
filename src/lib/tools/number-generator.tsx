@@ -1,15 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { writeClipboardText } from "@/hooks/use-clipboard";
-import { Copy, Hash, Dices } from "lucide-react";
+import { Copy, Dices } from "lucide-react";
 import { toast } from "sonner";
 import {
-  ToolHeader,
   QuickActions,
   ResultCard,
   CopyableResult,
-  StatusIndicator,
 } from "@/components/layout";
 import {
   Select,
@@ -22,16 +20,12 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-
-export const metadata = {
-  id: "number-generator",
-  name: "Number Generator",
-  description: "Generate random numbers with various options and formats",
-  category: "Generators",
-  tags: ["number", "generator", "random", "range", "sequence"],
-  path: "/tools/number-generator",
-  icon: "🔢",
-};
+import {
+  calculateNumberStats,
+  formatGeneratedNumber,
+  generateNumberBatch,
+  type NumberOutputFormat,
+} from "@/lib/processors/random-generators";
 
 export default function NumberGenerator() {
   const [generatedNumbers, setGeneratedNumbers] = useState<number[]>([]);
@@ -40,86 +34,67 @@ export default function NumberGenerator() {
   const [count, setCount] = useState(10);
   const [allowDuplicates, setAllowDuplicates] = useState(true);
   const [decimalPlaces, setDecimalPlaces] = useState(0);
-  const [format, setFormat] = useState<"decimal" | "binary" | "hex" | "octal">("decimal");
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [format, setFormat] = useState<NumberOutputFormat>("decimal");
 
-  const generateNumbers = async () => {
-    setIsGenerating(true);
-    
-    const numbers: number[] = [];
-    const usedNumbers = new Set<number>();
-    
-    for (let i = 0; i < count; i++) {
-      let number: number;
-      let attempts = 0;
-      const maxAttempts = 1000;
-      
-      do {
-        if (decimalPlaces > 0) {
-          const range = max - min;
-          const random = Math.random() * range + min;
-          number = parseFloat(random.toFixed(decimalPlaces));
-        } else {
-          number = Math.floor(Math.random() * (max - min + 1)) + min;
-        }
-        attempts++;
-      } while (!allowDuplicates && usedNumbers.has(number) && attempts < maxAttempts);
-      
-      if (attempts >= maxAttempts && !allowDuplicates) {
-        toast.error("Cannot generate unique numbers within the given range");
-        break;
-      }
-      
-      numbers.push(number);
-      if (!allowDuplicates) {
-        usedNumbers.add(number);
-      }
+  const runGeneration = (overrides?: {
+    min?: number;
+    max?: number;
+    count?: number;
+  }) => {
+    const result = generateNumberBatch({
+      min: overrides?.min ?? min,
+      max: overrides?.max ?? max,
+      count: overrides?.count ?? count,
+      allowDuplicates,
+      decimalPlaces,
+    });
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
     }
-    
-    setGeneratedNumbers(numbers);
-    setIsGenerating(false);
-    toast.success(`Generated ${numbers.length} random numbers!`);
+    setGeneratedNumbers(result.value);
+    toast.success(`Generated ${result.value.length} random numbers!`);
   };
 
-  const formatNumber = (num: number): string => {
-    switch (format) {
-      case "binary":
-        return `0b${Math.floor(num).toString(2)}`;
-      case "hex":
-        return `0x${Math.floor(num).toString(16).toUpperCase()}`;
-      case "octal":
-        return `0o${Math.floor(num).toString(8)}`;
-      default:
-        return num.toString();
-    }
+  const generateNumbers = () => {
+    runGeneration();
+  };
+
+  const generateQuickRange = (
+    newMin: number,
+    newMax: number,
+    newCount?: number,
+  ) => {
+    setMin(newMin);
+    setMax(newMax);
+    if (newCount !== undefined) setCount(newCount);
+    runGeneration({
+      min: newMin,
+      max: newMax,
+      count: newCount ?? count,
+    });
   };
 
   const copyNumbers = async () => {
-    const formattedNumbers = generatedNumbers.map(formatNumber);
-    const numbersText = formattedNumbers.join("\n");
-    await writeClipboardText(numbersText);
-    toast.success("Numbers copied to clipboard!");
+    const formattedNumbers = generatedNumbers.map((num) =>
+      formatGeneratedNumber(num, format),
+    );
+    try {
+      await writeClipboardText(formattedNumbers.join("\n"));
+      toast.success("Numbers copied to clipboard!");
+    } catch {
+      // Error toast is already surfaced by writeClipboardText
+    }
   };
 
   const copyNumber = async (number: number) => {
-    const formatted = formatNumber(number);
+    const formatted = formatGeneratedNumber(number, format);
     try {
       await writeClipboardText(formatted);
       toast.success(`${formatted} copied to clipboard!`);
     } catch {
-      toast.error("Failed to copy to clipboard");
+      // Error toast is already surfaced by writeClipboardText
     }
-  };
-
-  const generateQuickRange = (newMin: number, newMax: number, newCount?: number) => {
-    setMin(newMin);
-    setMax(newMax);
-    if (newCount) setCount(newCount);
-    setTimeout(() => generateNumbers(), 100);
-  };
-
-  const regenerate = () => {
-    generateNumbers();
   };
 
   const clearAll = () => {
@@ -127,7 +102,9 @@ export default function NumberGenerator() {
   };
 
   const downloadNumbers = () => {
-    const formattedNumbers = generatedNumbers.map(formatNumber);
+    const formattedNumbers = generatedNumbers.map((num) =>
+      formatGeneratedNumber(num, format),
+    );
     const content = formattedNumbers.join("\n");
     const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -139,71 +116,43 @@ export default function NumberGenerator() {
     toast.success("Numbers downloaded!");
   };
 
-  const getStats = () => {
-    if (generatedNumbers.length === 0) return null;
-    
-    const sum = generatedNumbers.reduce((a, b) => a + b, 0);
-    const avg = sum / generatedNumbers.length;
-    const sortedNumbers = [...generatedNumbers].sort((a, b) => a - b);
-    const median = sortedNumbers.length % 2 === 0
-      ? (sortedNumbers[sortedNumbers.length / 2 - 1] + sortedNumbers[sortedNumbers.length / 2]) / 2
-      : sortedNumbers[Math.floor(sortedNumbers.length / 2)];
-    
-    return {
-      count: generatedNumbers.length,
-      sum: sum.toFixed(decimalPlaces),
-      average: avg.toFixed(decimalPlaces),
-      median: median.toFixed(decimalPlaces),
-      min: Math.min(...generatedNumbers).toFixed(decimalPlaces),
-      max: Math.max(...generatedNumbers).toFixed(decimalPlaces),
-    };
-  };
-
-  const stats = getStats();
+  const stats = useMemo(
+    () => calculateNumberStats(generatedNumbers, decimalPlaces),
+    [generatedNumbers, decimalPlaces],
+  );
 
   return (
     <div className="space-y-6">
-      <ToolHeader
-        title="Number Generator"
-        description="Generate random numbers with various options and formats"
-        icon={Hash}
-      />
-
       <QuickActions
         actions={[
           {
             id: "generate",
-            label: isGenerating ? "Generating..." : "Generate Numbers",
+            label: "Generate Numbers",
             onClick: generateNumbers,
-            disabled: isGenerating,
             variant: "default" as const,
           },
           {
             id: "dice",
             label: "Roll Dice (1-6)",
             onClick: () => generateQuickRange(1, 6, 6),
-            disabled: isGenerating,
             variant: "outline" as const,
           },
           {
             id: "lottery",
             label: "Lottery (1-49)",
             onClick: () => generateQuickRange(1, 49, 6),
-            disabled: isGenerating,
             variant: "outline" as const,
           },
           {
             id: "percentage",
             label: "Percentage (0-100)",
             onClick: () => generateQuickRange(0, 100, 5),
-            disabled: isGenerating,
             variant: "outline" as const,
           },
         ]}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Settings */}
         <div className="space-y-4">
           <ResultCard
             title="Generator Settings"
@@ -218,7 +167,10 @@ export default function NumberGenerator() {
                     id="min"
                     type="number"
                     value={min}
-                    onChange={(e) => setMin(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => {
+                      const parsed = parseFloat(e.target.value);
+                      setMin(Number.isNaN(parsed) ? 0 : parsed);
+                    }}
                   />
                 </div>
                 <div>
@@ -227,7 +179,10 @@ export default function NumberGenerator() {
                     id="max"
                     type="number"
                     value={max}
-                    onChange={(e) => setMax(parseFloat(e.target.value) || 100)}
+                    onChange={(e) => {
+                      const parsed = parseFloat(e.target.value);
+                      setMax(Number.isNaN(parsed) ? 100 : parsed);
+                    }}
                   />
                 </div>
               </div>
@@ -240,7 +195,14 @@ export default function NumberGenerator() {
                   min="1"
                   max="1000"
                   value={count}
-                  onChange={(e) => setCount(Math.max(1, Math.min(1000, parseInt(e.target.value) || 1)))}
+                  onChange={(e) =>
+                    setCount(
+                      Math.max(
+                        1,
+                        Math.min(1000, parseInt(e.target.value, 10) || 1),
+                      ),
+                    )
+                  }
                 />
               </div>
 
@@ -252,14 +214,26 @@ export default function NumberGenerator() {
                   min="0"
                   max="10"
                   value={decimalPlaces}
-                  onChange={(e) => setDecimalPlaces(Math.max(0, Math.min(10, parseInt(e.target.value) || 0)))}
+                  onChange={(e) =>
+                    setDecimalPlaces(
+                      Math.max(
+                        0,
+                        Math.min(10, parseInt(e.target.value, 10) || 0),
+                      ),
+                    )
+                  }
                 />
               </div>
 
               <div>
                 <Label htmlFor="format">Number Format</Label>
-                <Select value={format} onValueChange={(value) => setFormat(value as typeof format)}>
-                  <SelectTrigger aria-label="Number format">
+                <Select
+                  value={format}
+                  onValueChange={(value) =>
+                    setFormat(value as NumberOutputFormat)
+                  }
+                >
+                  <SelectTrigger id="format" aria-label="Number format">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -280,35 +254,30 @@ export default function NumberGenerator() {
                 <Label htmlFor="allow-duplicates">Allow Duplicates</Label>
               </div>
 
-              <Button onClick={generateNumbers} disabled={isGenerating} className="w-full">
+              <Button onClick={generateNumbers} className="w-full">
                 <Dices className="h-4 w-4 mr-2" />
-                {isGenerating ? "Generating..." : "Generate Numbers"}
+                Generate Numbers
               </Button>
             </div>
           </ResultCard>
         </div>
 
-        {/* Results */}
         <div className="lg:col-span-2 space-y-4">
           <ResultCard
             title="Generated Numbers"
             description={`${generatedNumbers.length} numbers generated`}
             status={generatedNumbers.length > 0 ? "success" : "info"}
           >
-            {isGenerating ? (
-              <div className="flex items-center justify-center p-8">
-                <StatusIndicator status="loading" message="Generating numbers..." />
-              </div>
-            ) : generatedNumbers.length > 0 ? (
+            {generatedNumbers.length > 0 ? (
               <div className="space-y-4">
-                <div className="flex gap-2 mb-4">
-                  <Button size="sm" onClick={copyNumbers}>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <Button size="sm" onClick={() => void copyNumbers()}>
                     Copy All
                   </Button>
                   <Button size="sm" variant="outline" onClick={downloadNumbers}>
                     Download
                   </Button>
-                  <Button size="sm" variant="outline" onClick={regenerate}>
+                  <Button size="sm" variant="outline" onClick={generateNumbers}>
                     Regenerate
                   </Button>
                   <Button size="sm" variant="outline" onClick={clearAll}>
@@ -317,18 +286,18 @@ export default function NumberGenerator() {
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 max-h-80 overflow-y-auto">
                   {generatedNumbers.map((number, index) => {
-                    const formatted = formatNumber(number);
+                    const formatted = formatGeneratedNumber(number, format);
                     return (
-                    <button
-                      type="button"
-                      key={index}
-                      className="flex items-center justify-center gap-2 rounded bg-muted p-2 text-center font-mono text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      onClick={() => copyNumber(number)}
-                      aria-label={`Copy ${formatted}`}
-                    >
-                      <span>{formatted}</span>
-                      <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-                    </button>
+                      <button
+                        type="button"
+                        key={`${number}-${index}`}
+                        className="flex items-center justify-center gap-2 rounded bg-muted p-2 text-center font-mono text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        onClick={() => void copyNumber(number)}
+                        aria-label={`Copy ${formatted}`}
+                      >
+                        <span>{formatted}</span>
+                        <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
                     );
                   })}
                 </div>
@@ -342,7 +311,6 @@ export default function NumberGenerator() {
             )}
           </ResultCard>
 
-          {/* Statistics */}
           {stats && (
             <ResultCard
               title="Statistics"
@@ -379,39 +347,6 @@ export default function NumberGenerator() {
           )}
         </div>
       </div>
-
-      {/* Information */}
-      <ResultCard
-        title="About Number Generation"
-        status="info"
-        description="Learn about different number formats and use cases"
-      >
-        <div className="space-y-4 text-sm text-muted-foreground">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="font-medium mb-2">Number Formats</p>
-              <ul className="list-disc pl-4 space-y-1">
-                <li><strong>Decimal:</strong> Standard base-10 numbers</li>
-                <li><strong>Binary:</strong> Base-2 numbers (0b prefix)</li>
-                <li><strong>Hexadecimal:</strong> Base-16 numbers (0x prefix)</li>
-                <li><strong>Octal:</strong> Base-8 numbers (0o prefix)</li>
-              </ul>
-            </div>
-            <div>
-              <p className="font-medium mb-2">Use Cases</p>
-              <ul className="list-disc pl-4 space-y-1">
-                <li>Testing and simulation data</li>
-                <li>Gaming and random events</li>
-                <li>Statistical sampling</li>
-                <li>Password and ID generation</li>
-              </ul>
-            </div>
-          </div>
-          <p className="text-xs bg-muted p-2 rounded">
-            <strong>Note:</strong> Numbers are generated using JavaScript&apos;s Math.random() function, which is suitable for most use cases but not cryptographically secure.
-          </p>
-        </div>
-      </ResultCard>
     </div>
   );
 }

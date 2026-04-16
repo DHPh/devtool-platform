@@ -13,6 +13,8 @@ export const TOOL_COMPONENT_IDS = [
   "json-validator",
   "html-entities",
   "lorem-ipsum",
+  "name-generator",
+  "number-generator",
   "email-validator",
   "html-formatter",
   "diff-checker",

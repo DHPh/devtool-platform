@@ -3,8 +3,8 @@ import type { ToolComponentLoader } from "@/lib/tool-registry";
 
 export const TOOL_COMPONENT_LOADERS = {
   "json-formatter": () =>
-    import("@/lib/tools/json-formatter").then((module) => ({
-      default: module.JsonFormatter,
+    import("@/lib/tools/json-studio").then((module) => ({
+      default: module.JsonStudioFormatterView,
     })),
   "base64-encoder": () => import("@/lib/tools/base64-encoder"),
   "regex-studio": () =>
@@ -22,9 +22,14 @@ export const TOOL_COMPONENT_LOADERS = {
   "url-encoder": () => import("@/lib/tools/url-encoder"),
   "word-counter": () => import("@/lib/tools/word-counter"),
   "qr-generator": () => import("@/lib/tools/qr-generator"),
-  "json-validator": () => import("@/lib/tools/json-validator"),
+  "json-validator": () =>
+    import("@/lib/tools/json-studio").then((module) => ({
+      default: module.JsonStudioValidatorView,
+    })),
   "html-entities": () => import("@/lib/tools/html-entities"),
   "lorem-ipsum": () => import("@/lib/tools/lorem-ipsum"),
+  "name-generator": () => import("@/lib/tools/name-generator"),
+  "number-generator": () => import("@/lib/tools/number-generator"),
   "email-validator": () => import("@/lib/tools/email-validator"),
   "html-formatter": () => import("@/lib/tools/html-formatter"),
   "diff-checker": () => import("@/lib/tools/diff-checker"),
