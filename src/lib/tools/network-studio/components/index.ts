@@ -1,5 +1,3 @@
-export { ApiTester } from "./ApiTester";
-export { HttpClient } from "./HttpClient";
 export { WebSocketTester } from "./WebSocketTester";
 export { DnsLookup } from "./DnsLookup";
 export { IpInfo } from "./IpInfo";
