@@ -297,7 +297,7 @@ New line added`);
               <button
                 type="button"
                 onClick={copyResults}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-md transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 text-sm bg-muted hover:bg-accent text-foreground border border-border rounded-md transition-colors"
               >
                 <Copy className="h-4 w-4" />
                 Copy Results
@@ -305,7 +305,7 @@ New line added`);
               <button
                 type="button"
                 onClick={downloadResults}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-md transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 text-sm bg-muted hover:bg-accent text-foreground border border-border rounded-md transition-colors"
               >
                 <Download className="h-4 w-4" />
                 Download
@@ -325,10 +325,10 @@ New line added`);
                           ? "bg-green-50 text-green-800 border-green-300 dark:bg-green-900/20 dark:text-green-100 dark:border-green-700"
                           : line.type === "removed"
                           ? "bg-red-50 text-red-800 border-red-300 dark:bg-red-900/20 dark:text-red-100 dark:border-red-700"
-                          : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600"
+                          : "bg-card border-border"
                       }`}
                     >
-                      <span className="text-gray-400 w-8 inline-block text-right mr-4 select-none">
+                      <span className="text-muted-foreground w-8 inline-block text-right mr-4 select-none">
                         {line.lineNumber}
                       </span>
                       <span className="w-4 inline-block mr-2 font-bold">
@@ -357,10 +357,10 @@ New line added`);
                             className={`px-2 py-1 rounded ${
                               line.type === "removed"
                                 ? "bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-100"
-                                : "bg-gray-50 dark:bg-gray-800"
+                                : "bg-muted/50"
                             }`}
                           >
-                            <span className="text-gray-400 w-6 inline-block text-right mr-2 select-none text-xs">
+                            <span className="text-muted-foreground w-6 inline-block text-right mr-2 select-none text-xs">
                               {line.lineNumber}
                             </span>
                             <span className="whitespace-pre-wrap break-words">
@@ -385,10 +385,10 @@ New line added`);
                             className={`px-2 py-1 rounded ${
                               line.type === "added"
                                 ? "bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-100"
-                                : "bg-gray-50 dark:bg-gray-800"
+                                : "bg-muted/50"
                             }`}
                           >
-                            <span className="text-gray-400 w-6 inline-block text-right mr-2 select-none text-xs">
+                            <span className="text-muted-foreground w-6 inline-block text-right mr-2 select-none text-xs">
                               {line.lineNumber}
                             </span>
                             <span className="whitespace-pre-wrap break-words">

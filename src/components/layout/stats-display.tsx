@@ -36,11 +36,13 @@ export function StatsDisplay({
 
   const getColorClasses = (color?: string) => {
     const colorMap = {
-      green: "bg-green-50 text-green-700 border-green-300",
-      red: "bg-red-50 text-red-700 border-red-300",
-      blue: "bg-blue-50 text-blue-700 border-blue-300",
-      yellow: "bg-yellow-50 text-yellow-700 border-yellow-300",
-      gray: "bg-gray-50 text-gray-700 border-gray-300",
+      green:
+        "bg-green-50 text-green-700 border-green-300 dark:bg-green-950/40 dark:text-green-300 dark:border-green-800",
+      red: "bg-red-50 text-red-700 border-red-300 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800",
+      blue: "bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800",
+      yellow:
+        "bg-yellow-50 text-yellow-700 border-yellow-300 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-800",
+      gray: "bg-muted text-muted-foreground border-border",
     };
     return color ? colorMap[color as keyof typeof colorMap] : "";
   };

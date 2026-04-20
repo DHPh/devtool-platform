@@ -583,7 +583,7 @@ export function UnifiedHttpTester() {
               </TabsList>
 
               <TabsContent value="response" className="mt-4">
-                <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                <div className="bg-muted/50 border border-border p-4 rounded-lg">
                   <pre className="text-sm overflow-auto max-h-80">
                     {typeof response.data === "string"
                       ? response.data
@@ -597,7 +597,7 @@ export function UnifiedHttpTester() {
                   {Object.entries(response.headers).map(([key, value]) => (
                     <div
                       key={key}
-                      className="flex justify-between p-2 bg-gray-50 dark:bg-gray-900 rounded"
+                      className="flex justify-between p-2 bg-muted/50 border border-border rounded"
                     >
                       <span className="font-medium">{key}:</span>
                       <span className="text-muted-foreground">{value}</span>

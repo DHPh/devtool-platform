@@ -85,9 +85,9 @@ export default function JSONTableViewer() {
               const value = info.getValue();
 
               if (value === null)
-                return <span className="text-gray-400 italic">null</span>;
+                return <span className="text-muted-foreground italic">null</span>;
               if (value === undefined)
-                return <span className="text-gray-400 italic">undefined</span>;
+                return <span className="text-muted-foreground italic">undefined</span>;
               if (typeof value === "boolean") {
                 return (
                   <Badge variant={value ? "default" : "secondary"}>
@@ -335,7 +335,7 @@ export default function JSONTableViewer() {
       >
         <div className="space-y-4">
           {fileName && (
-            <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded">
+            <div className="flex items-center gap-2 p-2 bg-muted/50 border border-border rounded">
               <Upload className="h-4 w-4" />
               <span className="text-sm">{fileName}</span>
             </div>
@@ -378,7 +378,7 @@ export default function JSONTableViewer() {
                 >
                   📊 Nested data flattened
                 </Badge>
-                <span className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="text-sm text-muted-foreground">
                   Complex nested objects have been flattened into columns
                 </span>
               </div>
@@ -406,13 +406,13 @@ export default function JSONTableViewer() {
 
             <div className="border rounded-lg overflow-auto max-h-96">
               <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-800">
+                <thead className="bg-muted/50">
                   {table.getHeaderGroups().map((headerGroup) => (
                     <tr key={headerGroup.id}>
                       {headerGroup.headers.map((header) => (
                         <th
                           key={header.id}
-                          className="p-3 text-left font-medium cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                          className="p-3 text-left font-medium cursor-pointer hover:bg-accent"
                           onClick={header.column.getToggleSortingHandler()}
                         >
                           <div className="flex items-center gap-2">
@@ -431,7 +431,7 @@ export default function JSONTableViewer() {
                   {table.getRowModel().rows.map((row) => (
                     <tr
                       key={row.id}
-                      className="border-t hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                      className="border-t hover:bg-muted/50"
                     >
                       {row.getVisibleCells().map((cell) => (
                         <td key={cell.id} className="p-3">
@@ -448,7 +448,7 @@ export default function JSONTableViewer() {
             </div>
 
             <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600 dark:text-gray-400">
+              <div className="text-sm text-muted-foreground">
                 Page {table.getState().pagination.pageIndex + 1} of{" "}
                 {table.getPageCount()}
               </div>

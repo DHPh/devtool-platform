@@ -29,7 +29,7 @@ export function CheckboxInput({
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
         disabled={disabled}
-        className="rounded border-gray-300 focus:ring-2 focus:ring-blue-500"
+        className="h-4 w-4 rounded border-input accent-primary focus:ring-2 focus:ring-ring"
       />
       <div className="space-y-1">
         <Label htmlFor={id} className="text-sm font-medium cursor-pointer">

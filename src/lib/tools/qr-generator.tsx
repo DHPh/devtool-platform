@@ -165,7 +165,7 @@ export default function QrGenerator() {
         </div>
 
         <ResultCard title="QR Code Preview" description="Local SVG preview; scan to verify before publishing" status={model ? "success" : "info"}>
-          <div className="flex justify-center p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg min-h-[200px] items-center">
+          <div className="flex justify-center p-4 border-2 border-dashed border-border rounded-lg min-h-[200px] items-center bg-muted/20">
             {model && "svg" in generated ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={qrSvgDataUrl(generated.svg)} alt="Locally generated QR code" width={Math.min(Number(size), 400)} height={Math.min(Number(size), 400)} className="max-w-full h-auto" data-testid="local-qr-preview" />

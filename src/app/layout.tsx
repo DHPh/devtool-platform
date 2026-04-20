@@ -144,14 +144,14 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" data-theme="legacy" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#000000" />
-        {/* Prevent FOUC (Flash of Unstyled Content) for theme */}
+        {/* Apply initial color mode before paint */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -159,24 +159,20 @@ export default function RootLayout({
                 function systemDark() {
                   return window.matchMedia('(prefers-color-scheme: dark)').matches;
                 }
-                function apply(themeId, mode) {
+                function apply(mode) {
                   var root = document.documentElement;
-                  root.setAttribute('data-theme', themeId);
+                  root.setAttribute('data-theme', 'legacy');
                   var dark = mode === 'dark' || (mode === 'system' && systemDark());
                   root.classList.toggle('dark', dark);
                   root.classList.remove('light');
-                  root.setAttribute('data-theme-applied', 'true');
                 }
                 try {
-                  // Read theme + mode from localStorage (Zustand persist format)
                   var stored = localStorage.getItem('devtool-theme');
                   var state = stored ? (JSON.parse(stored).state || {}) : {};
-                  var themeId = typeof state.activeTheme === 'string' ? state.activeTheme : 'legacy';
                   var mode = state.theme === 'dark' || state.theme === 'light' ? state.theme : 'system';
-                  apply(themeId, mode);
+                  apply(mode);
                 } catch (e) {
-                  // Fallback to the default theme and system preference on any error
-                  apply('legacy', 'system');
+                  apply('system');
                 }
               })();
             `,

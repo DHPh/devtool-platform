@@ -268,7 +268,7 @@ export function PassphraseGeneratorTab({
                   onChange={(e) =>
                     handleOptionChange("capitalizeWords", e.target.checked)
                   }
-                  className="h-4 w-4 rounded border-gray-300"
+                  className="h-4 w-4 rounded border-input accent-primary"
                 />
                 <Label
                   htmlFor="capitalizeWords"
@@ -285,7 +285,7 @@ export function PassphraseGeneratorTab({
                   onChange={(e) =>
                     handleOptionChange("includeNumbers", e.target.checked)
                   }
-                  className="h-4 w-4 rounded border-gray-300"
+                  className="h-4 w-4 rounded border-input accent-primary"
                 />
                 <Label
                   htmlFor="includeNumbers"
@@ -302,7 +302,7 @@ export function PassphraseGeneratorTab({
                   onChange={(e) =>
                     handleOptionChange("includeSymbols", e.target.checked)
                   }
-                  className="h-4 w-4 rounded border-gray-300"
+                  className="h-4 w-4 rounded border-input accent-primary"
                 />
                 <Label
                   htmlFor="includeSymbols"

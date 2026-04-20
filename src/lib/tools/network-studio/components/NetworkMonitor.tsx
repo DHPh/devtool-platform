@@ -173,11 +173,11 @@ export function NetworkMonitor() {
             {pingLogs.length > 0 && (
               <div className="space-y-2">
                 <h4 className="font-medium text-sm">Test Log:</h4>
-                <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-lg max-h-40 overflow-y-auto">
+                <div className="bg-muted/50 border border-border p-3 rounded-lg max-h-40 overflow-y-auto">
                   {pingLogs.map((log, index) => (
                     <div
                       key={index}
-                      className="text-xs font-mono text-gray-600 dark:text-gray-400"
+                      className="text-xs font-mono text-muted-foreground"
                     >
                       {log}
                     </div>

@@ -23,7 +23,12 @@ export function ModeTabs({
 }: ModeTabsProps) {
   return (
     <Tabs value={value} onValueChange={onValueChange} className={className}>
-      <TabsList className={`grid w-full grid-cols-${options.length}`}>
+      <TabsList
+        className="grid w-full"
+        style={{
+          gridTemplateColumns: `repeat(${Math.max(1, options.length)}, minmax(0, 1fr))`,
+        }}
+      >
         {options.map((option) => (
           <TabsTrigger key={option.value} value={option.value}>
             {option.label}

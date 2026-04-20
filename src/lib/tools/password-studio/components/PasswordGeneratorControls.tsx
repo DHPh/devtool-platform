@@ -98,7 +98,7 @@ export function PasswordGeneratorControls({
                 onChange={(e) =>
                   handleOptionChange("includeUppercase", e.target.checked)
                 }
-                className="h-4 w-4 rounded border-gray-300"
+                className="h-4 w-4 rounded border-input accent-primary"
               />
               <Label htmlFor="uppercase" className="text-sm cursor-pointer">
                 Uppercase (A-Z)
@@ -112,7 +112,7 @@ export function PasswordGeneratorControls({
                 onChange={(e) =>
                   handleOptionChange("includeLowercase", e.target.checked)
                 }
-                className="h-4 w-4 rounded border-gray-300"
+                className="h-4 w-4 rounded border-input accent-primary"
               />
               <Label htmlFor="lowercase" className="text-sm cursor-pointer">
                 Lowercase (a-z)
@@ -126,7 +126,7 @@ export function PasswordGeneratorControls({
                 onChange={(e) =>
                   handleOptionChange("includeNumbers", e.target.checked)
                 }
-                className="h-4 w-4 rounded border-gray-300"
+                className="h-4 w-4 rounded border-input accent-primary"
               />
               <Label htmlFor="numbers" className="text-sm cursor-pointer">
                 Numbers (0-9)
@@ -140,7 +140,7 @@ export function PasswordGeneratorControls({
                 onChange={(e) =>
                   handleOptionChange("includeSymbols", e.target.checked)
                 }
-                className="h-4 w-4 rounded border-gray-300"
+                className="h-4 w-4 rounded border-input accent-primary"
               />
               <Label htmlFor="symbols" className="text-sm cursor-pointer">
                 Symbols (!@#$...)
@@ -161,7 +161,7 @@ export function PasswordGeneratorControls({
                 onChange={(e) =>
                   handleOptionChange("excludeSimilar", e.target.checked)
                 }
-                className="h-4 w-4 rounded border-gray-300"
+                className="h-4 w-4 rounded border-input accent-primary"
               />
               <Label
                 htmlFor="excludeSimilar"
@@ -178,7 +178,7 @@ export function PasswordGeneratorControls({
                 onChange={(e) =>
                   handleOptionChange("excludeAmbiguous", e.target.checked)
                 }
-                className="h-4 w-4 rounded border-gray-300"
+                className="h-4 w-4 rounded border-input accent-primary"
               />
               <Label
                 htmlFor="excludeAmbiguous"

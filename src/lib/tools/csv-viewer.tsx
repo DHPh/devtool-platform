@@ -78,7 +78,7 @@ export default function CSVViewer() {
         cell: (info) => {
           const value = info.getValue();
           if (value === null || value === undefined) {
-            return <span className="text-gray-400 italic">null</span>;
+            return <span className="text-muted-foreground italic">null</span>;
           }
           return typeof value === "number" ? (
             <span className="font-mono">{value.toLocaleString()}</span>
@@ -346,7 +346,7 @@ export default function CSVViewer() {
               placeholder="Paste CSV data here...&#10;&#10;Examples:&#10;SIC Code,Description&#10;1110,Growing of cereals&#10;1120,Growing of rice&#10;&#10;Or with semicolons:&#10;name;age;city&#10;John;30;NYC"
               className="w-full h-32 tool-textarea"
             />
-            <div className="text-sm text-gray-600 dark:text-gray-400">
+            <div className="text-sm text-muted-foreground">
               💡 Tip: Use the &quot;Process CSV&quot; button above to parse your
               data manually
             </div>
@@ -413,7 +413,7 @@ export default function CSVViewer() {
                     {table.getHeaderGroups().map((headerGroup) => (
                       <tr
                         key={headerGroup.id}
-                        className="border-b bg-gray-50 dark:bg-gray-900"
+                        className="border-b bg-muted/50"
                       >
                         {headerGroup.headers.map((header) => (
                           <th
@@ -435,7 +435,7 @@ export default function CSVViewer() {
                     {table.getRowModel().rows.map((row) => (
                       <tr
                         key={row.id}
-                        className="border-b hover:bg-gray-50 dark:hover:bg-gray-900"
+                        className="border-b hover:bg-muted/50"
                       >
                         {row.getVisibleCells().map((cell) => (
                           <td key={cell.id} className="px-4 py-3">
@@ -455,7 +455,7 @@ export default function CSVViewer() {
             {/* Pagination */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-700 dark:text-gray-300">
+                <span className="text-sm text-muted-foreground">
                   Showing{" "}
                   {table.getState().pagination.pageIndex *
                     table.getState().pagination.pageSize +
