@@ -69,4 +69,14 @@ describe("canonical tool categories", () => {
     );
     expect(searchTools("definitely-not-a-tool")).toEqual([]);
   });
+
+  it("matches multi-token queries across fields and ranks exact names first", () => {
+    expect(searchTools("json formatter")[0]?.id).toBe("json-formatter");
+    expect(searchTools("jwt verify").map((tool) => tool.id)).toContain(
+      "jwt-signature-verifier",
+    );
+    expect(searchTools("yaml json").map((tool) => tool.id)).toContain(
+      "json-yaml-converter",
+    );
+  });
 });

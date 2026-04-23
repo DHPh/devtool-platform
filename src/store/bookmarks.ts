@@ -13,9 +13,11 @@ export const useBookmarks = create<BookmarksState>()(
     (set, get) => ({
       bookmarks: [],
       addBookmark: (toolId) => {
-        set((state) => ({
-          bookmarks: [...state.bookmarks, toolId],
-        }));
+        set((state) =>
+          state.bookmarks.includes(toolId)
+            ? state
+            : { bookmarks: [...state.bookmarks, toolId] },
+        );
       },
       removeBookmark: (toolId) => {
         set((state) => ({
@@ -28,6 +30,6 @@ export const useBookmarks = create<BookmarksState>()(
     }),
     {
       name: "devtool-bookmarks",
-    }
-  )
+    },
+  ),
 );

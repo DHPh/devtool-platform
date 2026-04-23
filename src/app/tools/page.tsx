@@ -17,6 +17,7 @@ import {
 } from "@/lib/tool-registry";
 import { getAllCategories } from "@/lib/tool-classification";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { ToolsCatalog } from "@/components/tools-catalog";
 
 // Static metadata for SEO
 export const metadata: Metadata = {
@@ -176,105 +177,79 @@ export default function ToolsPage() {
           </div>
         </div>
 
-        {/* Tools by Category */}
-        <div className="space-y-8">
-          <h2 className="text-2xl font-bold text-center">
-            Browse Tools by Category
-          </h2>
+        {/* Interactive Search & Tools by Category */}
+        <ToolsCatalog
+          categories={populatedCategories.map((category) => ({
+            id: category.id,
+            name: category.name,
+            icon: category.icon,
+            count: category.tools.length,
+          }))}
+        >
+          <div className="space-y-8">
+            <h2 className="text-2xl font-bold text-center">
+              Browse Tools by Category
+            </h2>
 
-          {populatedCategories.map((category) => {
-            return (
-              <div key={category.id} className="space-y-4">
-                <h3 className="text-xl font-semibold flex items-center gap-2">
-                  <span className="text-2xl">{category.icon}</span>
-                  {category.name} Tools
-                  <Badge variant="secondary">{category.tools.length}</Badge>
-                </h3>
+            {populatedCategories.map((category) => {
+              return (
+                <div key={category.id} className="space-y-4">
+                  <h3 className="text-xl font-semibold flex items-center gap-2">
+                    <span className="text-2xl">{category.icon}</span>
+                    {category.name} Tools
+                    <Badge variant="secondary">{category.tools.length}</Badge>
+                  </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {category.tools.map((tool) => (
-                    <Link
-                      key={tool.id}
-                      href={tool.path}
-                      className="block"
-                    >
-                      <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
-                        <CardHeader>
-                          <div className="flex items-start gap-3">
-                            <span className="text-2xl flex-shrink-0">
-                              {tool.icon}
-                            </span>
-                            <div className="flex-1 min-w-0">
-                              <CardTitle className="text-lg">
-                                {tool.name}
-                              </CardTitle>
-                              <CardDescription className="text-sm">
-                                {tool.description}
-                              </CardDescription>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {category.tools.map((tool) => (
+                      <Link
+                        key={tool.id}
+                        href={tool.path}
+                        className="block"
+                      >
+                        <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
+                          <CardHeader>
+                            <div className="flex items-start gap-3">
+                              <span className="text-2xl flex-shrink-0">
+                                {tool.icon}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <CardTitle className="text-lg">
+                                  {tool.name}
+                                </CardTitle>
+                                <CardDescription className="text-sm">
+                                  {tool.description}
+                                </CardDescription>
+                              </div>
                             </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="flex flex-wrap gap-1">
-                            {tool.tags.slice(0, 3).map((tag) => (
-                              <Badge
-                                key={tag}
-                                variant="outline"
-                                className="text-xs"
-                              >
-                                {tag}
-                              </Badge>
-                            ))}
-                            {tool.tags.length > 3 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{tool.tags.length - 3}
-                              </Badge>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  ))}
+                          </CardHeader>
+                          <CardContent>
+                            <div className="flex flex-wrap gap-1">
+                              {tool.tags.slice(0, 3).map((tag) => (
+                                <Badge
+                                  key={tag}
+                                  variant="outline"
+                                  className="text-xs"
+                                >
+                                  {tag}
+                                </Badge>
+                              ))}
+                              {tool.tags.length > 3 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{tool.tags.length - 3}
+                                </Badge>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* All Tools Grid */}
-        <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-center">All Tools</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {TOOL_REGISTRY.map((tool) => (
-              <Link key={tool.id} href={tool.path} className="block">
-                <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl">{tool.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="text-base truncate">
-                          {tool.name}
-                        </CardTitle>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <CardDescription className="text-xs line-clamp-2">
-                      {tool.description}
-                    </CardDescription>
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {tool.tags.slice(0, 2).map((tag) => (
-                        <Badge key={tag} variant="outline" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
+              );
+            })}
           </div>
-        </div>
+        </ToolsCatalog>
 
         {/* SEO Content */}
         <div className="bg-muted/30 rounded-lg p-8 space-y-6">

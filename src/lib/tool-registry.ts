@@ -108,16 +108,90 @@ export function getFeaturedTools(): ToolMetadata[] {
 }
 
 export function searchTools(query: string): ToolMetadata[] {
-  const searchTerm = query.toLowerCase();
-  return TOOL_REGISTRY.filter(
-    (tool) =>
-      tool.name.toLowerCase().includes(searchTerm) ||
-      tool.description.toLowerCase().includes(searchTerm) ||
-      tool.tags.some((tag) => tag.toLowerCase().includes(searchTerm)) ||
-      tool.type.toLowerCase().includes(searchTerm) ||
-      (tool.types &&
-        tool.types.some((type) => type.toLowerCase().includes(searchTerm))),
-  );
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) {
+    return TOOL_REGISTRY;
+  }
+
+  const tokens = normalized.split(/\s+/).filter(Boolean);
+
+  const scored: { tool: ToolMetadata; score: number; index: number }[] = [];
+
+  TOOL_REGISTRY.forEach((tool, index) => {
+    const nameLower = tool.name.toLowerCase();
+    const idLower = tool.id.toLowerCase();
+    const descLower = tool.description.toLowerCase();
+    const categoryLower = tool.category.toLowerCase();
+    const tagsLower = tool.tags.map((tag) => tag.toLowerCase());
+    const typesLower = [tool.type, ...(tool.types ?? [])].map((type) =>
+      type.toLowerCase(),
+    );
+
+    const matchesAllTokens = tokens.every(
+      (token) =>
+        nameLower.includes(token) ||
+        idLower.includes(token) ||
+        descLower.includes(token) ||
+        categoryLower.includes(token) ||
+        tagsLower.some((tag) => tag.includes(token)) ||
+        typesLower.some((type) => type.includes(token)),
+    );
+
+    if (!matchesAllTokens) {
+      return;
+    }
+
+    let score = 0;
+
+    if (nameLower === normalized || idLower === normalized) {
+      score += 140;
+    } else if (
+      nameLower.startsWith(normalized) ||
+      idLower.startsWith(normalized)
+    ) {
+      score += 90;
+    } else if (nameLower.includes(normalized)) {
+      score += 55;
+    }
+
+    for (const token of tokens) {
+      if (nameLower.includes(token)) {
+        score += 25;
+        if (
+          nameLower.startsWith(token) ||
+          nameLower.includes(` ${token}`)
+        ) {
+          score += 12;
+        }
+      }
+      if (idLower.includes(token)) {
+        score += 16;
+      }
+      if (tagsLower.some((tag) => tag === token)) {
+        score += 22;
+      } else if (tagsLower.some((tag) => tag.includes(token))) {
+        score += 10;
+      }
+      if (
+        categoryLower.includes(token) ||
+        typesLower.some((type) => type.includes(token))
+      ) {
+        score += 8;
+      }
+      if (descLower.includes(token)) {
+        score += 4;
+      }
+    }
+
+    if (tool.kind !== "studio") {
+      score += 3;
+    }
+
+    scored.push({ tool, score, index });
+  });
+
+  scored.sort((a, b) => b.score - a.score || a.index - b.index);
+  return scored.map((entry) => entry.tool);
 }
 
 export function getToolsByTags(tags: string[]): ToolMetadata[] {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   Card,
@@ -36,15 +36,6 @@ export function ToolClassificationView({
   const [activeView, setActiveView] = useState(defaultView);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedType, setSelectedType] = useState<ToolType | "all">("all");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return <div>Loading...</div>;
-  }
 
   const categories = getAllCategories().filter(
     (category) => getToolsByCategory(category.id).length > 0
