@@ -36,12 +36,17 @@ import {
 import {
   lazy,
   Suspense,
+  useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ComponentType,
 } from "react";
+import { useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ToolIoGuide } from "@/components/tool-io-guide";
+import { useActiveTool } from "@/components/active-tool-context";
 import type { StudioIconName, StudioManifest } from "@/lib/studio-manifest";
 import { cn } from "@/lib/utils";
 
@@ -89,18 +94,68 @@ interface StudioTabsProps<Props extends object> {
   contentClassName?: string;
 }
 
-function getGridColumns(tabCount: number) {
+export function getStudioGridColumns(tabCount: number) {
   if (tabCount <= 1) return "grid-cols-1";
   if (tabCount === 2) return "grid-cols-2";
   if (tabCount === 3) return "grid-cols-2 sm:grid-cols-3";
   if (tabCount === 4) return "grid-cols-2 sm:grid-cols-4";
   if (tabCount === 5) return "grid-cols-2 md:grid-cols-5";
-  if (tabCount === 6) return "grid-cols-2 md:grid-cols-3 xl:grid-cols-6";
-  if (tabCount <= 8) {
-    return "grid-cols-2 md:grid-cols-4 xl:grid-cols-8";
-  }
-  if (tabCount <= 10) return "grid-cols-2 md:grid-cols-5";
-  return "grid-cols-2 md:grid-cols-4 xl:grid-cols-6";
+  if (tabCount === 6) return "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6";
+  if (tabCount <= 8) return "grid-cols-2 sm:grid-cols-4";
+  if (tabCount <= 10) return "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5";
+  return "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4";
+}
+
+function writeTabQueryParam(tab: string) {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  if (url.searchParams.get("tab") === tab) return;
+  url.searchParams.set("tab", tab);
+  window.history.replaceState(window.history.state, "", url.toString());
+}
+
+function StudioUrlObserver({
+  manifest,
+  onUrlTab,
+}: {
+  manifest: StudioManifest;
+  onUrlTab: (tab: string) => void;
+}) {
+  const searchParams = useSearchParams();
+  const routerTab = searchParams?.get("tab") ?? null;
+  const lastAppliedSearchRef = useRef<string | null>(null);
+
+  const syncFromLocation = useCallback(
+    (force = false) => {
+      if (typeof window === "undefined") return;
+      const currentSearch = window.location.search;
+      if (!force && lastAppliedSearchRef.current === currentSearch) return;
+      lastAppliedSearchRef.current = currentSearch;
+
+      const requestedTab = new URLSearchParams(currentSearch).get("tab");
+      if (requestedTab && manifest.tabs.some((tab) => tab.id === requestedTab)) {
+        onUrlTab(requestedTab);
+      }
+    },
+    [manifest.tabs, onUrlTab],
+  );
+
+  useEffect(() => {
+    if (routerTab && manifest.tabs.some((tab) => tab.id === routerTab)) {
+      lastAppliedSearchRef.current = window.location.search;
+      onUrlTab(routerTab);
+      return;
+    }
+    syncFromLocation();
+  }, [routerTab, manifest.tabs, onUrlTab, syncFromLocation]);
+
+  useEffect(() => {
+    const handlePopState = () => syncFromLocation(true);
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [syncFromLocation]);
+
+  return null;
 }
 
 export function StudioTabs<Props extends object>({
@@ -110,10 +165,23 @@ export function StudioTabs<Props extends object>({
   activeTab: controlledTab,
   onTabChange,
   listClassName,
-  contentClassName = "mt-8 focus:outline-none",
+  contentClassName = "mt-5 focus:outline-none",
 }: StudioTabsProps<Props>) {
   const [internalTab, setInternalTab] = useState(defaultTab);
   const activeTab = controlledTab ?? internalTab;
+  const activeToolCtx = useActiveTool();
+  const setActiveSubTool = activeToolCtx?.setActiveSubTool;
+
+  const isControlledRef = useRef(controlledTab !== undefined);
+  const onTabChangeRef = useRef(onTabChange);
+  const prevControlledTabRef = useRef(controlledTab);
+  const pendingUrlTabRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    isControlledRef.current = controlledTab !== undefined;
+    onTabChangeRef.current = onTabChange;
+  }, [controlledTab, onTabChange]);
+
   const components = useMemo(
     () =>
       new Map(
@@ -128,31 +196,63 @@ export function StudioTabs<Props extends object>({
     [manifest],
   );
 
-  useEffect(() => {
-    const requestedTab = new URLSearchParams(window.location.search).get("tab");
-    if (requestedTab && manifest.tabs.some((tab) => tab.id === requestedTab)) {
-      // The query string is external state and is available only after hydration.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (controlledTab === undefined) setInternalTab(requestedTab);
-      onTabChange?.(requestedTab);
+  const applyUrlTab = useCallback((requestedTab: string) => {
+    pendingUrlTabRef.current = requestedTab;
+    if (!isControlledRef.current) {
+      setInternalTab(requestedTab);
     }
-  }, [controlledTab, manifest, onTabChange]);
+    onTabChangeRef.current?.(requestedTab);
+  }, []);
+
+  // Sync programmatic controlled tab updates (e.g. RegexLibrary -> Tester) to URL
+  useEffect(() => {
+    if (
+      controlledTab === undefined ||
+      prevControlledTabRef.current === controlledTab
+    ) {
+      return;
+    }
+    prevControlledTabRef.current = controlledTab;
+    if (pendingUrlTabRef.current === controlledTab) {
+      pendingUrlTabRef.current = null;
+      return;
+    }
+    pendingUrlTabRef.current = null;
+    writeTabQueryParam(controlledTab);
+  }, [controlledTab]);
+
+  // Report active sub-tool metadata to parent ToolFrame
+  useEffect(() => {
+    if (!setActiveSubTool) return;
+    const current =
+      manifest.tabs.find((tab) => tab.id === activeTab) ?? manifest.tabs[0];
+    if (current?.metadata && "id" in current.metadata && current.metadata.id) {
+      setActiveSubTool(current.metadata);
+    }
+    return () => setActiveSubTool(null);
+  }, [activeTab, manifest.tabs, setActiveSubTool]);
 
   const handleTabChange = (tab: string) => {
-    if (controlledTab === undefined) setInternalTab(tab);
+    pendingUrlTabRef.current = null;
+    prevControlledTabRef.current = tab;
+    if (controlledTab === undefined) {
+      setInternalTab(tab);
+    }
     onTabChange?.(tab);
-    const url = new URL(window.location.href);
-    url.searchParams.set("tab", tab);
-    window.history.replaceState({}, "", url.toString());
+    writeTabQueryParam(tab);
   };
 
   return (
     <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+      <Suspense fallback={null}>
+        <StudioUrlObserver manifest={manifest} onUrlTab={applyUrlTab} />
+      </Suspense>
+
       <TabsList
         aria-label={`${manifest.id.replaceAll("-", " ")} tools`}
         className={cn(
-          "grid h-auto w-full auto-rows-fr p-1",
-          getGridColumns(manifest.tabs.length),
+          "grid h-auto w-full auto-rows-fr gap-1 p-1",
+          getStudioGridColumns(manifest.tabs.length),
           listClassName,
         )}
       >
@@ -162,11 +262,11 @@ export function StudioTabs<Props extends object>({
             <TabsTrigger
               key={tab.id}
               value={tab.id}
-              className="h-full min-h-16 min-w-0 flex-col gap-2 whitespace-normal px-2 py-2 text-center text-xs leading-tight"
+              className="h-full min-h-11 min-w-0 gap-2 whitespace-normal px-2.5 py-2 text-left text-xs sm:text-sm leading-snug justify-start sm:justify-center"
             >
               <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
-              <span className="hidden sm:inline">{tab.label}</span>
-              <span className="sm:hidden">{tab.shortLabel}</span>
+              <span className="hidden sm:inline line-clamp-2">{tab.label}</span>
+              <span className="sm:hidden truncate">{tab.shortLabel}</span>
             </TabsTrigger>
           );
         })}
@@ -177,60 +277,18 @@ export function StudioTabs<Props extends object>({
         if (!TabComponent) return null;
         return (
           <TabsContent key={tab.id} value={tab.id} className={contentClassName}>
-            {(tab.metadata.inputDescription ||
-              tab.metadata.outputDescription ||
-              tab.metadata.example) && (
-              <div className="mb-6 rounded-lg border bg-muted/30 p-4 space-y-3">
-                {(tab.metadata.inputDescription ||
-                  tab.metadata.outputDescription) && (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {tab.metadata.inputDescription && (
-                      <div>
-                        <h3 className="text-sm font-semibold mb-1">Input</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {tab.metadata.inputDescription}
-                        </p>
-                      </div>
-                    )}
-                    {tab.metadata.outputDescription && (
-                      <div>
-                        <h3 className="text-sm font-semibold mb-1">Output</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {tab.metadata.outputDescription}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {tab.metadata.example && (
-                  <div className="space-y-2">
-                    {tab.metadata.example.input && (
-                      <div>
-                        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
-                          Example input
-                        </h4>
-                        <pre className="whitespace-pre-wrap rounded-md border bg-background p-3 text-xs font-mono break-all">
-                          {tab.metadata.example.input}
-                        </pre>
-                      </div>
-                    )}
-                    {tab.metadata.example.output && (
-                      <div>
-                        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
-                          Expected output
-                        </h4>
-                        <pre className="whitespace-pre-wrap rounded-md border bg-background p-3 text-xs font-mono break-all">
-                          {tab.metadata.example.output}
-                        </pre>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+            <ToolIoGuide
+              inputDescription={tab.metadata.inputDescription}
+              outputDescription={tab.metadata.outputDescription}
+              example={tab.metadata.example}
+            />
             <Suspense
               fallback={
-                <div role="status" aria-live="polite" className="py-8 text-center">
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="py-8 text-center text-sm text-muted-foreground"
+                >
                   Loading…
                 </div>
               }
