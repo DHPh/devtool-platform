@@ -23,13 +23,17 @@ export function FormField({
     <div className={`space-y-2 ${className}`}>
       <Label className="text-sm font-medium">
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && (
+          <span className="text-red-700 dark:text-red-400 ml-1">*</span>
+        )}
       </Label>
       {children}
       {description && (
         <p className="text-xs text-muted-foreground">{description}</p>
       )}
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && (
+        <p className="text-xs text-red-700 dark:text-red-400">{error}</p>
+      )}
     </div>
   );
 }

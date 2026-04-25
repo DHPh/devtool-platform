@@ -86,11 +86,11 @@
 
 /* Syntax highlighting for HTML/CSS/JS */
 .syntax-keyword {
-  @apply text-blue-600 dark:text-blue-400 font-semibold;
+  @apply text-blue-700 dark:text-blue-400 font-semibold;
 }
 
 .syntax-string {
-  @apply text-green-600 dark:text-green-400;
+  @apply text-green-700 dark:text-green-400;
 }
 
 .syntax-comment {
@@ -98,15 +98,15 @@
 }
 
 .syntax-tag {
-  @apply text-red-600 dark:text-red-400;
+  @apply text-red-700 dark:text-red-400;
 }
 
 .syntax-attribute {
-  @apply text-purple-600 dark:text-purple-400;
+  @apply text-purple-700 dark:text-purple-400;
 }
 
 .syntax-value {
-  @apply text-orange-600 dark:text-orange-400;
+  @apply text-orange-700 dark:text-orange-400;
 }
 
 /* Diff highlighting improvements */

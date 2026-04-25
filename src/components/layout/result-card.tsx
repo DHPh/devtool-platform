@@ -43,7 +43,10 @@ export function ResultCard({
     switch (status) {
       case "success":
         return (
-          <Badge variant="secondary" className="text-green-700">
+          <Badge
+            variant="secondary"
+            className="text-green-700 dark:text-green-400"
+          >
             <CheckCircle className="w-3 h-3 mr-1" />
             Valid
           </Badge>
@@ -57,7 +60,10 @@ export function ResultCard({
         );
       case "warning":
         return (
-          <Badge variant="outline" className="text-orange-600">
+          <Badge
+            variant="outline"
+            className="text-orange-700 dark:text-orange-400 border-orange-300 dark:border-orange-800"
+          >
             <AlertTriangle className="w-3 h-3 mr-1" />
             Warning
           </Badge>

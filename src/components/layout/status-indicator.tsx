@@ -42,7 +42,7 @@ export function StatusIndicator({
         return {
           variant: "destructive" as const,
           icon: XCircle,
-          color: "text-white",
+          color: "text-destructive-foreground",
           bgColor: "bg-destructive/10 border-destructive/20",
         };
       case "warning":
@@ -118,10 +118,10 @@ export function ProgressIndicator({
   const height = size === "sm" ? "h-2" : size === "lg" ? "h-4" : "h-3";
 
   const getColorClass = () => {
-    if (percentage >= 80) return "text-green-600";
-    if (percentage >= 60) return "text-blue-600";
-    if (percentage >= 40) return "text-orange-600";
-    return "text-red-600";
+    if (percentage >= 80) return "text-green-700 dark:text-green-400";
+    if (percentage >= 60) return "text-blue-700 dark:text-blue-400";
+    if (percentage >= 40) return "text-orange-700 dark:text-orange-400";
+    return "text-red-700 dark:text-red-400";
   };
 
   return (
@@ -158,7 +158,7 @@ export function StrengthIndicator({
     switch (strength) {
       case "weak":
         return {
-          color: "text-red-600",
+          color: "text-red-700 dark:text-red-400",
           bgColor: "bg-red-100 dark:bg-red-950/20",
           percentage: 25,
           icon: XCircle,
@@ -166,7 +166,7 @@ export function StrengthIndicator({
         };
       case "fair":
         return {
-          color: "text-orange-600",
+          color: "text-orange-700 dark:text-orange-400",
           bgColor: "bg-orange-100 dark:bg-orange-950/20",
           percentage: 50,
           icon: AlertTriangle,
@@ -174,7 +174,7 @@ export function StrengthIndicator({
         };
       case "good":
         return {
-          color: "text-blue-600",
+          color: "text-blue-700 dark:text-blue-400",
           bgColor: "bg-blue-100 dark:bg-blue-950/20",
           percentage: 75,
           icon: Zap,
@@ -182,7 +182,7 @@ export function StrengthIndicator({
         };
       case "strong":
         return {
-          color: "text-green-600",
+          color: "text-green-700 dark:text-green-400",
           bgColor: "bg-green-100 dark:bg-green-950/20",
           percentage: 100,
           icon: Shield,

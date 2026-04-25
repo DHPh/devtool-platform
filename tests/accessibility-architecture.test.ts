@@ -135,13 +135,28 @@ describe("tool accessibility architecture", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("keeps destructive foreground contrast at WCAG AA", () => {
+  it("keeps theme foreground and semantic tokens at WCAG AA contrast", () => {
     const themeDir = join(process.cwd(), "src", "app", "themes");
     const themeFiles = readdirSync(themeDir).filter((file) =>
       file.endsWith(".css"),
     );
 
     expect(themeFiles.length).toBeGreaterThan(0);
+
+    const requiredPairs: [string, string][] = [
+      ["--background", "--foreground"],
+      ["--card", "--card-foreground"],
+      ["--popover", "--popover-foreground"],
+      ["--primary", "--primary-foreground"],
+      ["--secondary", "--secondary-foreground"],
+      ["--muted", "--muted-foreground"],
+      ["--background", "--muted-foreground"],
+      ["--accent", "--accent-foreground"],
+      ["--destructive", "--destructive-foreground"],
+      ["--background", "--destructive"],
+      ["--card", "--destructive"],
+      ["--background", "--primary"],
+    ];
 
     for (const file of themeFiles) {
       const css = readFileSync(join(themeDir, file), "utf8");
@@ -152,14 +167,16 @@ describe("tool accessibility architecture", () => {
       expect(lightBlock, `${file} light tokens`).not.toBe("");
       expect(darkBlock, `${file} dark tokens`).not.toBe("");
 
-      expect(
-        tokenContrast(lightBlock, "--destructive", "--destructive-foreground"),
-        `${file} light`,
-      ).toBeGreaterThanOrEqual(4.5);
-      expect(
-        tokenContrast(darkBlock, "--destructive", "--destructive-foreground"),
-        `${file} dark`,
-      ).toBeGreaterThanOrEqual(4.5);
+      for (const [bg, fg] of requiredPairs) {
+        expect(
+          tokenContrast(lightBlock, bg, fg),
+          `${file} light ${bg}/${fg}`,
+        ).toBeGreaterThanOrEqual(4.5);
+        expect(
+          tokenContrast(darkBlock, bg, fg),
+          `${file} dark ${bg}/${fg}`,
+        ).toBeGreaterThanOrEqual(4.5);
+      }
     }
   });
 });
