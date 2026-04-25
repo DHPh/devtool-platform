@@ -5,10 +5,9 @@ import { writeClipboardText } from "@/hooks/use-clipboard";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Copy, Mail } from "lucide-react";
+import { Copy, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import {
-  ToolHeader,
   QuickActions,
   CommonActions,
   ActionGroups,
@@ -99,20 +98,14 @@ export default function EmailValidator() {
 
   return (
     <div className="space-y-6">
-      {/* Tool Header */}
-      <ToolHeader
-        title="Email Validator"
-        description="Check common mailbox syntax and normalize IDN domains; deliverability is not checked"
-        icon={Mail}
-        badge={{ text: "New", variant: "secondary" }}
-        actions={[
-          {
-            label: "Clear All",
-            onClick: clearAll,
-            variant: "outline",
-          },
-        ]}
-      />
+      {(singleEmail || bulkEmails || singleResult || bulkResults.length > 0) && (
+        <div className="flex justify-end">
+          <Button type="button" variant="outline" size="sm" onClick={clearAll}>
+            <RotateCcw className="h-4 w-4 mr-1.5" />
+            Reset Both Panels
+          </Button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Single Email Validation */}
@@ -121,6 +114,7 @@ export default function EmailValidator() {
           
           <div className="space-y-3">
             <Input
+              aria-label="Single email address"
               placeholder="Enter email address to validate..."
               value={singleEmail}
               onChange={(e) => setSingleEmail(e.target.value)}

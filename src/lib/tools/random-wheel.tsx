@@ -292,13 +292,13 @@ export default function RandomWheel() {
           : baseSize;
       return (
         <div
-          className="flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-full border-4 border-gray-300 dark:border-gray-600"
+          className="flex items-center justify-center bg-muted/60 rounded-full border-4 border-border"
           style={{
             width: `${emptySize}px`,
             height: `${emptySize}px`,
           }}
         >
-          <p className="text-gray-500 text-center text-sm px-4">
+          <p className="text-muted-foreground text-center text-sm px-4">
             Add options to see the wheel
           </p>
         </div>
@@ -524,7 +524,7 @@ export default function RandomWheel() {
   }, []);
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="space-y-6">
       {/* Main Wheel Display */}
       <Card>
         <CardHeader>
@@ -602,7 +602,7 @@ export default function RandomWheel() {
                     {items.map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between p-3 border rounded-lg bg-white dark:bg-gray-800"
+                        className="flex items-center justify-between p-3 border rounded-lg bg-card"
                         style={{
                           borderLeftColor: item.color,
                           borderLeftWidth: "4px",
@@ -640,7 +640,7 @@ export default function RandomWheel() {
                     {results.map((result, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-3 border rounded-lg bg-gray-50 dark:bg-gray-800"
+                        className="flex items-center justify-between p-3 border rounded-lg bg-muted/50"
                       >
                         <div className="flex items-center gap-3">
                           <div

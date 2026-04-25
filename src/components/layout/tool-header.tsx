@@ -46,10 +46,13 @@ export function ToolHeader({
   className = "",
   children,
 }: ToolHeaderProps) {
+  if (!className) {
+    return null;
+  }
+
   return (
-    //* If you want to show this header only on larger screens, you can use the `hidden sm:block` classes
     <Card
-      className={`hidden border-0 sm:border shadow-none sm:shadow-sm ${className}`}
+      className={`border-0 sm:border shadow-none sm:shadow-sm ${className}`}
     >
       <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
         <div className="flex items-start justify-between">

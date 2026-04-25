@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { Copy, Download, FileText, Eye } from "lucide-react";
 import { toast } from "sonner";
 import {
-  ToolContainer,
   SettingsPanel,
   FormField,
   ActionButtons,
@@ -207,10 +206,7 @@ function hello() {
   ];
 
   return (
-    <ToolContainer
-      title="Markdown Preview"
-      description="Write markdown and see live preview with HTML output"
-    >
+    <div className="space-y-6">
       {/* View Mode Selection */}
       <ModeTabs
         value={viewMode}
@@ -300,6 +296,6 @@ function hello() {
           Clear All
         </Button>
       </div>
-    </ToolContainer>
+    </div>
   );
 }

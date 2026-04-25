@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Card } from "@/components/ui/card";
 import { StudioTabs } from "@/components/studio-tabs";
 import { REGEX_STUDIO_MANIFEST } from "./manifest";
 
@@ -26,21 +25,18 @@ export function RegexStudio({
   };
 
   return (
-    // <div className="container mx-auto p-6 max-w-7xl">
-      <Card className="sm:p-6 p-0 sm:border border-none">
-        <StudioTabs
-          manifest={REGEX_STUDIO_MANIFEST}
-          componentProps={{
-            initialPattern: sharedPattern || initialPattern,
-            initialText,
-            onPatternSelect: handlePatternSelect,
-          }}
-          defaultTab={initialTab}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          contentClassName="mt-6 space-y-6"
-        />
-      </Card>
-    // </div>
+    <div className="space-y-6">
+      <StudioTabs
+        manifest={REGEX_STUDIO_MANIFEST}
+        componentProps={{
+          initialPattern: sharedPattern || initialPattern,
+          initialText,
+          onPatternSelect: handlePatternSelect,
+        }}
+        defaultTab={initialTab}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
+    </div>
   );
 }
