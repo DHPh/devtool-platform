@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Eye, EyeOff } from "lucide-react";
 import { CopyButton } from "./copy-button";
+import { CodeEditor, type CodeLanguage } from "@/components/code-editor";
 import { cn } from "@/lib/utils";
 
 interface CopyableResultProps {
@@ -20,6 +21,7 @@ interface CopyableResultProps {
   showCopyButton?: boolean;
   showToggleVisibility?: boolean;
   fontFamily?: "mono" | "sans";
+  language?: CodeLanguage;
   onValueChange?: (value: string) => void;
 }
 
@@ -36,6 +38,7 @@ export function CopyableResult({
   showCopyButton = true,
   showToggleVisibility = false,
   fontFamily = "mono",
+  language,
   onValueChange,
 }: CopyableResultProps) {
   const [isVisible, setIsVisible] = useState(true);
@@ -86,18 +89,35 @@ export function CopyableResult({
         </div>
       )}
 
-      {/* Result textarea */}
-      <Textarea
-        value={isVisible ? value : "•".repeat(value.length)}
-        onChange={(e) => onValueChange?.(e.target.value)}
-        placeholder={placeholder}
-        aria-label={label ?? "Result"}
-        readOnly={readOnly}
-        rows={rows}
-        className={`resize-none ${
-          fontFamily === "mono" ? "font-mono text-sm" : ""
-        } ${!readOnly ? "cursor-text" : "cursor-default"} ${textareaClassName}`}
-      />
+      {/* Result editor / textarea */}
+      {language && isVisible ? (
+        <CodeEditor
+          value={value}
+          onChange={onValueChange}
+          language={language}
+          placeholder={placeholder}
+          readOnly={readOnly}
+          rows={rows}
+          aria-label={label ?? "Result"}
+          showToolbar={true}
+          showCopyButton={false}
+          showClearButton={false}
+          editorClassName={textareaClassName}
+        />
+      ) : (
+        <Textarea
+          value={isVisible ? value : "•".repeat(value.length)}
+          onChange={(e) => onValueChange?.(e.target.value)}
+          placeholder={placeholder}
+          aria-label={label ?? "Result"}
+          readOnly={readOnly}
+          rows={rows}
+          spellCheck={fontFamily === "mono" ? false : undefined}
+          className={`resize-none ${
+            fontFamily === "mono" ? "font-mono text-sm" : ""
+          } ${!readOnly ? "cursor-text" : "cursor-default"} ${textareaClassName}`}
+        />
+      )}
     </div>
   );
 }
@@ -192,6 +212,7 @@ export function CopyableResultGrid({
               value={item.value}
               readOnly
               rows={item.rows}
+              spellCheck={false}
               aria-label={item.label}
               className="resize-none font-mono text-sm"
             />

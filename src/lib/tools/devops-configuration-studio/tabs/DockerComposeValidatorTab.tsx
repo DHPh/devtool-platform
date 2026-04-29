@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from "react";
 import {
+  CodeEditor,
   CopyableResult,
   ToolErrorResult as ErrorResult,
   ToolSectionHeader as Header,
 } from "@/components/layout";
-import { Textarea } from "@/components/ui/textarea";
 import {
   validateDockerCompose,
   type ValidationIssue,
@@ -62,16 +62,16 @@ export function DockerComposeValidatorTab() {
         title="Docker Compose Validator"
         description="Parse Compose YAML and validate service and top-level field shapes locally."
       />
-      <label className="block space-y-2">
-        <span className="text-sm font-medium">compose.yaml</span>
-        <Textarea
+      <div className="space-y-2">
+        <span className="block text-sm font-medium">compose.yaml</span>
+        <CodeEditor
           value={input}
-          onChange={(event) => setInput(event.target.value)}
+          onChange={setInput}
+          language="yaml"
+          aria-label="compose.yaml"
           rows={16}
-          className="font-mono"
-          spellCheck={false}
         />
-      </label>
+      </div>
       {result.ok ? (
         <div className="space-y-4">
           <CopyableResult

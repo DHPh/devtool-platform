@@ -1,7 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CopyableResult, ToolSectionHeader } from "@/components/layout";
+import {
+  CodeEditor,
+  CopyableResult,
+  ToolSectionHeader,
+  type CodeLanguage,
+} from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import {
   convertCsvJson,
@@ -127,6 +132,36 @@ export function SerializationTool({ tool }: { tool: SerializationToolId }) {
   const isDirectional =
     tool === "json-yaml-converter" || tool === "csv-json-converter";
   const isFormatter = tool === "yaml-formatter" || tool === "xml-formatter";
+  const inputLanguage: CodeLanguage =
+    tool === "yaml-formatter" || tool === "yaml-validator"
+      ? "yaml"
+      : tool === "xml-formatter" || tool === "xml-validator"
+        ? "xml"
+        : tool === "json-yaml-converter"
+          ? direction === "yaml-to-json"
+            ? "yaml"
+            : "json"
+          : tool === "csv-json-converter"
+            ? direction === "json-to-csv"
+              ? "json"
+              : "plaintext"
+            : "plaintext";
+  const outputLanguage: CodeLanguage | undefined =
+    tool === "yaml-formatter"
+      ? "yaml"
+      : tool === "xml-formatter"
+        ? "xml"
+        : tool === "json-yaml-converter"
+          ? direction === "yaml-to-json"
+            ? "json"
+            : "yaml"
+          : tool === "csv-json-converter"
+            ? direction === "json-to-csv"
+              ? "plaintext"
+              : "json"
+            : tool.endsWith("validator")
+              ? undefined
+              : "plaintext";
   const baseResults =
     tool === "number-base-converter" &&
     "ok" in result &&
@@ -248,15 +283,18 @@ export function SerializationTool({ tool }: { tool: SerializationToolId }) {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <label className="space-y-2">
-          <span className="text-sm font-medium">Input</span>
-          <textarea
-            className="min-h-72 w-full rounded-md border bg-background p-3 font-mono text-sm"
+        <div className="space-y-2">
+          <span className="block text-sm font-medium">Input</span>
+          <CodeEditor
             value={input}
-            onChange={(event) => setInput(event.target.value)}
-            spellCheck={false}
+            onChange={setInput}
+            language={inputLanguage}
+            aria-label="Input"
+            minHeight={280}
+            showCopyButton={false}
+            showClearButton={false}
           />
-        </label>
+        </div>
         {baseResults ? (
           <div className="space-y-3">
             <p role="status" aria-live="polite" className="sr-only">
@@ -298,6 +336,7 @@ export function SerializationTool({ tool }: { tool: SerializationToolId }) {
               label={successful ? "Result" : "Error"}
               copyLabel="Copy result"
               successMessage="Result copied to clipboard"
+              language={successful ? outputLanguage : undefined}
               rows={tool.endsWith("validator") ? 5 : 14}
               textareaClassName={
                 successful

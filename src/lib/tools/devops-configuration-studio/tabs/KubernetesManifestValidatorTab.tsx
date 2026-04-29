@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from "react";
 import {
+  CodeEditor,
   CopyableResult,
   ToolErrorResult as ErrorResult,
   ToolSectionHeader as Header,
 } from "@/components/layout";
-import { Textarea } from "@/components/ui/textarea";
 import {
   validateKubernetesManifest,
   type ValidationIssue,
@@ -63,16 +63,16 @@ export function KubernetesManifestValidatorTab() {
         title="Kubernetes Manifest Validator"
         description="Parse multi-document Kubernetes YAML and verify required resource fields."
       />
-      <label className="block space-y-2">
-        <span className="text-sm font-medium">Kubernetes YAML</span>
-        <Textarea
+      <div className="space-y-2">
+        <span className="block text-sm font-medium">Kubernetes YAML</span>
+        <CodeEditor
           value={input}
-          onChange={(event) => setInput(event.target.value)}
+          onChange={setInput}
+          language="yaml"
+          aria-label="Kubernetes YAML"
           rows={17}
-          className="font-mono"
-          spellCheck={false}
         />
-      </label>
+      </div>
       {result.ok ? (
         <div className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2">

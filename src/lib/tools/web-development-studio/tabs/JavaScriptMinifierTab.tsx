@@ -3,11 +3,11 @@
 import { useState } from "react";
 import {
   AsyncActionButton,
+  CodeEditor,
   CopyableResult,
   ToolErrorResult as ErrorResult,
   ToolSectionHeader as Header,
 } from "@/components/layout";
-import { Textarea } from "@/components/ui/textarea";
 import {
   minifyJavaScript,
   type CompressionResult,
@@ -20,6 +20,7 @@ function CompressionStats({ result }: { result: CompressionResult }) {
         value={result.output}
         label="Minified JavaScript"
         copyLabel="Copy minified JavaScript"
+        language="javascript"
         rows={16}
       />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -100,16 +101,16 @@ export function JavaScriptMinifierTab() {
           ES module
         </label>
       </div>
-      <label className="block space-y-2">
-        <span className="text-sm font-medium">JavaScript source</span>
-        <Textarea
+      <div className="space-y-2">
+        <span className="block text-sm font-medium">JavaScript source</span>
+        <CodeEditor
           value={input}
-          onChange={(event) => setInput(event.target.value)}
+          onChange={setInput}
+          language="javascript"
+          aria-label="JavaScript source"
           rows={16}
-          className="font-mono"
-          spellCheck={false}
         />
-      </label>
+      </div>
       {result?.ok ? (
         <CompressionStats result={result.value} />
       ) : result ? (

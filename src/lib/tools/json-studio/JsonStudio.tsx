@@ -8,7 +8,7 @@
 import { useState, useMemo, Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileCode, Download } from "lucide-react";
-import { ResponsiveTextArea, FileUploadZone } from "@/components/layout";
+import { CodeEditor, FileUploadZone } from "@/components/layout";
 import { StudioTabs } from "@/components/studio-tabs";
 import { validateJson } from "@/lib/processors/json";
 import { JSON_STUDIO_MANIFEST } from "./manifest";
@@ -137,13 +137,16 @@ function JsonStudioContent({
             className="mb-4"
           />
 
-          {/* Text Input */}
-          <ResponsiveTextArea
+          {/* Code Input */}
+          <CodeEditor
             value={input}
             onChange={setInput}
+            language="json"
+            aria-label="JSON input"
             placeholder="Paste your JSON here or drag and drop a JSON file above..."
-            className="min-h-[200px] font-mono"
-            minHeight={200}
+            minHeight={220}
+            showCopyButton
+            showClearButton
           />
 
           {/* Validation Status */}

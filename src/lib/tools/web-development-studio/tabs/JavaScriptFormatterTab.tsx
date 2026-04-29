@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import {
+  CodeEditor,
   CopyableResult,
   ToolErrorResult as ErrorResult,
   ToolSectionHeader as Header,
@@ -14,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import {
   formatJavaScript,
   type JavaScriptLanguage,
@@ -73,16 +73,16 @@ export function JavaScriptFormatterTab() {
         </Button>
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
-        <label className="space-y-2">
-          <span className="text-sm font-medium">Source</span>
-          <Textarea
+        <div className="space-y-2">
+          <span className="block text-sm font-medium">Source</span>
+          <CodeEditor
             value={input}
-            onChange={(event) => setInput(event.target.value)}
+            onChange={setInput}
+            language={language === "typescript" ? "typescript" : "javascript"}
+            aria-label="Source code"
             rows={18}
-            className="font-mono"
-            spellCheck={false}
           />
-        </label>
+        </div>
         {error ? (
           <ErrorResult message={error} />
         ) : (
@@ -90,6 +90,7 @@ export function JavaScriptFormatterTab() {
             value={output}
             label="Formatted source"
             copyLabel="Copy formatted source"
+            language={language === "typescript" ? "typescript" : "javascript"}
             rows={18}
           />
         )}

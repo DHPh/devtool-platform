@@ -6,7 +6,7 @@
 "use client";
 
 import { useState } from "react";
-import { writeClipboardText } from "@/hooks/use-clipboard";
+import { copyToClipboard } from "@/hooks/use-clipboard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ResponsiveTextArea } from "@/components/layout";
+import { CodeEditor } from "@/components/layout";
 import {
   validateJsonSchema,
   generateSchemaFromData,
@@ -93,8 +93,7 @@ export function JsonSchemaValidator({
       toast.error("No schema to copy");
       return;
     }
-    void writeClipboardText(schema);
-    toast.success("Schema copied to clipboard");
+    void copyToClipboard(schema, "Schema copied to clipboard");
   };
 
   const loadSampleSchema = () => {
@@ -190,11 +189,13 @@ export function JsonSchemaValidator({
               </Button>
             </div>
           </div>
-          <ResponsiveTextArea
+          <CodeEditor
             value={schema}
             onChange={setSchema}
+            language="json"
+            aria-label="JSON Schema"
             placeholder="Enter your JSON Schema here..."
-            className="font-mono text-sm min-h-32"
+            minHeight={160}
           />
         </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { writeClipboardText } from "@/hooks/use-clipboard";
+import { copyToClipboard } from "@/hooks/use-clipboard";
 import {
   Card,
   CardContent,
@@ -16,7 +16,7 @@ import {
   SettingsPanel,
   FormField,
   ActionButtons,
-  ResponsiveTextArea,
+  CodeEditor,
   ModeTabs,
 } from "@/components/layout";
 import {
@@ -75,14 +75,12 @@ function hello() {
   );
 
   const copyMarkdown = () => {
-    void writeClipboardText(input);
-    toast.success("Markdown copied to clipboard!");
+    void copyToClipboard(input, "Markdown copied to clipboard!");
   };
 
   const copyHtml = () => {
     const htmlOutput = renderMarkdownToSafeHtml(input);
-    void writeClipboardText(htmlOutput);
-    toast.success("HTML copied to clipboard!");
+    void copyToClipboard(htmlOutput, "HTML copied to clipboard!");
   };
 
   const downloadMarkdown = () => {
@@ -257,14 +255,13 @@ function hello() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveTextArea
+              <CodeEditor
                 placeholder="Enter markdown here..."
                 value={input}
-                onChange={(value) => setInput(value)}
+                onChange={setInput}
+                language="markdown"
+                aria-label="Markdown source"
                 minHeight={400}
-                showCharacterCount={true}
-                showWordCount={true}
-                showLineCount={true}
               />
             </CardContent>
           </Card>

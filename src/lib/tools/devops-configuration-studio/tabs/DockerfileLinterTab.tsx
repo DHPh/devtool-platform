@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from "react";
 import {
+  CodeEditor,
   CopyableResult,
   ToolErrorResult as ErrorResult,
   ToolSectionHeader as Header,
 } from "@/components/layout";
-import { Textarea } from "@/components/ui/textarea";
 import {
   lintDockerfile,
   type ValidationIssue,
@@ -64,16 +64,16 @@ export function DockerfileLinterTab() {
         title="Dockerfile Linter"
         description="Check Dockerfile structure and flag common image security and reproducibility risks."
       />
-      <label className="block space-y-2">
-        <span className="text-sm font-medium">Dockerfile</span>
-        <Textarea
+      <div className="space-y-2">
+        <span className="block text-sm font-medium">Dockerfile</span>
+        <CodeEditor
           value={input}
-          onChange={(event) => setInput(event.target.value)}
+          onChange={setInput}
+          language="plaintext"
+          aria-label="Dockerfile"
           rows={16}
-          className="font-mono"
-          spellCheck={false}
         />
-      </label>
+      </div>
       {result.ok ? (
         <div className="space-y-4">
           <CopyableResult

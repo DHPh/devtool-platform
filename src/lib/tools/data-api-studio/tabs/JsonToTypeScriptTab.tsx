@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from "react";
 import {
+  CodeEditor,
   CopyableResult,
   ToolSectionHeader as Header,
 } from "@/components/layout";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { jsonToTypeScript } from "@/lib/processors/data-api-core";
 
 const SAMPLE =
@@ -28,22 +28,23 @@ export function JsonToTypeScriptTab() {
         <Input value={name} onChange={(event) => setName(event.target.value)} />
       </label>
       <div className="grid gap-4 lg:grid-cols-2">
-        <label className="space-y-2">
-          <span className="text-sm font-medium">Input</span>
-          <Textarea
+        <div className="space-y-2">
+          <span className="block text-sm font-medium">Input</span>
+          <CodeEditor
             value={input}
-            onChange={(event) => setInput(event.target.value)}
+            onChange={setInput}
+            language="json"
+            aria-label="Input"
             rows={18}
-            className="font-mono"
-            spellCheck={false}
           />
-        </label>
+        </div>
         <div>
           {result.ok ? (
             <CopyableResult
               value={result.value}
               label="Result"
               copyLabel="Copy result"
+              language="typescript"
               rows={18}
             />
           ) : (

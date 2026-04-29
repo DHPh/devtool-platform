@@ -8,7 +8,7 @@ import {
   QuickActions,
   ResultCard,
   CopyableResult,
-  ResponsiveTextArea,
+  CodeEditor,
   ModeTabs,
   ValidationMessages,
 } from "@/components/layout";
@@ -156,16 +156,20 @@ export default function CssFormatter() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Input */}
         <div className="space-y-4">
-          <div>
-            <Label className="block text-sm font-medium mb-2">Input CSS</Label>
-            <ResponsiveTextArea
+          <div className="space-y-2">
+            <Label htmlFor="css-input" className="block text-sm font-medium">
+              Input CSS
+            </Label>
+            <CodeEditor
+              id="css-input"
+              language="css"
+              aria-label="CSS input"
               value={input}
               onChange={setInput}
               placeholder="Enter CSS code here..."
               minHeight={300}
-              showCharacterCount={true}
-              allowFileUpload={true}
-              acceptedFileTypes=".css"
+              showCopyButton
+              showClearButton
             />
           </div>
 
@@ -227,6 +231,7 @@ export default function CssFormatter() {
                 value={output}
                 placeholder={`${mode === "format" ? "Formatted" : "Minified"} CSS will appear here...`}
                 fontFamily="mono"
+                language="css"
                 rows={12}
               />
             </div>

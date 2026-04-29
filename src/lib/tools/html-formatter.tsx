@@ -5,11 +5,11 @@ import { FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
+  CodeEditor,
   CopyableResult,
   FormField,
   ModeTabs,
   QuickActions,
-  ResponsiveTextArea,
   ResultCard,
   SettingsPanel,
   ToolHeader,
@@ -83,9 +83,21 @@ export default function HtmlFormatter() {
 
       <ModeTabs value={activeTab} onValueChange={setActiveTab} options={[{ value: "input", label: "Input" }, { value: "output", label: "Formatted" }]} />
       {activeTab === "input" ? (
-        <div>
-          <label className="block text-sm font-medium mb-2">HTML Input</label>
-          <ResponsiveTextArea placeholder="Enter an HTML document or fragment..." value={input} onChange={setInput} minHeight={300} showCharacterCount showLineCount />
+        <div className="space-y-2">
+          <label htmlFor="html-input" className="block text-sm font-medium">
+            HTML Input
+          </label>
+          <CodeEditor
+            id="html-input"
+            language="html"
+            aria-label="HTML input"
+            placeholder="Enter an HTML document or fragment..."
+            value={input}
+            onChange={setInput}
+            minHeight={300}
+            showCopyButton
+            showClearButton
+          />
         </div>
       ) : (
         <div className="space-y-4">
@@ -96,7 +108,13 @@ export default function HtmlFormatter() {
             onDownload={output ? downloadFile : undefined}
             downloadLabel="Download HTML"
           >
-            <CopyableResult value={output} placeholder="Formatted HTML will appear here..." fontFamily="mono" rows={15} />
+            <CopyableResult
+              value={output}
+              placeholder="Formatted HTML will appear here..."
+              fontFamily="mono"
+              language="html"
+              rows={15}
+            />
           </ResultCard>
           <ValidationMessages errors={errors} warnings={[]} />
         </div>

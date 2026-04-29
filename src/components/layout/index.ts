@@ -7,6 +7,8 @@ export { SettingsPanel } from "./settings-panel";
 export { FormField, FormFieldGroup } from "./form-fields";
 export { StatsDisplay } from "./stats-display";
 export { ResponsiveTextArea } from "./responsive-textarea";
+export { CodeEditor } from "@/components/code-editor";
+export type { CodeEditorProps, CodeLanguage } from "@/components/code-editor";
 
 // New Reusable Components
 export { ResultCard } from "./result-card";

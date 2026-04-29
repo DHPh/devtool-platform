@@ -272,8 +272,8 @@ export function JsonFormatterTab({
                 value={output}
                 label="Formatted JSON"
                 fontFamily="mono"
-                className="h-96"
-                rows={20}
+                language="json"
+                rows={18}
               />
             </div>
           )}

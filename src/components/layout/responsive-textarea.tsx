@@ -20,6 +20,9 @@ interface ResponsiveTextAreaProps {
   onFileUpload?: (content: string) => void;
   className?: string;
   resize?: "none" | "vertical" | "horizontal" | "both";
+  id?: string;
+  "aria-label"?: string;
+  "aria-labelledby"?: string;
 }
 
 export function ResponsiveTextArea({
@@ -37,6 +40,9 @@ export function ResponsiveTextArea({
   onFileUpload,
   className = "",
   resize = "vertical",
+  id,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
 }: ResponsiveTextAreaProps) {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -132,10 +138,14 @@ export function ResponsiveTextArea({
         )}
 
         <Textarea
+          id={id}
+          aria-label={ariaLabel}
+          aria-labelledby={ariaLabelledBy}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           readOnly={readOnly}
+          spellCheck={false}
           style={heightStyle}
           className={`font-mono text-sm transition-colors ${
             isDragging ? "border-blue-500 bg-blue-50" : ""

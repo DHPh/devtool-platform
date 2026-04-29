@@ -22,6 +22,22 @@ export async function writeClipboardText(
   }
 }
 
+export async function copyToClipboard(
+  value: string,
+  successMessage = "Copied to clipboard!",
+): Promise<boolean> {
+  if (!value) return false;
+  try {
+    const copied = await writeClipboardText(value, { reportError: true });
+    if (copied) {
+      toast.success(successMessage);
+    }
+    return copied;
+  } catch {
+    return false;
+  }
+}
+
 interface UseClipboardOptions {
   resetAfter?: number;
   successMessage?: string;

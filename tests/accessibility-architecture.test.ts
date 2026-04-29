@@ -93,6 +93,7 @@ describe("tool accessibility architecture", () => {
       "Input",
       "Textarea",
       "ResponsiveTextArea",
+      "CodeEditor",
       "SelectTrigger",
       "input",
       "textarea",

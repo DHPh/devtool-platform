@@ -3,11 +3,11 @@
 import { useState } from "react";
 import {
   AsyncActionButton,
+  CodeEditor,
   CopyableResult,
   ToolErrorResult as ErrorResult,
   ToolSectionHeader as Header,
 } from "@/components/layout";
-import { Textarea } from "@/components/ui/textarea";
 import {
   optimizeSvg,
   type CompressionResult,
@@ -23,6 +23,7 @@ function CompressionStats({ result }: { result: CompressionResult }) {
         value={result.output}
         label="Optimized SVG"
         copyLabel="Copy optimized SVG"
+        language="svg"
         rows={16}
       />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -101,16 +102,16 @@ export function SvgOptimizerTab() {
           Preserve viewBox
         </label>
       </div>
-      <label className="block space-y-2">
-        <span className="text-sm font-medium">SVG markup</span>
-        <Textarea
+      <div className="space-y-2">
+        <span className="block text-sm font-medium">SVG markup</span>
+        <CodeEditor
           value={input}
-          onChange={(event) => setInput(event.target.value)}
+          onChange={setInput}
+          language="svg"
+          aria-label="SVG markup"
           rows={16}
-          className="font-mono"
-          spellCheck={false}
         />
-      </label>
+      </div>
       {result?.ok ? (
         <CompressionStats result={result.value} />
       ) : result ? (

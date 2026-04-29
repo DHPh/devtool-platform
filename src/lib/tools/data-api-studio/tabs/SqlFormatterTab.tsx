@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from "react";
 import {
+  CodeEditor,
   CopyableResult,
   ToolSectionHeader as Header,
 } from "@/components/layout";
-import { Textarea } from "@/components/ui/textarea";
 import { formatSql } from "@/lib/processors/data-workflow-core";
 
 export function SqlFormatterTab() {
@@ -21,22 +21,23 @@ export function SqlFormatterTab() {
         description="Format SQL locally while preserving quoted strings and identifiers."
       />
       <div className="grid gap-4 lg:grid-cols-2">
-        <label className="space-y-2">
-          <span className="text-sm font-medium">Input</span>
-          <Textarea
+        <div className="space-y-2">
+          <span className="block text-sm font-medium">Input</span>
+          <CodeEditor
             value={input}
-            onChange={(event) => setInput(event.target.value)}
+            onChange={setInput}
+            language="sql"
+            aria-label="Input"
             rows={18}
-            className="font-mono"
-            spellCheck={false}
           />
-        </label>
+        </div>
         <div>
           {result.ok ? (
             <CopyableResult
               value={result.value}
               label="Result"
               copyLabel="Copy result"
+              language="sql"
               rows={18}
             />
           ) : (
