@@ -6,6 +6,8 @@ export { CheckboxInput } from "./checkbox-input";
 export { SettingsPanel } from "./settings-panel";
 export { FormField, FormFieldGroup } from "./form-fields";
 export { StatsDisplay } from "./stats-display";
+export { DataTable } from "./data-table";
+export type { DataTableProps } from "./data-table";
 export { ResponsiveTextArea } from "./responsive-textarea";
 export { CodeEditor } from "@/components/code-editor";
 export type { CodeEditorProps, CodeLanguage } from "@/components/code-editor";

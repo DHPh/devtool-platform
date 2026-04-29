@@ -2,36 +2,17 @@
 
 import { useState } from "react";
 import {
-  useReactTable,
-  getCoreRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  flexRender,
-  createColumnHelper,
-  SortingState,
-  ColumnFiltersState,
-  ColumnDef,
-} from "@tanstack/react-table";
-import {
-  ToolHeader,
-  QuickActions,
-  ResultCard,
+  DataTable,
   FileUploadZone,
+  QuickActions,
   ResponsiveTextArea,
+  ResultCard,
+  ToolHeader,
 } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  Upload,
-  Download,
-  ChevronLeft,
-  ChevronRight,
-  ArrowUpDown,
-  Table,
-} from "lucide-react";
+import { Download, Table, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { parseJSON } from "@/lib/utils/json-parser";
 
@@ -46,17 +27,12 @@ export const metadata = {
   icon: "🗂️",
 };
 
-interface JSONRow {
-  [key: string]: unknown;
-}
+type JSONRow = Record<string, unknown>;
 
 export default function JSONTableViewer() {
   const [jsonInput, setJsonInput] = useState("");
   const [data, setData] = useState<JSONRow[]>([]);
-  const [columns, setColumns] = useState<ColumnDef<JSONRow>[]>([]);
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [globalFilter, setGlobalFilter] = useState("");
+  const [headers, setHeaders] = useState<string[]>([]);
   const [fileName, setFileName] = useState("");
   const [hasNestedData, setHasNestedData] = useState(false);
 
@@ -70,72 +46,11 @@ export default function JSONTableViewer() {
       }
 
       setData(result.data);
+      setHeaders(result.headers);
       setHasNestedData(result.hasNestedData);
 
-      // Create columns
-      const columnHelper = createColumnHelper<JSONRow>();
-      const newColumns = result.headers.map((header) =>
-        columnHelper.accessor(
-          // Custom accessor function to handle flattened keys
-          (row) => row[header],
-          {
-            id: header,
-            header: header,
-            cell: (info) => {
-              const value = info.getValue();
-
-              if (value === null)
-                return <span className="text-muted-foreground italic">null</span>;
-              if (value === undefined)
-                return <span className="text-muted-foreground italic">undefined</span>;
-              if (typeof value === "boolean") {
-                return (
-                  <Badge variant={value ? "default" : "secondary"}>
-                    {String(value)}
-                  </Badge>
-                );
-              }
-              if (typeof value === "number") {
-                return (
-                  <span className="font-mono">{value.toLocaleString()}</span>
-                );
-              }
-              if (typeof value === "string") {
-                // Check if it's a JSON string (starts with [ or {)
-                if (
-                  (value.startsWith("[") && value.endsWith("]")) ||
-                  (value.startsWith("{") && value.endsWith("}"))
-                ) {
-                  return (
-                    <span className="font-mono text-purple-600 dark:text-purple-400 text-sm">
-                      {value}
-                    </span>
-                  );
-                }
-                // Check if it's a date string
-                if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
-                  return (
-                    <span className="text-blue-600 dark:text-blue-400">
-                      {value}
-                    </span>
-                  );
-                }
-                // Truncate long strings
-                if (value.length > 100) {
-                  return (
-                    <span title={value}>{value.substring(0, 100)}...</span>
-                  );
-                }
-              }
-              return <span className="break-all">{String(value)}</span>;
-            },
-          }
-        )
-      );
-
-      setColumns(newColumns);
       toast.success(
-        `Loaded ${result.rowCount} rows with ${result.headers.length} columns`
+        `Loaded ${result.rowCount} rows with ${result.headers.length} columns`,
       );
 
       if (result.hasNestedData) {
@@ -148,9 +63,9 @@ export default function JSONTableViewer() {
     }
   };
 
-  const handleFileUpload = (content: string, fileName: string) => {
+  const handleFileUpload = (content: string, uploadedName: string) => {
     setJsonInput(content);
-    setFileName(fileName);
+    setFileName(uploadedName);
     processJSONData(content);
   };
 
@@ -206,7 +121,7 @@ export default function JSONTableViewer() {
         },
       ],
       null,
-      2
+      2,
     );
 
     setJsonInput(sampleJSON);
@@ -217,11 +132,8 @@ export default function JSONTableViewer() {
   const clearData = () => {
     setJsonInput("");
     setData([]);
-    setColumns([]);
+    setHeaders([]);
     setFileName("");
-    setGlobalFilter("");
-    setSorting([]);
-    setColumnFilters([]);
     setHasNestedData(false);
     toast.success("Data cleared");
   };
@@ -232,18 +144,18 @@ export default function JSONTableViewer() {
       return;
     }
 
-    const headers = Object.keys(data[0]);
+    const csvHeaders = headers.length > 0 ? headers : Object.keys(data[0]);
     const csvContent = [
-      headers.join(","),
+      csvHeaders.join(","),
       ...data.map((row) =>
-        headers
+        csvHeaders
           .map((header) => {
             const value = row[header];
             const stringValue =
               value === null || value === undefined ? "" : String(value);
             return `"${stringValue.replace(/"/g, '""')}"`;
           })
-          .join(",")
+          .join(","),
       ),
     ].join("\n");
 
@@ -252,8 +164,13 @@ export default function JSONTableViewer() {
     const a = document.createElement("a");
     a.href = url;
     a.download = fileName.replace(/\.json$/i, ".csv") || "json-data.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    document.body.appendChild(a);
+    try {
+      a.click();
+    } finally {
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
     toast.success("CSV exported successfully");
   };
 
@@ -269,32 +186,15 @@ export default function JSONTableViewer() {
     const a = document.createElement("a");
     a.href = url;
     a.download = fileName || "processed-data.json";
-    a.click();
-    URL.revokeObjectURL(url);
+    document.body.appendChild(a);
+    try {
+      a.click();
+    } finally {
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
     toast.success("JSON exported successfully");
   };
-
-  const table = useReactTable({
-    data,
-    columns,
-    state: {
-      sorting,
-      columnFilters,
-      globalFilter,
-    },
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: {
-      pagination: {
-        pageSize: 10,
-      },
-    },
-  });
 
   return (
     <div className="space-y-6">
@@ -349,8 +249,9 @@ export default function JSONTableViewer() {
           />
 
           <div className="space-y-2">
-            <Label htmlFor="json-input">Or Paste JSON Data</Label>
+            <Label htmlFor="json-table-input">Or Paste JSON Data</Label>
             <ResponsiveTextArea
+              id="json-table-input"
               value={jsonInput}
               onChange={setJsonInput}
               placeholder="Paste your JSON data here..."
@@ -364,9 +265,7 @@ export default function JSONTableViewer() {
       {data.length > 0 && (
         <ResultCard
           title="JSON Table"
-          description={`Showing ${table.getFilteredRowModel().rows.length} of ${
-            data.length
-          } rows`}
+          description={`Showing ${data.length} rows with ${headers.length} columns`}
           status="success"
         >
           <div className="space-y-4">
@@ -383,96 +282,25 @@ export default function JSONTableViewer() {
                 </span>
               </div>
             )}
-            <div className="flex gap-4 items-center">
-              <div className="flex-1">
-                <Input
-                  placeholder="Search across all columns..."
-                  value={globalFilter}
-                  onChange={(e) => setGlobalFilter(e.target.value)}
-                  className="max-w-sm"
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={downloadCSV}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download CSV
-                </Button>
-                <Button variant="outline" size="sm" onClick={downloadJSON}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download JSON
-                </Button>
-              </div>
-            </div>
 
-            <div className="border rounded-lg overflow-auto max-h-96">
-              <table className="w-full">
-                <thead className="bg-muted/50">
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <th
-                          key={header.id}
-                          className="p-3 text-left font-medium cursor-pointer hover:bg-accent"
-                          onClick={header.column.getToggleSortingHandler()}
-                        >
-                          <div className="flex items-center gap-2">
-                            {flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                            <ArrowUpDown className="h-4 w-4" />
-                          </div>
-                        </th>
-                      ))}
-                    </tr>
-                  ))}
-                </thead>
-                <tbody>
-                  {table.getRowModel().rows.map((row) => (
-                    <tr
-                      key={row.id}
-                      className="border-t hover:bg-muted/50"
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="p-3">
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
-                Page {table.getState().pagination.pageIndex + 1} of{" "}
-                {table.getPageCount()}
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage()}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage()}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+            <DataTable
+              data={data}
+              headers={headers}
+              defaultPageSize={10}
+              searchPlaceholder="Search across all columns..."
+              toolbarActions={
+                <>
+                  <Button variant="outline" size="sm" onClick={downloadCSV}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download CSV
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={downloadJSON}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download JSON
+                  </Button>
+                </>
+              }
+            />
           </div>
         </ResultCard>
       )}

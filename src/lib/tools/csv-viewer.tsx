@@ -1,30 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import {
-  useReactTable,
-  getCoreRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  flexRender,
-  createColumnHelper,
-  SortingState,
-  ColumnFiltersState,
-  ColumnDef,
-} from "@tanstack/react-table";
-import { ToolHeader, QuickActions, ResultCard } from "@/components/layout";
-import { Button } from "@/components/ui/button";
+import { DataTable, QuickActions, ResultCard, ToolHeader } from "@/components/layout";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  ArrowUpDown,
-  Table,
-} from "lucide-react";
+import { Table } from "lucide-react";
 import { toast } from "sonner";
 import {
   getDelimiterDisplayName,
@@ -42,52 +23,30 @@ export const metadata = {
   icon: "📊",
 };
 
-interface CSVRow {
-  [key: string]: unknown;
-}
+type CSVRow = Record<string, unknown>;
 
 export default function CSVViewer() {
   const [data, setData] = useState<CSVRow[]>([]);
-  const [columns, setColumns] = useState<ColumnDef<CSVRow>[]>([]);
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [globalFilter, setGlobalFilter] = useState("");
+  const [headers, setHeaders] = useState<string[]>([]);
   const [fileName, setFileName] = useState("");
   const [detectedDelimiter, setDetectedDelimiter] = useState(",");
   const [parseIssueCount, setParseIssueCount] = useState(0);
   const [textInput, setTextInput] = useState("");
 
-  const createColumns = (data: CSVRow[]): ColumnDef<CSVRow>[] => {
-    if (data.length === 0) return [];
-
-    const columnHelper = createColumnHelper<CSVRow>();
-    const keys = Object.keys(data[0]);
-
-    return keys.map((key) =>
-      columnHelper.accessor(key, {
-        header: ({ column }) => (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="h-auto p-0 font-semibold hover:bg-transparent"
-          >
-            {key}
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        ),
-        cell: (info) => {
-          const value = info.getValue();
-          if (value === null || value === undefined) {
-            return <span className="text-muted-foreground italic">null</span>;
-          }
-          return typeof value === "number" ? (
-            <span className="font-mono">{value.toLocaleString()}</span>
-          ) : (
-            <span>{String(value)}</span>
-          );
-        },
-      })
+  const applyParsedResult = (
+    result: ReturnType<typeof parseCSV>,
+    sourceName: string,
+  ) => {
+    const rows = result.data as CSVRow[];
+    setData(rows);
+    setHeaders(
+      result.headers.length > 0
+        ? result.headers
+        : Object.keys(rows[0] ?? {}),
     );
+    setDetectedDelimiter(result.delimiter);
+    setParseIssueCount(result.issues.length);
+    setFileName(sourceName);
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -108,11 +67,7 @@ export default function CSVViewer() {
           skipEmptyLines: true,
           convertValues: false,
         });
-        setData(result.data as CSVRow[]);
-        setColumns(createColumns(result.data as CSVRow[]));
-        setDetectedDelimiter(result.delimiter);
-        setParseIssueCount(result.issues.length);
-        setFileName(file.name);
+        applyParsedResult(result, file.name);
         toast.success(`Loaded ${result.rowCount} rows from ${file.name}`);
       } catch (error) {
         const errorMessage =
@@ -125,65 +80,41 @@ export default function CSVViewer() {
 
   const handleTextInput = (text: string) => {
     try {
-      // First try with auto-detection
       let result = parseCSV(text, {
         hasHeader: true,
         skipEmptyLines: true,
         convertValues: false,
       });
 
-      // If we get too many columns (indicating possible unquoted commas), try other approaches
       if (result.headers.length > 10) {
-        // Try with semicolon delimiter
-        try {
-          const semicolonResult = parseCSV(text, {
-            delimiter: ";",
-            hasHeader: true,
-            skipEmptyLines: true,
-            convertValues: false,
-          });
-          if (
-            semicolonResult.headers.length < result.headers.length &&
-            semicolonResult.headers.length > 1
-          ) {
-            result = semicolonResult;
+        for (const delimiter of [";", "\t"] as const) {
+          try {
+            const candidate = parseCSV(text, {
+              delimiter,
+              hasHeader: true,
+              skipEmptyLines: true,
+              convertValues: false,
+            });
+            if (
+              candidate.headers.length < result.headers.length &&
+              candidate.headers.length > 1
+            ) {
+              result = candidate;
+            }
+          } catch {
+            // Ignore fallback delimiter parse errors
           }
-        } catch {
-          // Continue with original result
-        }
-
-        // Try with tab delimiter
-        try {
-          const tabResult = parseCSV(text, {
-            delimiter: "\t",
-            hasHeader: true,
-            skipEmptyLines: true,
-            convertValues: false,
-          });
-          if (
-            tabResult.headers.length < result.headers.length &&
-            tabResult.headers.length > 1
-          ) {
-            result = tabResult;
-          }
-        } catch {
-          // Continue with original result
         }
       }
 
-      setData(result.data as CSVRow[]);
-      setColumns(createColumns(result.data as CSVRow[]));
-      setDetectedDelimiter(result.delimiter);
-      setParseIssueCount(result.issues.length);
-      setFileName("Manual Input");
+      applyParsedResult(result, "Manual Input");
       toast.success(
-        `Loaded ${result.rowCount} rows with ${result.headers.length} columns`
+        `Loaded ${result.rowCount} rows with ${result.headers.length} columns`,
       );
 
-      // Warn if we detected too many columns
       if (result.headers.length > 10) {
         toast.warning(
-          "Detected many columns. Data may contain unquoted commas. Consider using proper CSV format with quoted values."
+          "Detected many columns. Data may contain unquoted commas. Consider using proper CSV format with quoted values.",
         );
       }
     } catch (error) {
@@ -193,33 +124,11 @@ export default function CSVViewer() {
     }
   };
 
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    state: {
-      sorting,
-      columnFilters,
-      globalFilter,
-    },
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
-    initialState: {
-      pagination: {
-        pageSize: 20,
-      },
-    },
-  });
-
   const exportData = () => {
     if (data.length === 0) return;
 
-    const headers = Object.keys(data[0]);
-    const csvContent = serializeCSV(data, headers, {
+    const exportHeaders = headers.length > 0 ? headers : Object.keys(data[0]);
+    const csvContent = serializeCSV(data, exportHeaders, {
       delimiter: detectedDelimiter,
       safeSpreadsheet: true,
     });
@@ -270,15 +179,15 @@ export default function CSVViewer() {
 
   const clearData = () => {
     setData([]);
-    setColumns([]);
+    setHeaders([]);
     setFileName("");
     setDetectedDelimiter(",");
     setParseIssueCount(0);
-    setGlobalFilter("");
-    setColumnFilters([]);
-    setSorting([]);
     setTextInput("");
   };
+
+  const columnCount =
+    headers.length > 0 ? headers.length : Object.keys(data[0] ?? {}).length;
 
   return (
     <div className="space-y-6">
@@ -345,6 +254,7 @@ export default function CSVViewer() {
               onChange={(e) => setTextInput(e.target.value)}
               placeholder="Paste CSV data here...&#10;&#10;Examples:&#10;SIC Code,Description&#10;1110,Growing of cereals&#10;1120,Growing of rice&#10;&#10;Or with semicolons:&#10;name;age;city&#10;John;30;NYC"
               className="w-full h-32 tool-textarea"
+              spellCheck={false}
             />
             <div className="text-sm text-muted-foreground">
               💡 Tip: Use the &quot;Process CSV&quot; button above to parse your
@@ -355,14 +265,14 @@ export default function CSVViewer() {
           {data.length > 0 && (
             <div className="flex flex-wrap gap-2">
               <Badge variant="outline">{data.length} rows</Badge>
-              <Badge variant="outline">{columns.length} columns</Badge>
+              <Badge variant="outline">{columnCount} columns</Badge>
               <Badge
                 variant="outline"
                 className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
               >
                 📝 {getDelimiterDisplayName(detectedDelimiter)}
               </Badge>
-              {columns.length > 10 && (
+              {columnCount > 10 && (
                 <Badge
                   variant="outline"
                   className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300"
@@ -388,109 +298,15 @@ export default function CSVViewer() {
       {data.length > 0 && (
         <ResultCard
           title="Data Table"
-          description={`Showing ${data.length} rows with ${columns.length} columns`}
+          description={`Showing ${data.length} rows with ${columnCount} columns`}
           status="success"
         >
-          <div className="space-y-4">
-            {/* Global Search */}
-            <div className="flex items-center space-x-2">
-              <Search className="h-4 w-4" />
-              <Input
-                placeholder="Search all columns..."
-                value={globalFilter ?? ""}
-                onChange={(event) =>
-                  setGlobalFilter(String(event.target.value))
-                }
-                className="max-w-sm"
-              />
-            </div>
-
-            {/* Table */}
-            <div className="border rounded-md">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    {table.getHeaderGroups().map((headerGroup) => (
-                      <tr
-                        key={headerGroup.id}
-                        className="border-b bg-muted/50"
-                      >
-                        {headerGroup.headers.map((header) => (
-                          <th
-                            key={header.id}
-                            className="px-4 py-3 text-left font-medium"
-                          >
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext()
-                                )}
-                          </th>
-                        ))}
-                      </tr>
-                    ))}
-                  </thead>
-                  <tbody>
-                    {table.getRowModel().rows.map((row) => (
-                      <tr
-                        key={row.id}
-                        className="border-b hover:bg-muted/50"
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <td key={cell.id} className="px-4 py-3">
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Pagination */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-muted-foreground">
-                  Showing{" "}
-                  {table.getState().pagination.pageIndex *
-                    table.getState().pagination.pageSize +
-                    1}{" "}
-                  to{" "}
-                  {Math.min(
-                    (table.getState().pagination.pageIndex + 1) *
-                      table.getState().pagination.pageSize,
-                    table.getFilteredRowModel().rows.length
-                  )}{" "}
-                  of {table.getFilteredRowModel().rows.length} entries
-                </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage()}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage()}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
+          <DataTable
+            data={data}
+            headers={headers}
+            defaultPageSize={20}
+            searchPlaceholder="Search all columns..."
+          />
         </ResultCard>
       )}
     </div>

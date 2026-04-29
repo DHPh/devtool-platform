@@ -2,25 +2,13 @@
 
 import { useState } from "react";
 import {
-  useReactTable,
-  getCoreRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  flexRender,
-  createColumnHelper,
-  SortingState,
-  ColumnFiltersState,
-  ColumnDef,
-} from "@tanstack/react-table";
-import {
-  ToolHeader,
+  DataTable,
+  FileUploadZone,
   QuickActions,
   ResultCard,
-  FileUploadZone,
+  ToolHeader,
 } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -30,14 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Download,
-  ChevronLeft,
-  ChevronRight,
-  ArrowUpDown,
-  BarChart3,
-  FileText,
-} from "lucide-react";
+import { BarChart3, Download, FileText } from "lucide-react";
 import { toast } from "sonner";
 import {
   getDelimiterDisplayName,
@@ -57,9 +38,7 @@ export const metadata = {
   icon: "🔍",
 };
 
-interface DataRow {
-  [key: string]: unknown;
-}
+type DataRow = Record<string, unknown>;
 
 interface ColumnStats {
   column: string;
@@ -76,10 +55,7 @@ interface ColumnStats {
 
 export default function DataExplorer() {
   const [data, setData] = useState<DataRow[]>([]);
-  const [columns, setColumns] = useState<ColumnDef<DataRow>[]>([]);
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [globalFilter, setGlobalFilter] = useState("");
+  const [headers, setHeaders] = useState<string[]>([]);
   const [fileName, setFileName] = useState("");
   const [stats, setStats] = useState<ColumnStats[]>([]);
   const [selectedFormat, setSelectedFormat] = useState<
@@ -92,7 +68,7 @@ export default function DataExplorer() {
 
   const detectColumnType = (values: unknown[]): ColumnStats["type"] => {
     const nonNullValues = values.filter(
-      (v) => v !== null && v !== undefined && v !== ""
+      (v) => v !== null && v !== undefined && v !== "",
     );
     if (nonNullValues.length === 0) return "string";
 
@@ -117,7 +93,7 @@ export default function DataExplorer() {
         booleanCount++;
       } else if (
         /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/.test(
-          strValue
+          strValue,
         ) &&
         Number.isFinite(Date.parse(strValue))
       ) {
@@ -133,14 +109,13 @@ export default function DataExplorer() {
     return "string";
   };
 
-  const calculateStats = (data: DataRow[]): ColumnStats[] => {
-    if (data.length === 0) return [];
+  const calculateStats = (rows: DataRow[], columns: string[]): ColumnStats[] => {
+    if (rows.length === 0) return [];
 
-    const columnNames = Object.keys(data[0]);
-    return columnNames.map((column) => {
-      const values = data.map((row) => row[column]);
+    return columns.map((column) => {
+      const values = rows.map((row) => row[column]);
       const nonNullValues = values.filter(
-        (v) => v !== null && v !== undefined && v !== ""
+        (v) => v !== null && v !== undefined && v !== "",
       );
       const type = detectColumnType(values);
 
@@ -152,10 +127,10 @@ export default function DataExplorer() {
       }, {});
 
       const mostCommon = Object.entries(valueCounts).sort(
-        ([, a], [, b]) => b - a
+        ([, a], [, b]) => b - a,
       )[0]?.[0];
 
-      const stats: ColumnStats = {
+      const colStats: ColumnStats = {
         column,
         type,
         count: values.length,
@@ -169,24 +144,24 @@ export default function DataExplorer() {
           .map((v) => Number(v))
           .filter((n) => !isNaN(n));
         if (numbers.length > 0) {
-          stats.min = Math.min(...numbers);
-          stats.max = Math.max(...numbers);
-          stats.avg = numbers.reduce((a, b) => a + b, 0) / numbers.length;
-          stats.sum = numbers.reduce((a, b) => a + b, 0);
+          colStats.min = Math.min(...numbers);
+          colStats.max = Math.max(...numbers);
+          colStats.avg = numbers.reduce((a, b) => a + b, 0) / numbers.length;
+          colStats.sum = numbers.reduce((a, b) => a + b, 0);
         }
       }
 
-      return stats;
+      return colStats;
     });
   };
 
   const processData = (text: string, format: string) => {
     let parsedData: DataRow[] = [];
+    let parsedHeaders: string[] = [];
     let delimiter = ",";
     let hasNested = false;
     let csvIssueCount = 0;
 
-    // Better auto-detection logic
     if (
       format === "csv" ||
       (format === "auto" &&
@@ -196,6 +171,7 @@ export default function DataExplorer() {
       try {
         const result = parseCSV(text, { convertValues: false });
         parsedData = result.data as DataRow[];
+        parsedHeaders = result.headers;
         delimiter = result.delimiter;
         csvIssueCount = result.issues.length;
         setDetectedDelimiter(delimiter);
@@ -203,7 +179,7 @@ export default function DataExplorer() {
         toast.error(
           `Error parsing CSV data: ${
             error instanceof Error ? error.message : "Unknown error"
-          }`
+          }`,
         );
         return;
       }
@@ -215,12 +191,13 @@ export default function DataExplorer() {
       try {
         const result = parseJSON(text, { maxDepth: 20 });
         parsedData = result.data as DataRow[];
+        parsedHeaders = result.headers;
         hasNested = result.hasNestedData;
       } catch (error) {
         toast.error(
           `Error parsing JSON data: ${
             error instanceof Error ? error.message : "Unknown error"
-          }`
+          }`,
         );
         return;
       }
@@ -231,6 +208,7 @@ export default function DataExplorer() {
           convertValues: false,
         });
         parsedData = result.data as DataRow[];
+        parsedHeaders = result.headers;
         delimiter = "\t";
         csvIssueCount = result.issues.length;
         setDetectedDelimiter(delimiter);
@@ -238,15 +216,15 @@ export default function DataExplorer() {
         toast.error(
           `Error parsing TSV data: ${
             error instanceof Error ? error.message : "Unknown error"
-          }`
+          }`,
         );
         return;
       }
     } else {
-      // Default to CSV
       try {
         const result = parseCSV(text, { convertValues: false });
         parsedData = result.data as DataRow[];
+        parsedHeaders = result.headers;
         delimiter = result.delimiter;
         csvIssueCount = result.issues.length;
         setDetectedDelimiter(delimiter);
@@ -261,58 +239,26 @@ export default function DataExplorer() {
       return;
     }
 
+    const resolvedHeaders =
+      parsedHeaders.length > 0 ? parsedHeaders : Object.keys(parsedData[0]);
+
     setData(parsedData);
+    setHeaders(resolvedHeaders);
     setHasNestedData(hasNested);
     setParseIssueCount(csvIssueCount);
-    const newStats = calculateStats(parsedData);
-    setStats(newStats);
-
-    // Create columns for table
-    const columnHelper = createColumnHelper<DataRow>();
-    const newColumns = Object.keys(parsedData[0]).map((key) =>
-      columnHelper.accessor(
-        // Custom accessor function to handle flattened keys
-        (row) => row[key],
-        {
-          id: key,
-          header: key,
-          cell: (info) => {
-            const value = info.getValue();
-            if (value === null || value === undefined) {
-              return <span className="text-muted-foreground italic">null</span>;
-            }
-            if (typeof value === "boolean") {
-              return (
-                <Badge variant={value ? "default" : "secondary"}>
-                  {String(value)}
-                </Badge>
-              );
-            }
-            if (typeof value === "number") {
-              return (
-                <span className="font-mono">{value.toLocaleString()}</span>
-              );
-            }
-            return <span>{String(value)}</span>;
-          },
-        }
-      )
-    );
-    setColumns(newColumns);
+    setStats(calculateStats(parsedData, resolvedHeaders));
 
     const formatDisplay =
       format === "auto"
         ? delimiter === "\t"
           ? "TSV"
           : delimiter === ";"
-          ? "CSV (;)"
-          : "CSV (,)"
+            ? "CSV (;)"
+            : "CSV (,)"
         : format.toUpperCase();
 
     toast.success(
-      `Loaded ${parsedData.length} rows with ${
-        Object.keys(parsedData[0]).length
-      } columns from ${formatDisplay}`
+      `Loaded ${parsedData.length} rows with ${resolvedHeaders.length} columns from ${formatDisplay}`,
     );
 
     if (hasNested) {
@@ -320,14 +266,14 @@ export default function DataExplorer() {
     }
   };
 
-  const handleFileUpload = (content: string, fileName: string) => {
-    setFileName(fileName);
-    const extension = fileName.split(".").pop()?.toLowerCase();
+  const handleFileUpload = (content: string, uploadedName: string) => {
+    setFileName(uploadedName);
+    const extension = uploadedName.split(".").pop()?.toLowerCase();
     const detectedFormat =
       extension === "json" ? "json" : extension === "tsv" ? "tsv" : "csv";
     processData(
       content,
-      selectedFormat === "auto" ? detectedFormat : selectedFormat
+      selectedFormat === "auto" ? detectedFormat : selectedFormat,
     );
   };
 
@@ -354,13 +300,10 @@ Charlie Wilson,32,Phoenix,72000,false`;
 
   const clearData = () => {
     setData([]);
-    setColumns([]);
+    setHeaders([]);
     setStats([]);
     setTextData("");
     setFileName("");
-    setGlobalFilter("");
-    setSorting([]);
-    setColumnFilters([]);
     setHasNestedData(false);
     setDetectedDelimiter(",");
     setParseIssueCount(0);
@@ -373,8 +316,8 @@ Charlie Wilson,32,Phoenix,72000,false`;
       return;
     }
 
-    const headers = Object.keys(data[0]);
-    const csvContent = serializeCSV(data, headers, {
+    const csvHeaders = headers.length > 0 ? headers : Object.keys(data[0]);
+    const csvContent = serializeCSV(data, csvHeaders, {
       delimiter: detectedDelimiter,
       safeSpreadsheet: true,
     });
@@ -395,28 +338,6 @@ Charlie Wilson,32,Phoenix,72000,false`;
     }
     toast.success("Data exported successfully");
   };
-
-  const table = useReactTable({
-    data,
-    columns,
-    state: {
-      sorting,
-      columnFilters,
-      globalFilter,
-    },
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: {
-      pagination: {
-        pageSize: 10,
-      },
-    },
-  });
 
   return (
     <div className="space-y-6">
@@ -465,7 +386,7 @@ Charlie Wilson,32,Phoenix,72000,false`;
                   setSelectedFormat(value)
                 }
               >
-                <SelectTrigger aria-label="Input data format">
+                <SelectTrigger id="format-select" aria-label="Input data format">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -502,7 +423,8 @@ Charlie Wilson,32,Phoenix,72000,false`;
               value={textData}
               onChange={(e) => setTextData(e.target.value)}
               placeholder="Paste CSV, JSON, or TSV data here..."
-              className="w-full h-32 p-3 border rounded-lg resize-none font-mono text-sm"
+              className="w-full h-32 p-3 border rounded-lg resize-none font-mono text-sm bg-background"
+              spellCheck={false}
             />
           </div>
         </div>
@@ -515,8 +437,8 @@ Charlie Wilson,32,Phoenix,72000,false`;
           status="success"
         >
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {hasNestedData && (
                   <Badge
                     variant="outline"
@@ -578,93 +500,15 @@ Charlie Wilson,32,Phoenix,72000,false`;
       {data.length > 0 && (
         <ResultCard
           title="Data Table"
-          description={`Showing ${table.getFilteredRowModel().rows.length} of ${
-            data.length
-          } rows`}
+          description={`Showing ${data.length} rows`}
           status="success"
         >
-          <div className="space-y-4">
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <Input
-                  placeholder="Search across all columns..."
-                  value={globalFilter}
-                  onChange={(e) => setGlobalFilter(e.target.value)}
-                  className="max-w-sm"
-                />
-              </div>
-            </div>
-
-            <div className="border rounded-lg overflow-auto max-h-96">
-              <table className="w-full">
-                <thead className="bg-muted/50">
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <th
-                          key={header.id}
-                          className="p-3 text-left font-medium cursor-pointer hover:bg-accent"
-                          onClick={header.column.getToggleSortingHandler()}
-                        >
-                          <div className="flex items-center gap-2">
-                            {flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                            <ArrowUpDown className="h-4 w-4" />
-                          </div>
-                        </th>
-                      ))}
-                    </tr>
-                  ))}
-                </thead>
-                <tbody>
-                  {table.getRowModel().rows.map((row) => (
-                    <tr
-                      key={row.id}
-                      className="border-t hover:bg-muted/50"
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="p-3">
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
-                Page {table.getState().pagination.pageIndex + 1} of{" "}
-                {table.getPageCount()}
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage()}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage()}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
+          <DataTable
+            data={data}
+            headers={headers}
+            defaultPageSize={10}
+            searchPlaceholder="Search across all columns..."
+          />
         </ResultCard>
       )}
     </div>
