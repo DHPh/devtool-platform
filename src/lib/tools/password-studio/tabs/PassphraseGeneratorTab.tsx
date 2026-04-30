@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { writeClipboardText } from "@/hooks/use-clipboard";
+import { copyToClipboard } from "@/hooks/use-clipboard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -78,7 +78,10 @@ export function PassphraseGeneratorTab({
 
   const handleCopyPassphrase = () => {
     if (currentPassphrase) {
-      void writeClipboardText(currentPassphrase);
+      void copyToClipboard(
+        currentPassphrase,
+        "Passphrase copied to clipboard!",
+      );
     }
   };
 
@@ -368,7 +371,10 @@ export function PassphraseGeneratorTab({
                     variant="ghost"
                     size="sm"
                     onClick={() =>
-                      writeClipboardText(result.passphrase)
+                      void copyToClipboard(
+                        result.passphrase,
+                        "Passphrase copied to clipboard!",
+                      )
                     }
                     aria-label={`Copy passphrase history item ${index + 1}`}
                     className="h-8 w-8 p-0 ml-3"

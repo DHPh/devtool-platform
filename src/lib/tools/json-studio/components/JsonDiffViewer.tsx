@@ -6,7 +6,7 @@
 "use client";
 
 import { useState } from "react";
-import { writeClipboardText } from "@/hooks/use-clipboard";
+import { copyToClipboard } from "@/hooks/use-clipboard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -98,8 +98,7 @@ export function JsonDiffViewer({ data, className }: JsonDiffViewerProps) {
       )
       .join("\n\n");
 
-    void writeClipboardText(diffText);
-    toast.success("Diff copied to clipboard");
+    void copyToClipboard(diffText, "Diff copied to clipboard");
   };
 
   const copyPatches = () => {
@@ -108,8 +107,10 @@ export function JsonDiffViewer({ data, className }: JsonDiffViewerProps) {
       return;
     }
 
-    void writeClipboardText(JSON.stringify(diffResult.patches, null, 2));
-    toast.success("JSON patches copied to clipboard");
+    void copyToClipboard(
+      JSON.stringify(diffResult.patches, null, 2),
+      "JSON patches copied to clipboard",
+    );
   };
 
   const downloadDiff = () => {

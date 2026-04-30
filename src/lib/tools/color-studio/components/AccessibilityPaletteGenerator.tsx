@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { writeClipboardText } from "@/hooks/use-clipboard";
+import { copyToClipboard } from "@/hooks/use-clipboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -112,8 +112,7 @@ export function AccessibilityPaletteGenerator() {
   };
 
   const copyColor = (color: string) => {
-    void writeClipboardText(color);
-    toast.success(`Color ${color} copied to clipboard!`);
+    void copyToClipboard(color, `Color ${color} copied to clipboard!`);
   };
 
   const copyPalette = () => {
@@ -128,8 +127,10 @@ export function AccessibilityPaletteGenerator() {
       baseColor: palette.baseColor,
     };
 
-    void writeClipboardText(JSON.stringify(paletteData, null, 2));
-    toast.success("Palette data copied to clipboard!");
+    void copyToClipboard(
+      JSON.stringify(paletteData, null, 2),
+      "Palette data copied to clipboard!",
+    );
   };
 
   const exportPalette = () => {

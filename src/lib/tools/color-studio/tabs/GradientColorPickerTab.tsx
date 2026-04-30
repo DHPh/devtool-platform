@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useRef } from "react";
-import { writeClipboardText } from "@/hooks/use-clipboard";
+import { copyToClipboard } from "@/hooks/use-clipboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -137,8 +137,7 @@ export function GradientColorPickerTab() {
   };
 
   const copyColor = (color: string, format: string) => {
-    void writeClipboardText(color);
-    toast.success(`${format} color copied to clipboard!`);
+    void copyToClipboard(color, `${format} color copied to clipboard!`);
   };
 
   const removePickedColor = (index: number) => {

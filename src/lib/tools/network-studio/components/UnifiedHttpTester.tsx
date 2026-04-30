@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { writeClipboardText } from "@/hooks/use-clipboard";
+import { copyToClipboard } from "@/hooks/use-clipboard";
+import { CodeEditor } from "@/components/code-editor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,30 +22,36 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import {
-  Send,
-  Plus,
-  Trash2,
-  Copy,
+  AlertCircle,
+  Book,
+  CheckCircle,
   ChevronDown,
   Clock,
-  AlertCircle,
-  CheckCircle,
-  Book,
+  Copy,
+  History,
+  Plus,
+  Send,
+  Terminal,
+  Trash2,
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  HTTP_HEADERS,
-  HTTP_HEADER_CATEGORIES,
-  HEADER_PRESETS,
-  searchHeaders,
   getHeadersByCategory,
+  HEADER_PRESETS,
+  HTTP_HEADER_CATEGORIES,
+  HTTP_HEADERS,
+  searchHeaders,
   type HttpHeaderInfo,
 } from "@/lib/utils/network/http-headers";
 import {
+  generateCurlCommand,
   makeHttpRequest,
+  parseCurlCommand,
   type HttpMethodType,
 } from "@/lib/utils/network/api-client";
+
+export type HttpTesterMode = "api-tester" | "http-client";
 
 interface HeaderEntry {
   key: string;
@@ -66,7 +73,16 @@ interface HttpResponse {
   errorCategory?: string;
 }
 
-const HTTP_METHODS = [
+interface SessionHistoryEntry {
+  url: string;
+  method: HttpMethodType;
+  headers: HeaderEntry[];
+  body: string;
+  status: number;
+  responseTime: number;
+}
+
+const HTTP_METHODS: HttpMethodType[] = [
   "GET",
   "POST",
   "PUT",
@@ -76,9 +92,15 @@ const HTTP_METHODS = [
   "OPTIONS",
 ];
 
-export function UnifiedHttpTester() {
+export function UnifiedHttpTester({
+  mode = "api-tester",
+}: {
+  mode?: HttpTesterMode;
+}) {
+  const isApiTester = mode === "api-tester";
+
   const [url, setUrl] = useState("https://httpbin.org/get");
-  const [method, setMethod] = useState("GET");
+  const [method, setMethod] = useState<HttpMethodType>("GET");
   const [headers, setHeaders] = useState<HeaderEntry[]>([
     { key: "Content-Type", value: "application/json", enabled: true },
   ]);
@@ -86,16 +108,23 @@ export function UnifiedHttpTester() {
   const [response, setResponse] = useState<HttpResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Header library state
+  // cURL import state for API Tester
+  const [curlInput, setCurlInput] = useState("");
+  const [showCurlImport, setShowCurlImport] = useState(false);
+
+  // Header library & request history for HTTP Client
   const [headerSearch, setHeaderSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [showHeaderLibrary, setShowHeaderLibrary] = useState(false);
+  const [showHeaderLibrary, setShowHeaderLibrary] = useState(!isApiTester);
+  const [requestHistory, setRequestHistory] = useState<SessionHistoryEntry[]>(
+    [],
+  );
 
   const filteredHeaders = headerSearch
     ? searchHeaders(headerSearch)
     : selectedCategory === "all"
-    ? HTTP_HEADERS
-    : getHeadersByCategory(selectedCategory);
+      ? HTTP_HEADERS
+      : getHeadersByCategory(selectedCategory);
 
   const addHeader = (key = "", value = "") => {
     setHeaders([...headers, { key, value, enabled: true }]);
@@ -104,7 +133,7 @@ export function UnifiedHttpTester() {
   const updateHeader = (
     index: number,
     field: keyof HeaderEntry,
-    value: string | boolean
+    value: string | boolean,
   ) => {
     const newHeaders = [...headers];
     newHeaders[index] = { ...newHeaders[index], [field]: value };
@@ -130,23 +159,63 @@ export function UnifiedHttpTester() {
 
   const addHeaderFromLibrary = (headerInfo: HttpHeaderInfo) => {
     const existingIndex = headers.findIndex(
-      (h) => h.key.toLowerCase() === headerInfo.name.toLowerCase()
+      (h) => h.key.toLowerCase() === headerInfo.name.toLowerCase(),
     );
 
     if (existingIndex !== -1) {
-      // Update existing header
       updateHeader(existingIndex, "value", headerInfo.examples[0] || "");
       toast.success(`Updated ${headerInfo.name} header`);
     } else {
-      // Add new header
       addHeader(headerInfo.name, headerInfo.examples[0] || "");
       toast.success(`Added ${headerInfo.name} header`);
     }
   };
 
+  const buildEnabledHeadersRecord = (): Record<string, string> => {
+    const record: Record<string, string> = {};
+    headers
+      .filter((h) => h.enabled && h.key.trim() && h.value.trim())
+      .forEach((h) => {
+        record[h.key.trim()] = h.value.trim();
+      });
+    return record;
+  };
+
+  const handleImportCurl = () => {
+    const parsed = parseCurlCommand(curlInput);
+    if (!parsed) {
+      toast.error("Could not parse a valid URL from the cURL command");
+      return;
+    }
+
+    setUrl(parsed.url);
+    setMethod(parsed.method);
+    const parsedHeaders = Object.entries(parsed.headers ?? {}).map(
+      ([key, value]) => ({ key, value, enabled: true }),
+    );
+    setHeaders(
+      parsedHeaders.length > 0
+        ? parsedHeaders
+        : [{ key: "Content-Type", value: "application/json", enabled: true }],
+    );
+    setBody(parsed.body ?? "");
+    setShowCurlImport(false);
+    toast.success(`Imported ${parsed.method} request from cURL`);
+  };
+
+  const handleCopyAsCurl = () => {
+    const curl = generateCurlCommand({
+      url,
+      method,
+      headers: buildEnabledHeadersRecord(),
+      body: ["POST", "PUT", "PATCH"].includes(method) && body ? body : undefined,
+    });
+    void copyToClipboard(curl, "cURL command copied to clipboard!");
+  };
+
   const categorizeError = (
     error: unknown,
-    status?: number
+    status?: number,
   ): { category: string; details: string } => {
     if (status) {
       if (status >= 400 && status < 500) {
@@ -202,23 +271,19 @@ export function UnifiedHttpTester() {
 
     setIsLoading(true);
     try {
-      // Prepare headers
-      const requestHeaders: Record<string, string> = {};
-      headers
-        .filter((h) => h.enabled && h.key && h.value)
-        .forEach((h) => {
-          requestHeaders[h.key] = h.value;
-        });
+      const requestHeaders = buildEnabledHeadersRecord();
 
       const result = await makeHttpRequest({
         url,
-        method: method as HttpMethodType,
+        method,
         headers: requestHeaders,
         body: ["POST", "PUT", "PATCH"].includes(method) && body ? body : undefined,
       });
 
       if (!result.response) {
-        const error = new Error(result.errorDetails || result.error || "Request failed");
+        const error = new Error(
+          result.errorDetails || result.error || "Request failed",
+        );
         if (result.error === "Request timeout") error.name = "AbortError";
         if (result.error === "Network error") error.name = "TypeError";
         throw error;
@@ -231,7 +296,7 @@ export function UnifiedHttpTester() {
         try {
           responseData = JSON.parse(responseResult.data);
         } catch {
-          // Preserve invalid JSON as the response text.
+          // Preserve invalid JSON as raw response text.
         }
       }
 
@@ -246,7 +311,6 @@ export function UnifiedHttpTester() {
         method,
       };
 
-      // Add error info if not successful
       if (!result.success) {
         const errorInfo = categorizeError(null, responseResult.status);
         httpResponse.error = `${responseResult.status} ${responseResult.statusText}`;
@@ -255,6 +319,17 @@ export function UnifiedHttpTester() {
       }
 
       setResponse(httpResponse);
+      setRequestHistory((prev) => [
+        {
+          url,
+          method,
+          headers: headers.map((h) => ({ ...h })),
+          body,
+          status: responseResult.status,
+          responseTime: responseResult.responseTime,
+        },
+        ...prev.slice(0, 7),
+      ]);
       toast.success(`Request completed in ${httpResponse.responseTime}ms`);
     } catch (error) {
       const errorInfo = categorizeError(error);
@@ -275,7 +350,6 @@ export function UnifiedHttpTester() {
 
       setResponse(errorResponse);
       toast.error(`Request failed: ${errorInfo.category}`);
-      console.error("Request error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -283,16 +357,25 @@ export function UnifiedHttpTester() {
 
   const copyResponse = () => {
     if (response) {
-      void writeClipboardText(JSON.stringify(response, null, 2));
-      toast.success("Response copied to clipboard");
+      void copyToClipboard(
+        JSON.stringify(response, null, 2),
+        "Response copied to clipboard",
+      );
     }
   };
 
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold mb-2">HTTP Tester & API Client</h2>
-        <p className="text-muted-foreground">
+      <div className="text-center space-y-1">
+        <div className="flex items-center justify-center gap-2">
+          <h2 className="text-xl sm:text-2xl font-bold">
+            {isApiTester ? "API Tester & cURL Builder" : "HTTP Client & Header Inspector"}
+          </h2>
+          <Badge variant="outline">
+            {isApiTester ? "REST / cURL" : "HTTP / Headers"}
+          </Badge>
+        </div>
+        <p className="text-sm text-muted-foreground">
           Requests run in your browser. Cross-origin targets must allow your
           origin through CORS, and browser-restricted headers cannot be set.
         </p>
@@ -303,15 +386,75 @@ export function UnifiedHttpTester() {
         <div className="lg:col-span-2 space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Send className="h-5 w-5" />
-                Request Builder
-              </CardTitle>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Send className="h-5 w-5" />
+                  Request Builder
+                </CardTitle>
+                {isApiTester && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowCurlImport((prev) => !prev)}
+                    >
+                      <Terminal className="h-3.5 w-3.5 mr-1.5" />
+                      {showCurlImport ? "Hide cURL" : "Import cURL"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCopyAsCurl}
+                      disabled={!url}
+                    >
+                      <Copy className="h-3.5 w-3.5 mr-1.5" />
+                      Copy as cURL
+                    </Button>
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              {isApiTester && showCurlImport && (
+                <div className="rounded-lg border bg-muted/30 p-3 space-y-2.5">
+                  <Textarea
+                    aria-label="cURL command"
+                    placeholder={`Paste cURL command, e.g. curl -X POST https://httpbin.org/post -H "Authorization: Bearer token" -d '{"hello":"world"}'`}
+                    value={curlInput}
+                    onChange={(e) => setCurlInput(e.target.value)}
+                    rows={3}
+                    spellCheck={false}
+                    className="font-mono text-xs"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowCurlImport(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleImportCurl}
+                      disabled={!curlInput.trim()}
+                    >
+                      Apply cURL
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {/* URL and Method */}
               <div className="flex gap-2">
-                <Select value={method} onValueChange={setMethod}>
+                <Select
+                  value={method}
+                  onValueChange={(value) => setMethod(value as HttpMethodType)}
+                >
                   <SelectTrigger className="w-32" aria-label="HTTP method">
                     <SelectValue />
                   </SelectTrigger>
@@ -324,6 +467,7 @@ export function UnifiedHttpTester() {
                   </SelectContent>
                 </Select>
                 <Input
+                  aria-label="Request URL"
                   placeholder="https://httpbin.org/get"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
@@ -376,6 +520,7 @@ export function UnifiedHttpTester() {
                 {headers.map((header, index) => (
                   <div key={index} className="flex gap-2 items-center">
                     <Input
+                      aria-label={`Header ${index + 1} name`}
                       placeholder="Header name"
                       value={header.key}
                       onChange={(e) =>
@@ -384,6 +529,7 @@ export function UnifiedHttpTester() {
                       className="flex-1"
                     />
                     <Input
+                      aria-label={`Header ${index + 1} value`}
                       placeholder="Header value"
                       value={header.value}
                       onChange={(e) =>
@@ -407,18 +553,32 @@ export function UnifiedHttpTester() {
               {["POST", "PUT", "PATCH"].includes(method) && (
                 <div className="space-y-2">
                   <h4 className="font-medium">Request Body</h4>
-                  <Textarea
-                    placeholder='{"key": "value"}'
-                    value={body}
-                    onChange={(e) => setBody(e.target.value)}
-                    rows={6}
-                  />
+                  {isApiTester ? (
+                    <CodeEditor
+                      value={body}
+                      onChange={setBody}
+                      language="json"
+                      aria-label="Request body"
+                      placeholder='{"key": "value"}'
+                      minHeight={160}
+                    />
+                  ) : (
+                    <Textarea
+                      aria-label="Request body"
+                      placeholder='{"key": "value"}'
+                      value={body}
+                      onChange={(e) => setBody(e.target.value)}
+                      rows={6}
+                      spellCheck={false}
+                      className="font-mono text-sm"
+                    />
+                  )}
                 </div>
               )}
 
               {/* Submit Button */}
               <Button
-                onClick={handleSubmit}
+                onClick={() => void handleSubmit()}
                 disabled={isLoading}
                 className="w-full"
               >
@@ -428,7 +588,7 @@ export function UnifiedHttpTester() {
           </Card>
         </div>
 
-        {/* Header Library */}
+        {/* Right Column: Header Library + Session History */}
         <div className="space-y-4">
           <Collapsible
             open={showHeaderLibrary}
@@ -437,9 +597,9 @@ export function UnifiedHttpTester() {
             <CollapsibleTrigger asChild>
               <Card className="cursor-pointer hover:bg-accent/50">
                 <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
+                  <CardTitle className="flex items-center justify-between text-base">
                     <div className="flex items-center gap-2">
-                      <Book className="h-5 w-5" />
+                      <Book className="h-4 w-4" />
                       HTTP Headers Library
                     </div>
                     <ChevronDown className="h-4 w-4" />
@@ -451,14 +611,13 @@ export function UnifiedHttpTester() {
               <Card>
                 <CardContent className="pt-6">
                   <div className="space-y-4">
-                    {/* Search */}
                     <Input
+                      aria-label="Search HTTP headers"
                       placeholder="Search headers..."
                       value={headerSearch}
                       onChange={(e) => setHeaderSearch(e.target.value)}
                     />
 
-                    {/* Category Filter */}
                     <Select
                       value={selectedCategory}
                       onValueChange={setSelectedCategory}
@@ -473,12 +632,11 @@ export function UnifiedHttpTester() {
                             <SelectItem key={category} value={category}>
                               {category}
                             </SelectItem>
-                          )
+                          ),
                         )}
                       </SelectContent>
                     </Select>
 
-                    {/* Header List */}
                     <div className="max-h-80 overflow-y-auto space-y-2">
                       {filteredHeaders.slice(0, 20).map((header) => (
                         <button
@@ -487,8 +645,8 @@ export function UnifiedHttpTester() {
                           className="w-full p-3 border rounded-lg hover:bg-accent/50 cursor-pointer text-left"
                           onClick={() => addHeaderFromLibrary(header)}
                         >
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
+                          <div className="flex justify-between items-start gap-2">
+                            <div className="flex-1 min-w-0">
                               <div className="font-medium text-sm">
                                 {header.name}
                               </div>
@@ -496,12 +654,12 @@ export function UnifiedHttpTester() {
                                 {header.description}
                               </div>
                             </div>
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="outline" className="text-xs shrink-0">
                               {header.category}
                             </Badge>
                           </div>
                           {header.examples.length > 0 && (
-                            <div className="text-xs text-muted-foreground mt-2 font-mono">
+                            <div className="text-xs text-muted-foreground mt-2 font-mono break-all">
                               {header.examples[0]}
                             </div>
                           )}
@@ -513,6 +671,49 @@ export function UnifiedHttpTester() {
               </Card>
             </CollapsibleContent>
           </Collapsible>
+
+          {!isApiTester && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <History className="h-4 w-4" />
+                  Session History
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {requestHistory.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    Requests executed in this tab appear here so you can replay
+                    or tweak headers.
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {requestHistory.map((item, idx) => (
+                      <button
+                        key={`${item.url}-${idx}`}
+                        type="button"
+                        onClick={() => {
+                          setUrl(item.url);
+                          setMethod(item.method);
+                          setHeaders(item.headers);
+                          setBody(item.body);
+                        }}
+                        className="w-full text-left rounded-md border p-2.5 hover:bg-accent/50 transition-colors space-y-1"
+                      >
+                        <div className="flex items-center justify-between gap-2 text-xs">
+                          <Badge variant="secondary">{item.method}</Badge>
+                          <span className="text-muted-foreground font-mono">
+                            {item.status} · {item.responseTime}ms
+                          </span>
+                        </div>
+                        <p className="text-xs font-mono truncate">{item.url}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
@@ -539,16 +740,23 @@ export function UnifiedHttpTester() {
                   <Clock className="h-3 w-3" />
                   {response.responseTime}ms
                 </Badge>
-                <Button variant="outline" size="sm" onClick={copyResponse} aria-label="Copy HTTP response">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={copyResponse}
+                  aria-label="Copy HTTP response"
+                >
                   <Copy className="h-3 w-3" />
                 </Button>
               </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {/* Error Display */}
             {response.error && (
-              <div role="alert" className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <div
+                role="alert"
+                className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+              >
                 <div className="flex items-start gap-2">
                   <AlertCircle className="h-4 w-4 text-red-600 mt-0.5" />
                   <div>
@@ -584,7 +792,7 @@ export function UnifiedHttpTester() {
 
               <TabsContent value="response" className="mt-4">
                 <div className="bg-muted/50 border border-border p-4 rounded-lg">
-                  <pre className="text-sm overflow-auto max-h-80">
+                  <pre className="text-sm overflow-auto max-h-80 font-mono">
                     {typeof response.data === "string"
                       ? response.data
                       : JSON.stringify(response.data, null, 2)}
@@ -610,7 +818,9 @@ export function UnifiedHttpTester() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <span className="text-sm text-muted-foreground">URL:</span>
-                    <div className="font-mono text-sm">{response.url}</div>
+                    <div className="font-mono text-sm break-all">
+                      {response.url}
+                    </div>
                   </div>
                   <div>
                     <span className="text-sm text-muted-foreground">

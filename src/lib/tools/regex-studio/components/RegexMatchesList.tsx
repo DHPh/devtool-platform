@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { writeClipboardText } from "@/hooks/use-clipboard";
+import { copyToClipboard } from "@/hooks/use-clipboard";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -26,7 +26,7 @@ export function RegexMatchesList({
   onHighlightMatch,
 }: RegexMatchesListProps) {
   const handleCopyMatch = (match: string) => {
-    void writeClipboardText(match);
+    void copyToClipboard(match, "Match copied to clipboard!");
   };
 
   const handleHighlightMatch = (match: RegexMatch) => {

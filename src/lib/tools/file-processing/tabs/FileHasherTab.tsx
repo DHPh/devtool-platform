@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { writeClipboardText } from "@/hooks/use-clipboard";
+import { copyToClipboard } from "@/hooks/use-clipboard";
 import {
   Card,
   CardContent,
@@ -159,10 +159,15 @@ export default function FileHasherTab() {
     setProgress(0);
   };
 
-  const copyHash = (hash: string, algorithm: string) => {
-    void writeClipboardText(hash);
-    setCopiedHash(`${algorithm}:${hash}`);
-    setTimeout(() => setCopiedHash(""), 2000);
+  const copyHash = async (hash: string, algorithm: string) => {
+    const ok = await copyToClipboard(
+      hash,
+      `${algorithm.toUpperCase()} hash copied to clipboard`,
+    );
+    if (ok) {
+      setCopiedHash(`${algorithm}:${hash}`);
+      setTimeout(() => setCopiedHash(""), 2000);
+    }
   };
 
   const exportHashes = (file: HashedFile) => {

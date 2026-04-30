@@ -6,14 +6,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { writeClipboardText } from "@/hooks/use-clipboard";
+import { copyToClipboard } from "@/hooks/use-clipboard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Play, Copy, Lightbulb } from "lucide-react";
-import { toast } from "sonner";
 import {
   Tooltip,
   TooltipContent,
@@ -79,15 +78,13 @@ export function JsonPathExplorer({ data, className }: JsonPathExplorerProps) {
   };
 
   const copyPath = (path: string) => {
-    void writeClipboardText(path);
-    toast.success("Path copied to clipboard");
+    void copyToClipboard(path, "Path copied to clipboard");
   };
 
   const copyValue = (value: unknown) => {
     const valueStr =
       typeof value === "string" ? value : JSON.stringify(value, null, 2);
-    void writeClipboardText(valueStr);
-    toast.success("Value copied to clipboard");
+    void copyToClipboard(valueStr, "Value copied to clipboard");
   };
 
   const handleUseSamplePath = (path: string) => {

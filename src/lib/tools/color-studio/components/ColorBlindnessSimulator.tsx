@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { writeClipboardText } from "@/hooks/use-clipboard";
+import { copyToClipboard } from "@/hooks/use-clipboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Copy, Eye, Palette } from "lucide-react";
-import { toast } from "sonner";
 import {
   simulateColorBlindness,
   type ColorBlindnessType,
@@ -104,8 +103,10 @@ export function ColorBlindnessSimulator() {
 
   const copySimulatedColor = (color: string, type: ColorBlindnessType) => {
     const simulated = simulateColor(color, type);
-    void writeClipboardText(simulated);
-    toast.success(`Simulated color (${type}) copied to clipboard`);
+    void copyToClipboard(
+      simulated,
+      `Simulated color (${type}) copied to clipboard`,
+    );
   };
 
   const copyAllSimulations = () => {
@@ -114,8 +115,7 @@ export function ColorBlindnessSimulator() {
     ).join("\n");
 
     const output = `Original: ${inputColor}\n${results}`;
-    void writeClipboardText(output);
-    toast.success("All simulations copied to clipboard");
+    void copyToClipboard(output, "All simulations copied to clipboard");
   };
 
   return (
@@ -317,7 +317,12 @@ export function ColorBlindnessSimulator() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => void writeClipboardText(inputColor)}
+                  onClick={() =>
+                    void copyToClipboard(
+                      inputColor,
+                      `Color ${inputColor} copied to clipboard`,
+                    )
+                  }
                   className="h-6 w-6 p-0"
                   aria-label={`Copy input color ${inputColor}`}
                 >

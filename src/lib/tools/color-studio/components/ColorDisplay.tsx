@@ -1,12 +1,11 @@
 "use client";
 
 import React from "react";
-import { writeClipboardText } from "@/hooks/use-clipboard";
+import { copyToClipboard } from "@/hooks/use-clipboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Copy } from "lucide-react";
-import { toast } from "sonner";
 import { TermHelp } from "@/components/tool-glossary";
 import {
   mapCSSColorToGamut,
@@ -37,10 +36,11 @@ export function ColorDisplay({ color, showDetails = true, onCopy, onChange }: Co
   const mapped = mapCSSColorToGamut(cssColor, "srgb");
   const previewLabel = mapped.hex ?? color.hex;
 
-  const handleCopy = (value: string, format: string) => {
-    void writeClipboardText(value);
-    toast.success(`${format} copied to clipboard`);
-    onCopy?.(value, format);
+  const handleCopy = async (value: string, format: string) => {
+    const copied = await copyToClipboard(value, `${format} copied to clipboard`);
+    if (copied) {
+      onCopy?.(value, format);
+    }
   };
 
   return (

@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { writeClipboardText } from "@/hooks/use-clipboard";
+import { copyToClipboard } from "@/hooks/use-clipboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, Palette } from "lucide-react";
-import { toast } from "sonner";
 import {
   generateContrastSuggestions,
   type ContrastSuggestion,
@@ -53,8 +52,10 @@ export function ContrastSuggestions({
 
   const handleColorClick = (suggestion: ContrastSuggestion) => {
     onColorSelect(suggestion.hex);
-    void writeClipboardText(suggestion.hex);
-    toast.success(`Color ${suggestion.hex} copied and applied!`);
+    void copyToClipboard(
+      suggestion.hex,
+      `Color ${suggestion.hex} copied and applied!`,
+    );
   };
 
   const getContrastLevel = (level: string) => {

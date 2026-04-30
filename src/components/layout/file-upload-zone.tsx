@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Upload, File, X, AlertCircle } from "lucide-react";
+import { AlertCircle, File, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
 interface FileUploadZoneProps {
@@ -23,28 +23,28 @@ export function FileUploadZone({
   className = "",
   disabled = false,
 }: FileUploadZoneProps) {
+  const inputId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const validateFile = useCallback(
     (file: File): string | null => {
-      // Check file size
       if (file.size > maxSizeInMB * 1024 * 1024) {
         return `File size must be less than ${maxSizeInMB}MB`;
       }
 
-      // Check file type
       const fileExtension = `.${file.name.split(".").pop()?.toLowerCase()}`;
       if (acceptedTypes.length > 0 && !acceptedTypes.includes(fileExtension)) {
         return `File type ${fileExtension} is not supported. Accepted types: ${acceptedTypes.join(
-          ", "
+          ", ",
         )}`;
       }
 
       return null;
     },
-    [maxSizeInMB, acceptedTypes]
+    [maxSizeInMB, acceptedTypes],
   );
 
   const processFile = useCallback(
@@ -69,8 +69,13 @@ export function FileUploadZone({
         setIsLoading(false);
       }
     },
-    [onFileSelect, validateFile]
+    [onFileSelect, validateFile],
   );
+
+  const openFilePicker = () => {
+    if (disabled || isLoading) return;
+    inputRef.current?.click();
+  };
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -81,10 +86,10 @@ export function FileUploadZone({
 
       const files = Array.from(e.dataTransfer.files);
       if (files.length > 0) {
-        processFile(files[0]);
+        void processFile(files[0]);
       }
     },
-    [disabled, processFile]
+    [disabled, processFile],
   );
 
   const handleDragOver = useCallback(
@@ -94,7 +99,7 @@ export function FileUploadZone({
         setIsDragOver(true);
       }
     },
-    [disabled]
+    [disabled],
   );
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
@@ -105,22 +110,39 @@ export function FileUploadZone({
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      processFile(files[0]);
+      void processFile(files[0]);
     }
-    // Reset input
     e.target.value = "";
   };
 
-  const clearFile = () => {
+  const clearFile = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setSelectedFile(null);
     setIsLoading(false);
   };
 
+  const isPromptInteractive = !disabled && !selectedFile;
+
   return (
     <div className={className}>
       <Card
+        role={isPromptInteractive ? "button" : undefined}
+        tabIndex={isPromptInteractive ? 0 : undefined}
+        aria-label={isPromptInteractive ? placeholder : undefined}
+        onClick={() => {
+          if (isPromptInteractive) {
+            openFilePicker();
+          }
+        }}
+        onKeyDown={(e) => {
+          if (isPromptInteractive && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            openFilePicker();
+          }
+        }}
         className={`
-          transition-all duration-200 cursor-pointer border-2 border-dashed
+          transition-all duration-200 border-2 border-dashed
+          ${isPromptInteractive ? "cursor-pointer" : ""}
           ${
             isDragOver
               ? "border-primary bg-primary/5"
@@ -142,8 +164,17 @@ export function FileUploadZone({
         onDragLeave={handleDragLeave}
       >
         <CardContent className="p-6">
+          <input
+            ref={inputRef}
+            id={inputId}
+            type="file"
+            onChange={handleFileInput}
+            accept={acceptedTypes.join(",")}
+            className="hidden"
+            disabled={disabled}
+          />
+
           {selectedFile ? (
-            // File selected state
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-md">
@@ -158,6 +189,7 @@ export function FileUploadZone({
               </div>
               {!isLoading && (
                 <Button
+                  type="button"
                   onClick={clearFile}
                   variant="ghost"
                   size="sm"
@@ -169,7 +201,6 @@ export function FileUploadZone({
               )}
             </div>
           ) : (
-            // Upload prompt state
             <div className="text-center">
               <div className="mx-auto mb-4 p-3 bg-muted rounded-full w-fit">
                 <Upload className="h-6 w-6 text-muted-foreground" />
@@ -179,18 +210,17 @@ export function FileUploadZone({
                 Supported formats: {acceptedTypes.join(", ")} • Max size:{" "}
                 {maxSizeInMB}MB
               </p>
-              <input
-                type="file"
-                onChange={handleFileInput}
-                accept={acceptedTypes.join(",")}
-                className="hidden"
-                id="file-upload"
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
                 disabled={disabled}
-              />
-              <Button asChild variant="outline" size="sm" disabled={disabled}>
-                <label htmlFor="file-upload" className="cursor-pointer">
-                  Choose File
-                </label>
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openFilePicker();
+                }}
+              >
+                Choose File
               </Button>
             </div>
           )}
@@ -206,7 +236,6 @@ export function FileUploadZone({
         </CardContent>
       </Card>
 
-      {/* File type help */}
       <div className="mt-2 text-xs text-muted-foreground">
         <div className="flex items-start gap-1">
           <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />

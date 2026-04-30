@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { writeClipboardText } from "@/hooks/use-clipboard";
+import { copyToClipboard } from "@/hooks/use-clipboard";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -103,15 +104,25 @@ export function PasswordGeneratorTab({
         }
       }
     } catch (error) {
-      console.error("Password generation failed:", error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Password generation failed";
+      toast.error(message);
     } finally {
       setIsGenerating(false);
     }
   };
 
+  const hasSelectedCharacterType =
+    options.includeUppercase ||
+    options.includeLowercase ||
+    options.includeNumbers ||
+    options.includeSymbols;
+
   const handleCopyPassword = () => {
     if (currentPassword) {
-      void writeClipboardText(currentPassword);
+      void copyToClipboard(currentPassword, "Password copied to clipboard!");
     }
   };
 
@@ -204,6 +215,11 @@ export function PasswordGeneratorTab({
               Generate
             </Button>
           </div>
+          {!hasSelectedCharacterType && (
+            <p role="alert" className="text-xs text-destructive">
+              Select at least one character type below before generating a password.
+            </p>
+          )}
         </CardContent>
       </Card>
 

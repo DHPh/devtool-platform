@@ -4,8 +4,8 @@ export const NETWORK_STUDIO_MANIFEST = defineStudioManifest(
   "network-studio",
   "network-studio",
   [
-    { id: "api-tester", shortLabel: "API", icon: "Globe", loadComponent: () => import("./tabs/UnifiedHttpTesterTab").then((module) => ({ default: module.UnifiedHttpTesterTab })) },
-    { id: "http-client", shortLabel: "HTTP", icon: "Globe", loadComponent: () => import("./tabs/UnifiedHttpTesterTab").then((module) => ({ default: module.UnifiedHttpTesterTab })) },
+    { id: "api-tester", shortLabel: "API", icon: "Zap", loadComponent: () => import("./tabs/UnifiedHttpTesterTab").then((module) => ({ default: module.ApiTesterTab })) },
+    { id: "http-client", shortLabel: "HTTP", icon: "Globe", loadComponent: () => import("./tabs/UnifiedHttpTesterTab").then((module) => ({ default: module.HttpClientTab })) },
     { id: "websocket", shortLabel: "WS", icon: "Wifi", loadComponent: () => import("./tabs/WebSocketTesterTab").then((module) => ({ default: module.WebSocketTesterTab })) },
     { id: "dns-lookup", shortLabel: "DNS", icon: "Search", loadComponent: () => import("./tabs/DnsLookupTab").then((module) => ({ default: module.DnsLookupTab })) },
     { id: "ip-info", shortLabel: "IP", icon: "MapPin", loadComponent: () => import("./tabs/IpInfoTab").then((module) => ({ default: module.IpInfoTab })) },

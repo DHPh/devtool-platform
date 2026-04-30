@@ -217,28 +217,211 @@ export function testWebSocket(
   });
 }
 
+function tokenizeShellArgs(command: string): string[] {
+  const normalized = command.replace(/\\\r?\n/g, " ");
+  const tokens: string[] = [];
+  let current = "";
+  let inSingle = false;
+  let inDouble = false;
+  let hasToken = false;
+
+  for (let i = 0; i < normalized.length; i++) {
+    const ch = normalized[i];
+
+    if (inSingle) {
+      if (ch === "'") {
+        inSingle = false;
+      } else {
+        current += ch;
+      }
+      hasToken = true;
+      continue;
+    }
+
+    if (inDouble) {
+      if (ch === "\\" && i + 1 < normalized.length) {
+        const next = normalized[i + 1];
+        if (next === '"' || next === "\\" || next === "$" || next === "`") {
+          current += next;
+          i += 1;
+          continue;
+        }
+      }
+      if (ch === '"') {
+        inDouble = false;
+      } else {
+        current += ch;
+      }
+      hasToken = true;
+      continue;
+    }
+
+    if (/\s/.test(ch)) {
+      if (hasToken) {
+        tokens.push(current);
+        current = "";
+        hasToken = false;
+      }
+      continue;
+    }
+
+    if (ch === "'") {
+      inSingle = true;
+      hasToken = true;
+      continue;
+    }
+
+    if (ch === '"') {
+      inDouble = true;
+      hasToken = true;
+      continue;
+    }
+
+    if (ch === "\\" && i + 1 < normalized.length) {
+      current += normalized[i + 1];
+      i += 1;
+      hasToken = true;
+      continue;
+    }
+
+    current += ch;
+    hasToken = true;
+  }
+
+  if (hasToken) {
+    tokens.push(current);
+  }
+
+  return tokens;
+}
+
+const VALID_HTTP_METHODS = new Set<HttpMethodType>([
+  "GET",
+  "POST",
+  "PUT",
+  "DELETE",
+  "PATCH",
+  "HEAD",
+  "OPTIONS",
+]);
+
 /**
  * Parse cURL command to ApiRequest
  */
 export function parseCurlCommand(curl: string): ApiRequest | null {
   try {
-    // Basic cURL parsing - can be enhanced
-    const urlMatch = curl.match(/curl\s+['"](.*?)['"]|curl\s+(\S+)/);
-    if (!urlMatch) return null;
+    const tokens = tokenizeShellArgs(curl.trim());
+    if (tokens.length === 0) return null;
 
-    const url = urlMatch[1] || urlMatch[2];
-    const method = curl.includes("-X")
-      ? (curl.match(/-X\s+(\w+)/)?.[1] as HttpMethodType) || "GET"
-      : "GET";
-
-    const headers: Record<string, string> = {};
-    const headerMatches = curl.matchAll(/-H\s+['"]([^:]+):\s*([^'"]+)['"]/g);
-    for (const match of headerMatches) {
-      headers[match[1]] = match[2];
+    let startIndex = 0;
+    if (tokens[0].toLowerCase() === "curl") {
+      startIndex = 1;
     }
 
-    const dataMatch = curl.match(/-d\s+['"](.*)['"]|--data\s+['"](.*)['"]/);
-    const body = dataMatch?.[1] || dataMatch?.[2];
+    let url = "";
+    let explicitMethod: HttpMethodType | null = null;
+    let forceGet = false;
+    const headers: Record<string, string> = {};
+    const bodyParts: string[] = [];
+
+    for (let i = startIndex; i < tokens.length; i++) {
+      const token = tokens[i];
+
+      if ((token === "-X" || token === "--request") && i + 1 < tokens.length) {
+        const rawMethod = tokens[++i].toUpperCase() as HttpMethodType;
+        if (VALID_HTTP_METHODS.has(rawMethod)) {
+          explicitMethod = rawMethod;
+        }
+        continue;
+      }
+
+      if (token.startsWith("--request=")) {
+        const rawMethod = token.slice("--request=".length).toUpperCase() as HttpMethodType;
+        if (VALID_HTTP_METHODS.has(rawMethod)) {
+          explicitMethod = rawMethod;
+        }
+        continue;
+      }
+
+      if ((token === "-H" || token === "--header") && i + 1 < tokens.length) {
+        const headerLine = tokens[++i];
+        const colonIdx = headerLine.indexOf(":");
+        if (colonIdx > 0) {
+          const name = headerLine.slice(0, colonIdx).trim();
+          const value = headerLine.slice(colonIdx + 1).trim();
+          if (name) headers[name] = value;
+        }
+        continue;
+      }
+
+      if (token.startsWith("--header=")) {
+        const headerLine = token.slice("--header=".length);
+        const colonIdx = headerLine.indexOf(":");
+        if (colonIdx > 0) {
+          const name = headerLine.slice(0, colonIdx).trim();
+          const value = headerLine.slice(colonIdx + 1).trim();
+          if (name) headers[name] = value;
+        }
+        continue;
+      }
+
+      if (
+        (token === "-d" ||
+          token === "--data" ||
+          token === "--data-raw" ||
+          token === "--data-binary" ||
+          token === "--data-urlencode") &&
+        i + 1 < tokens.length
+      ) {
+        bodyParts.push(tokens[++i]);
+        continue;
+      }
+
+      if (
+        token.startsWith("--data=") ||
+        token.startsWith("--data-raw=") ||
+        token.startsWith("--data-binary=")
+      ) {
+        const eqIdx = token.indexOf("=");
+        bodyParts.push(token.slice(eqIdx + 1));
+        continue;
+      }
+
+      if (token === "-G" || token === "--get") {
+        forceGet = true;
+        continue;
+      }
+
+      if (token === "--url" && i + 1 < tokens.length) {
+        url = tokens[++i];
+        continue;
+      }
+
+      if (token.startsWith("--url=")) {
+        url = token.slice("--url=".length);
+        continue;
+      }
+
+      if (
+        token === "-A" ||
+        token === "--user-agent" ||
+        token === "-u" ||
+        token === "--user"
+      ) {
+        if (i + 1 < tokens.length) i += 1;
+        continue;
+      }
+
+      if (!token.startsWith("-") && !url) {
+        url = token;
+      }
+    }
+
+    if (!url) return null;
+
+    const body = bodyParts.length > 0 ? bodyParts.join("&") : undefined;
+    const method: HttpMethodType =
+      explicitMethod ?? (forceGet ? "GET" : body !== undefined ? "POST" : "GET");
 
     return {
       url,
@@ -255,16 +438,20 @@ export function parseCurlCommand(curl: string): ApiRequest | null {
  * Generate cURL command from ApiRequest
  */
 export function generateCurlCommand(request: ApiRequest): string {
-  let curl = `curl -X ${request.method} "${request.url}"`;
+  const escapedUrl = request.url.replace(/"/g, '\\"');
+  let curl = `curl -X ${request.method} "${escapedUrl}"`;
 
   if (request.headers) {
     Object.entries(request.headers).forEach(([key, value]) => {
-      curl += ` -H "${key}: ${value}"`;
+      const safeKey = key.replace(/["\\]/g, "\\$&");
+      const safeValue = value.replace(/["\\]/g, "\\$&");
+      curl += ` -H "${safeKey}: ${safeValue}"`;
     });
   }
 
   if (request.body && request.method !== "GET" && request.method !== "HEAD") {
-    curl += ` -d '${request.body}'`;
+    const safeBody = request.body.replace(/'/g, "'\\''");
+    curl += ` -d '${safeBody}'`;
   }
 
   return curl;

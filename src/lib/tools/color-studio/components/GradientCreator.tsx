@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { writeClipboardText } from "@/hooks/use-clipboard";
+import { copyToClipboard } from "@/hooks/use-clipboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -134,8 +134,7 @@ export function GradientCreator() {
   });
 
   const copyCss = () => {
-    void writeClipboardText(gradientCSS);
-    toast.success("CSS copied to clipboard");
+    void copyToClipboard(gradientCSS, "CSS copied to clipboard");
   };
 
   const generateSwiftUICode = (): string => {
@@ -156,8 +155,10 @@ export function GradientCreator() {
   };
 
   const copySwiftUI = () => {
-    void writeClipboardText(generateSwiftUICode());
-    toast.success("SwiftUI code copied to clipboard");
+    void copyToClipboard(
+      generateSwiftUICode(),
+      "SwiftUI code copied to clipboard",
+    );
   };
 
   const directionOptions = [

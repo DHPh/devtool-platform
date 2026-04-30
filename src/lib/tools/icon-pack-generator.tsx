@@ -578,14 +578,23 @@ Note: The 1024x1024 icon is required for App Store submission.
               <CardTitle>Generate Icon Packs</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {!isGenerating &&
-                !generatedZips.android &&
-                !generatedZips.ios && (
-                  <Button onClick={generateIcons} className="w-full" size="lg">
-                    <Package className="h-4 w-4 mr-2" />
-                    Generate Icon Packs
-                  </Button>
-                )}
+              {!isGenerating && (
+                <Button
+                  onClick={generateIcons}
+                  variant={
+                    generatedZips.android || generatedZips.ios
+                      ? "outline"
+                      : "default"
+                  }
+                  className="w-full"
+                  size="lg"
+                >
+                  <Package className="h-4 w-4 mr-2" />
+                  {generatedZips.android || generatedZips.ios
+                    ? "Regenerate Icon Packs"
+                    : "Generate Icon Packs"}
+                </Button>
+              )}
 
               {isGenerating && (
                 <div className="space-y-3">
