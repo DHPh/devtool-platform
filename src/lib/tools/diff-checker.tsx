@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { writeClipboardText } from "@/hooks/use-clipboard";
+import { copyToClipboard } from "@/hooks/use-clipboard";
 import { GitCompare, Copy, Download, FileText } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -20,7 +20,11 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { calculateTextDiff } from "@/lib/processors/ui-primitives";
+import {
+  calculateTextDiff,
+  type DiffEntry,
+  type DiffSplitRow,
+} from "@/lib/processors/ui-primitives";
 
 export const metadata = {
   id: "diff-checker",
@@ -32,16 +36,11 @@ export const metadata = {
   icon: "🔍",
 };
 
-interface DiffLine {
-  type: "added" | "removed" | "unchanged";
-  text: string;
-  lineNumber: number;
-}
-
 export default function DiffChecker() {
   const [text1, setText1] = useState("");
   const [text2, setText2] = useState("");
-  const [diffResult, setDiffResult] = useState<DiffLine[]>([]);
+  const [diffResult, setDiffResult] = useState<DiffEntry[]>([]);
+  const [splitRows, setSplitRows] = useState<DiffSplitRow[]>([]);
   const [diffType, setDiffType] = useState<"unified" | "split">("unified");
   const [diffLevel, setDiffLevel] = useState<"line" | "word" | "char">("line");
   const [ignoreWhitespace, setIgnoreWhitespace] = useState(false);
@@ -64,6 +63,7 @@ export default function DiffChecker() {
       ignoreCase,
     });
     setDiffResult(result.lines);
+    setSplitRows(result.splitRows);
     setStats(result.stats);
     toast.success("Diff calculated successfully!");
   };
@@ -82,8 +82,7 @@ export default function DiffChecker() {
       })
       .join("\n");
 
-    void writeClipboardText(diffText);
-    toast.success("Diff copied to clipboard!");
+    void copyToClipboard(diffText, "Diff copied to clipboard!");
   };
 
   const downloadResults = () => {
@@ -114,6 +113,7 @@ export default function DiffChecker() {
     setText1("");
     setText2("");
     setDiffResult([]);
+    setSplitRows([]);
     setStats({ additions: 0, deletions: 0, changes: 0 });
     toast.success("All data cleared!");
   };
@@ -194,7 +194,7 @@ New line added`);
                 setDiffType(value)
               }
             >
-              <SelectTrigger aria-label="Diff view type">
+              <SelectTrigger id="diff-type" aria-label="Diff view type">
                 <SelectValue placeholder="Select view type" />
               </SelectTrigger>
               <SelectContent>
@@ -212,7 +212,7 @@ New line added`);
                 setDiffLevel(value)
               }
             >
-              <SelectTrigger aria-label="Comparison level">
+              <SelectTrigger id="diff-level" aria-label="Comparison level">
                 <SelectValue placeholder="Select comparison level" />
               </SelectTrigger>
               <SelectContent>
@@ -245,30 +245,32 @@ New line added`);
       </ResultCard>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <div>
-            <Label className="block text-sm font-medium mb-2">Original Text</Label>
-            <ResponsiveTextArea
-              value={text1}
-              onChange={setText1}
-              placeholder="Enter original text here..."
-              minHeight={300}
-              showCharacterCount={true}
-            />
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="diff-original" className="block text-sm font-medium">
+            Original Text
+          </Label>
+          <ResponsiveTextArea
+            id="diff-original"
+            value={text1}
+            onChange={setText1}
+            placeholder="Enter original text here..."
+            minHeight={280}
+            showCharacterCount={true}
+          />
         </div>
 
-        <div className="space-y-4">
-          <div>
-            <Label className="block text-sm font-medium mb-2">Modified Text</Label>
-            <ResponsiveTextArea
-              value={text2}
-              onChange={setText2}
-              placeholder="Enter modified text here..."
-              minHeight={300}
-              showCharacterCount={true}
-            />
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="diff-modified" className="block text-sm font-medium">
+            Modified Text
+          </Label>
+          <ResponsiveTextArea
+            id="diff-modified"
+            value={text2}
+            onChange={setText2}
+            placeholder="Enter modified text here..."
+            minHeight={280}
+            showCharacterCount={true}
+          />
         </div>
       </div>
 
@@ -281,13 +283,22 @@ New line added`);
           <div className="space-y-4">
             {/* Stats */}
             <div className="flex flex-wrap gap-2">
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+              <Badge
+                variant="outline"
+                className="bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800"
+              >
                 +{stats.additions} additions
               </Badge>
-              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300">
+              <Badge
+                variant="outline"
+                className="bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-300 dark:border-red-800"
+              >
                 -{stats.deletions} deletions
               </Badge>
-              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+              <Badge
+                variant="outline"
+                className="bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800"
+              >
                 {stats.changes} changes
               </Badge>
             </div>
@@ -315,89 +326,90 @@ New line added`);
             {/* Diff Display */}
             <div className="border rounded-lg overflow-auto max-h-96">
               {diffType === "unified" ? (
-                // Unified View - single column with +/- indicators
                 <div className="font-mono text-sm">
                   {diffResult.map((line, index) => (
                     <div
                       key={index}
-                      className={`px-4 py-1 border-l-2 ${
+                      className={`px-3 py-1 border-l-2 flex items-start ${
                         line.type === "added"
-                          ? "bg-green-50 text-green-800 border-green-300 dark:bg-green-900/20 dark:text-green-100 dark:border-green-700"
+                          ? "bg-green-50 text-green-800 border-green-500 dark:bg-green-900/20 dark:text-green-100 dark:border-green-600"
                           : line.type === "removed"
-                          ? "bg-red-50 text-red-800 border-red-300 dark:bg-red-900/20 dark:text-red-100 dark:border-red-700"
-                          : "bg-card border-border"
+                            ? "bg-red-50 text-red-800 border-red-500 dark:bg-red-900/20 dark:text-red-100 dark:border-red-600"
+                            : "bg-card border-transparent"
                       }`}
                     >
-                      <span className="text-muted-foreground w-8 inline-block text-right mr-4 select-none">
-                        {line.lineNumber}
+                      <span className="text-muted-foreground w-8 inline-block text-right mr-2 select-none text-xs shrink-0 pt-0.5">
+                        {line.oldLineNumber ?? ""}
                       </span>
-                      <span className="w-4 inline-block mr-2 font-bold">
-                        {line.type === "added" ? "+" : line.type === "removed" ? "-" : " "}
+                      <span className="text-muted-foreground w-8 inline-block text-right mr-3 select-none text-xs shrink-0 pt-0.5">
+                        {line.newLineNumber ?? ""}
                       </span>
-                      <span className="whitespace-pre-wrap break-words">
+                      <span className="w-4 inline-block mr-2 font-bold shrink-0">
+                        {line.type === "added"
+                          ? "+"
+                          : line.type === "removed"
+                            ? "-"
+                            : " "}
+                      </span>
+                      <span className="whitespace-pre-wrap break-words min-w-0 flex-1">
                         {line.text || " "}
                       </span>
                     </div>
                   ))}
                 </div>
               ) : (
-                // Split View - side by side comparison
-                <div className="grid grid-cols-2 gap-4 p-4">
-                  <div className="space-y-2">
-                    <div className="font-semibold text-sm text-red-600 dark:text-red-400 border-b pb-2 flex items-center gap-2">
+                <div className="font-mono text-sm min-w-[640px]">
+                  <div className="grid grid-cols-2 border-b bg-muted/60 sticky top-0 z-10">
+                    <div className="px-3 py-2 font-semibold text-xs sm:text-sm text-red-700 dark:text-red-400 flex items-center gap-2 border-r">
                       <FileText className="h-4 w-4" />
                       Original Text
                     </div>
-                    <div className="font-mono text-sm space-y-1">
-                      {diffResult
-                        .filter(line => line.type !== "added")
-                        .map((line, index) => (
-                          <div
-                            key={`orig-${index}`}
-                            className={`px-2 py-1 rounded ${
-                              line.type === "removed"
-                                ? "bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-100"
-                                : "bg-muted/50"
-                            }`}
-                          >
-                            <span className="text-muted-foreground w-6 inline-block text-right mr-2 select-none text-xs">
-                              {line.lineNumber}
-                            </span>
-                            <span className="whitespace-pre-wrap break-words">
-                              {line.text || " "}
-                            </span>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="font-semibold text-sm text-green-600 dark:text-green-400 border-b pb-2 flex items-center gap-2">
+                    <div className="px-3 py-2 font-semibold text-xs sm:text-sm text-green-700 dark:text-green-400 flex items-center gap-2">
                       <FileText className="h-4 w-4" />
                       Modified Text
                     </div>
-                    <div className="font-mono text-sm space-y-1">
-                      {diffResult
-                        .filter(line => line.type !== "removed")
-                        .map((line, index) => (
-                          <div
-                            key={`mod-${index}`}
-                            className={`px-2 py-1 rounded ${
-                              line.type === "added"
-                                ? "bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-100"
-                                : "bg-muted/50"
-                            }`}
-                          >
-                            <span className="text-muted-foreground w-6 inline-block text-right mr-2 select-none text-xs">
-                              {line.lineNumber}
-                            </span>
-                            <span className="whitespace-pre-wrap break-words">
-                              {line.text || " "}
-                            </span>
-                          </div>
-                        ))}
-                    </div>
                   </div>
+
+                  {splitRows.map((row, index) => (
+                    <div
+                      key={index}
+                      className="grid grid-cols-2 border-t first:border-t-0"
+                    >
+                      <div
+                        className={`px-3 py-1 border-r flex items-start ${
+                          row.left?.type === "removed"
+                            ? "bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-100"
+                            : row.left
+                              ? "bg-card"
+                              : "bg-muted/25 border-dashed border-border/50"
+                        }`}
+                      >
+                        <span className="text-muted-foreground w-7 inline-block text-right mr-2 select-none text-xs shrink-0 pt-0.5">
+                          {row.left?.lineNumber ?? ""}
+                        </span>
+                        <span className="whitespace-pre-wrap break-words min-w-0 flex-1">
+                          {row.left ? row.left.text || " " : "\u00A0"}
+                        </span>
+                      </div>
+
+                      <div
+                        className={`px-3 py-1 flex items-start ${
+                          row.right?.type === "added"
+                            ? "bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-100"
+                            : row.right
+                              ? "bg-card"
+                              : "bg-muted/25 border-dashed border-border/50"
+                        }`}
+                      >
+                        <span className="text-muted-foreground w-7 inline-block text-right mr-2 select-none text-xs shrink-0 pt-0.5">
+                          {row.right?.lineNumber ?? ""}
+                        </span>
+                        <span className="whitespace-pre-wrap break-words min-w-0 flex-1">
+                          {row.right ? row.right.text || " " : "\u00A0"}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

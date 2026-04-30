@@ -1,61 +1,266 @@
 export type DiffLevel = "line" | "word" | "char";
-export type DiffEntry = { type: "added" | "removed" | "unchanged"; text: string; lineNumber: number };
+export type DiffEntry = {
+  type: "added" | "removed" | "unchanged";
+  text: string;
+  lineNumber: number;
+  oldLineNumber?: number;
+  newLineNumber?: number;
+};
+
+export type DiffSplitCell = {
+  type: "added" | "removed" | "unchanged";
+  text: string;
+  lineNumber: number;
+};
+
+export type DiffSplitRow = {
+  left: DiffSplitCell | null;
+  right: DiffSplitCell | null;
+};
+
+type RawDiffOp =
+  | { kind: "unchanged"; oldIndex: number; newIndex: number }
+  | { kind: "removed"; oldIndex: number }
+  | { kind: "added"; newIndex: number };
+
+const MAX_LCS_CELLS = 4_000_000;
+
+function computeMiddleDiffOps(
+  compA: readonly string[],
+  compB: readonly string[],
+  startA: number,
+  endA: number,
+  startB: number,
+  endB: number,
+): RawDiffOp[] {
+  const m = endA - startA;
+  const n = endB - startB;
+  if (m === 0 && n === 0) return [];
+  if (m === 0) {
+    return Array.from({ length: n }, (_, k) => ({
+      kind: "added" as const,
+      newIndex: startB + k,
+    }));
+  }
+  if (n === 0) {
+    return Array.from({ length: m }, (_, k) => ({
+      kind: "removed" as const,
+      oldIndex: startA + k,
+    }));
+  }
+
+  if (m * n > MAX_LCS_CELLS) {
+    const ops: RawDiffOp[] = [];
+    const maxLen = Math.max(m, n);
+    for (let k = 0; k < maxLen; k++) {
+      if (k < m && k < n && compA[startA + k] === compB[startB + k]) {
+        ops.push({ kind: "unchanged", oldIndex: startA + k, newIndex: startB + k });
+      } else {
+        if (k < m) ops.push({ kind: "removed", oldIndex: startA + k });
+        if (k < n) ops.push({ kind: "added", newIndex: startB + k });
+      }
+    }
+    return ops;
+  }
+
+  const width = n + 1;
+  const dp = new Int32Array((m + 1) * width);
+
+  for (let i = 1; i <= m; i++) {
+    const rowOffset = i * width;
+    const prevRowOffset = (i - 1) * width;
+    const aToken = compA[startA + i - 1];
+    for (let j = 1; j <= n; j++) {
+      if (aToken === compB[startB + j - 1]) {
+        dp[rowOffset + j] = dp[prevRowOffset + j - 1] + 1;
+      } else {
+        const up = dp[prevRowOffset + j];
+        const leftVal = dp[rowOffset + j - 1];
+        dp[rowOffset + j] = up >= leftVal ? up : leftVal;
+      }
+    }
+  }
+
+  const opsReversed: RawDiffOp[] = [];
+  let i = m;
+  let j = n;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && compA[startA + i - 1] === compB[startB + j - 1]) {
+      i -= 1;
+      j -= 1;
+      opsReversed.push({
+        kind: "unchanged",
+        oldIndex: startA + i,
+        newIndex: startB + j,
+      });
+    } else if (j > 0 && (i === 0 || dp[i * width + j - 1] >= dp[(i - 1) * width + j])) {
+      j -= 1;
+      opsReversed.push({ kind: "added", newIndex: startB + j });
+    } else {
+      i -= 1;
+      opsReversed.push({ kind: "removed", oldIndex: startA + i });
+    }
+  }
+
+  opsReversed.reverse();
+  return opsReversed;
+}
 
 export function calculateTextDiff(
   left: string,
   right: string,
   options: { level?: DiffLevel; ignoreWhitespace?: boolean; ignoreCase?: boolean } = {},
-): { lines: DiffEntry[]; stats: { additions: number; deletions: number; changes: number } } {
+): {
+  lines: DiffEntry[];
+  splitRows: DiffSplitRow[];
+  stats: { additions: number; deletions: number; changes: number };
+} {
   const level = options.level ?? "line";
-  const preprocess = (value: string) => {
-    let result = options.ignoreCase ? value.toLowerCase() : value;
-    if (options.ignoreWhitespace) result = result.replace(/\s+/g, " ").trim();
+
+  const prepareNonLine = (value: string) => {
+    if (!options.ignoreWhitespace) return value;
+    return value.replace(/\s+/g, " ");
+  };
+
+  const tokenize = (value: string) =>
+    level === "line"
+      ? value.split("\n")
+      : level === "word"
+        ? value.split(/(\s+)/).filter(Boolean)
+        : value.split("");
+
+  const normalizeToken = (token: string) => {
+    let result = options.ignoreCase ? token.toLowerCase() : token;
+    if (options.ignoreWhitespace) {
+      result =
+        level === "line"
+          ? result.replace(/\s+/g, " ").trim()
+          : /^\s+$/.test(result)
+            ? " "
+            : result;
+    }
     return result;
   };
-  const tokenize = (value: string) => level === "line"
-    ? value.split("\n")
-    : level === "word" ? value.split(/(\s+)/).filter(Boolean) : value.split("");
-  const a = tokenize(preprocess(left));
-  const b = tokenize(preprocess(right));
+
+  const rawA = tokenize(level === "line" ? left : prepareNonLine(left));
+  const rawB = tokenize(level === "line" ? right : prepareNonLine(right));
+  const compA = rawA.map(normalizeToken);
+  const compB = rawB.map(normalizeToken);
+
+  let prefix = 0;
+  const minLen = Math.min(compA.length, compB.length);
+  while (prefix < minLen && compA[prefix] === compB[prefix]) {
+    prefix += 1;
+  }
+
+  let suffix = 0;
+  while (
+    suffix < minLen - prefix &&
+    compA[compA.length - 1 - suffix] === compB[compB.length - 1 - suffix]
+  ) {
+    suffix += 1;
+  }
+
+  const endA = compA.length - suffix;
+  const endB = compB.length - suffix;
+
+  const ops: RawDiffOp[] = [];
+  for (let k = 0; k < prefix; k++) {
+    ops.push({ kind: "unchanged", oldIndex: k, newIndex: k });
+  }
+  for (const op of computeMiddleDiffOps(compA, compB, prefix, endA, prefix, endB)) {
+    ops.push(op);
+  }
+  for (let k = 0; k < suffix; k++) {
+    ops.push({
+      kind: "unchanged",
+      oldIndex: endA + k,
+      newIndex: endB + k,
+    });
+  }
+
   const lines: DiffEntry[] = [];
+  const splitRows: DiffSplitRow[] = [];
   let additions = 0;
   let deletions = 0;
   let changes = 0;
 
-  if (level === "line") {
-    for (let index = 0; index < Math.max(a.length, b.length); index++) {
-      const before = a[index];
-      const after = b[index];
-      if (before === after) lines.push({ type: "unchanged", text: before ?? "", lineNumber: index + 1 });
-      else {
-        if (before !== undefined) { lines.push({ type: "removed", text: before, lineNumber: index + 1 }); deletions++; }
-        if (after !== undefined) { lines.push({ type: "added", text: after, lineNumber: index + 1 }); additions++; }
-        if (before !== undefined && after !== undefined) changes++;
-      }
-    }
-    return { lines, stats: { additions, deletions, changes } };
-  }
+  let pendingRemoved: DiffSplitCell[] = [];
+  let pendingAdded: DiffSplitCell[] = [];
 
-  const matrix = Array.from({ length: a.length + 1 }, () => Array<number>(b.length + 1).fill(0));
-  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) {
-    matrix[i][j] = a[i - 1] === b[j - 1] ? matrix[i - 1][j - 1] + 1 : Math.max(matrix[i - 1][j], matrix[i][j - 1]);
+  const flushHunk = () => {
+    if (pendingRemoved.length === 0 && pendingAdded.length === 0) return;
+
+    for (const item of pendingRemoved) {
+      lines.push({
+        type: "removed",
+        text: item.text,
+        lineNumber: item.lineNumber,
+        oldLineNumber: item.lineNumber,
+      });
+      deletions += 1;
+    }
+    for (const item of pendingAdded) {
+      lines.push({
+        type: "added",
+        text: item.text,
+        lineNumber: item.lineNumber,
+        newLineNumber: item.lineNumber,
+      });
+      additions += 1;
+    }
+
+    const hunkSize = Math.max(pendingRemoved.length, pendingAdded.length);
+    changes += hunkSize;
+    for (let k = 0; k < hunkSize; k++) {
+      splitRows.push({
+        left: pendingRemoved[k] ?? null,
+        right: pendingAdded[k] ?? null,
+      });
+    }
+
+    pendingRemoved = [];
+    pendingAdded = [];
+  };
+
+  for (const op of ops) {
+    if (op.kind === "unchanged") {
+      flushHunk();
+      const oldLine = op.oldIndex + 1;
+      const newLine = op.newIndex + 1;
+      const text = rawA[op.oldIndex];
+      lines.push({
+        type: "unchanged",
+        text,
+        lineNumber: oldLine,
+        oldLineNumber: oldLine,
+        newLineNumber: newLine,
+      });
+      splitRows.push({
+        left: { type: "unchanged", text, lineNumber: oldLine },
+        right: { type: "unchanged", text: rawB[op.newIndex], lineNumber: newLine },
+      });
+    } else if (op.kind === "removed") {
+      pendingRemoved.push({
+        type: "removed",
+        text: rawA[op.oldIndex],
+        lineNumber: op.oldIndex + 1,
+      });
+    } else {
+      pendingAdded.push({
+        type: "added",
+        text: rawB[op.newIndex],
+        lineNumber: op.newIndex + 1,
+      });
+    }
   }
-  const tokens: Array<{ type: DiffEntry["type"]; text: string }> = [];
-  let i = a.length;
-  let j = b.length;
-  while (i > 0 || j > 0) {
-    if (i > 0 && j > 0 && a[i - 1] === b[j - 1]) { tokens.unshift({ type: "unchanged", text: a[--i] }); j--; }
-    else if (j > 0 && (i === 0 || matrix[i][j - 1] >= matrix[i - 1][j])) tokens.unshift({ type: "added", text: b[--j] });
-    else tokens.unshift({ type: "removed", text: a[--i] });
-  }
-  let lineNumber = 1;
-  for (const token of tokens) {
-    lines.push({ ...token, lineNumber: lineNumber++ });
-    if (token.type === "added") additions++;
-    if (token.type === "removed") deletions++;
-    if (token.type !== "unchanged") changes++;
-  }
-  return { lines, stats: { additions, deletions, changes } };
+  flushHunk();
+
+  return {
+    lines,
+    splitRows,
+    stats: { additions, deletions, changes },
+  };
 }
 
 export type WeightedWheelItem = { weight: number };
