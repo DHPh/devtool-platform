@@ -5,7 +5,7 @@ from Node.js tests without rendering its UI.
 
 - Keep deterministic transformation and validation logic in this directory or
   another shared `src/lib` engine imported by both the UI and its contract test.
-- Return structured results or typed failures; never fabricate successful
+- Return structured `ProcessorResult<T>` (`ok` / `err` / `tryProcess` from `src/lib/processors/result.ts`) or typed failures; never fabricate successful
   output after an exception.
 - Inject clocks, randomness, network calls, and browser-only adapters when they
   affect results so tests remain deterministic.

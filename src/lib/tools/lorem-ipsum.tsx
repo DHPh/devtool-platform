@@ -23,16 +23,6 @@ import {
   type LoremIpsumUnit,
 } from "@/lib/processors/lorem";
 
-export const metadata = {
-  id: "lorem-ipsum",
-  name: "Lorem Ipsum Generator",
-  description: "Generate placeholder text in various formats",
-  category: "Generators",
-  tags: ["lorem", "ipsum", "placeholder", "text"],
-  path: "/tools/lorem-ipsum",
-  icon: "📃",
-};
-
 export default function LoremIpsum() {
   const [count, setCount] = useState(3);
   const [type, setType] = useState<LoremIpsumUnit>("paragraphs");

@@ -25,18 +25,7 @@ import {
   parseCSV,
   serializeCSV,
 } from "@/lib/processors/csv";
-import { parseJSON } from "@/lib/utils/json-parser";
-
-export const metadata = {
-  id: "data-explorer",
-  name: "Data Explorer",
-  description:
-    "Advanced data analysis with statistics, filtering, and visualization",
-  category: "Data Processing",
-  tags: ["data", "analysis", "statistics", "explorer"],
-  path: "/tools/data-explorer",
-  icon: "🔍",
-};
+import { parseJsonTable } from "@/lib/processors/json-table";
 
 type DataRow = Record<string, unknown>;
 
@@ -188,19 +177,14 @@ export default function DataExplorer() {
       (format === "auto" &&
         (text.trim().startsWith("[") || text.trim().startsWith("{")))
     ) {
-      try {
-        const result = parseJSON(text, { maxDepth: 20 });
-        parsedData = result.data as DataRow[];
-        parsedHeaders = result.headers;
-        hasNested = result.hasNestedData;
-      } catch (error) {
-        toast.error(
-          `Error parsing JSON data: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }`,
-        );
+      const parsed = parseJsonTable(text, { maxDepth: 20 });
+      if (!parsed.ok) {
+        toast.error(`Error parsing JSON data: ${parsed.error}`);
         return;
       }
+      parsedData = parsed.value.data as DataRow[];
+      parsedHeaders = parsed.value.headers;
+      hasNested = parsed.value.hasNestedData;
     } else if (format === "tsv") {
       try {
         const result = parseCSV(text, {

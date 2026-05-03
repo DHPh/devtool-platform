@@ -1,4 +1,9 @@
 import { ProcessorError } from "./errors";
+import { tryProcess, type ProcessorResult } from "./result";
+import {
+  compareJsonObjects,
+  type JsonDiffResult,
+} from "@/lib/utils/json/json-diff";
 
 /**
  * JSON Formatter Utilities
@@ -168,7 +173,7 @@ function removeJsonComments(input: string): string {
  * Calculate comprehensive JSON statistics
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function calculateJsonStats(obj: any): JsonStats {
+export function calculateJsonStats(obj: any): JsonStats {
   const stats: JsonStats = {
     size: JSON.stringify(obj).length,
     lines: JSON.stringify(obj, null, 2).split("\n").length,
@@ -247,106 +252,32 @@ function getSuggestionForError(errorMessage: string): string {
   return "Check JSON syntax and formatting";
 }
 
-/**
- * Compare two JSON objects
- */
-export function compareJson(
-  json1: string,
-  json2: string
-): {
-  areEqual: boolean;
-  differences: string[];
-} {
-  try {
-    const obj1 = JSON.parse(json1);
-    const obj2 = JSON.parse(json2);
+/** Parse JSON string safely returning a ProcessorResult. */
+export function parseJsonSafe<T = unknown>(input: string): ProcessorResult<T> {
+  return tryProcess(() => JSON.parse(input) as T, "Invalid JSON.");
+}
 
-    const differences: string[] = [];
-    const areEqual = deepCompare(obj1, obj2, "", differences);
-
-    return { areEqual, differences };
-  } catch (error) {
-    return {
-      areEqual: false,
-      differences: [
-        `Parsing error: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`,
-      ],
-    };
-  }
+/** Format JSON string safely returning a ProcessorResult. */
+export function formatJsonSafe(
+  input: string,
+  options: JsonFormatOptions = {},
+): ProcessorResult<{ result: string; stats: JsonStats }> {
+  return tryProcess(() => formatJson(input, options), "JSON formatting failed.");
 }
 
 /**
- * Deep compare two objects and collect differences
+ * Compare two JSON strings structurally using canonical RFC 6902 diffing.
  */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-function deepCompare(
-  obj1: any,
-  obj2: any,
-  path: string,
-  differences: string[]
-): boolean {
-  if (obj1 === obj2) return true;
-
-  if (obj1 === null || obj2 === null) {
-    differences.push(`${path}: ${obj1} !== ${obj2}`);
-    return false;
-  }
-
-  if (typeof obj1 !== typeof obj2) {
-    differences.push(
-      `${path}: type mismatch (${typeof obj1} vs ${typeof obj2})`
-    );
-    return false;
-  }
-
-  if (Array.isArray(obj1) !== Array.isArray(obj2)) {
-    differences.push(`${path}: array mismatch`);
-    return false;
-  }
-
-  if (Array.isArray(obj1)) {
-    if (obj1.length !== obj2.length) {
-      differences.push(
-        `${path}: array length mismatch (${obj1.length} vs ${obj2.length})`
-      );
-      return false;
-    }
-
-    let isEqual = true;
-    for (let i = 0; i < obj1.length; i++) {
-      if (!deepCompare(obj1[i], obj2[i], `${path}[${i}]`, differences)) {
-        isEqual = false;
-      }
-    }
-    return isEqual;
-  }
-
-  if (typeof obj1 === "object") {
-    const keys1 = Object.keys(obj1);
-    const keys2 = Object.keys(obj2);
-
-    const allKeys = new Set([...keys1, ...keys2]);
-    let isEqual = true;
-
-    for (const key of allKeys) {
-      const newPath = path ? `${path}.${key}` : key;
-
-      if (!(key in obj1)) {
-        differences.push(`${newPath}: missing in first object`);
-        isEqual = false;
-      } else if (!(key in obj2)) {
-        differences.push(`${newPath}: missing in second object`);
-        isEqual = false;
-      } else if (!deepCompare(obj1[key], obj2[key], newPath, differences)) {
-        isEqual = false;
-      }
-    }
-
-    return isEqual;
-  }
-
-  differences.push(`${path}: ${obj1} !== ${obj2}`);
-  return false;
+export function compareJsonStrings(
+  leftJson: string,
+  rightJson: string,
+): ProcessorResult<JsonDiffResult> {
+  const left = parseJsonSafe(leftJson);
+  if (!left.ok) return left;
+  const right = parseJsonSafe(rightJson);
+  if (!right.ok) return right;
+  return tryProcess(
+    () => compareJsonObjects(left.value, right.value),
+    "Failed to compare JSON objects.",
+  );
 }

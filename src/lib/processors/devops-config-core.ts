@@ -2,8 +2,6 @@ import { CronExpressionParser } from "cron-parser";
 import semver from "semver";
 import type { ProcessorResult } from "./result";
 
-export type { ProcessorResult } from "./result";
-
 export interface CronDetails {
   expression: string;
   explanation: string;

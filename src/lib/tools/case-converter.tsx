@@ -11,17 +11,6 @@ import {
 } from "@/components/layout";
 import { convertTextToAllCases } from "@/lib/processors/text";
 
-export const metadata = {
-  id: "case-converter",
-  name: "Case Converter",
-  description:
-    "Convert text between different cases (camelCase, snake_case, etc.)",
-  category: "Converters",
-  tags: ["case", "converter", "camel", "snake", "kebab"],
-  path: "/tools/case-converter",
-  icon: "🔠",
-};
-
 export default function CaseConverter() {
   const [input, setInput] = useState("Hello World Example Text");
 

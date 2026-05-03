@@ -24,16 +24,6 @@ import {
   renderMarkdownToSafeHtml,
 } from "@/lib/markdown/markdown-renderer";
 
-export const metadata = {
-  id: "markdown-preview",
-  name: "Markdown Preview",
-  description: "Preview markdown with live editing",
-  category: "Text & Format",
-  tags: ["markdown", "preview", "editor"],
-  path: "/tools/markdown-preview",
-  icon: "📝",
-};
-
 export default function MarkdownPreview() {
   const [input, setInput] = useState(`# Hello World
 

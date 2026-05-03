@@ -23,16 +23,6 @@ import {
   type EmailSyntaxResult,
 } from "@/lib/processors/email";
 
-export const metadata = {
-  id: "email-validator",
-  name: "Email Validator",
-  description: "Check common email address syntax and normalize internationalized domains",
-  category: "Validators",
-  tags: ["email", "validator", "validation"],
-  path: "/tools/email-validator",
-  icon: "📧",
-};
-
 export default function EmailValidator() {
   const [singleEmail, setSingleEmail] = useState("");
   const [bulkEmails, setBulkEmails] = useState("");

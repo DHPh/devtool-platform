@@ -28,16 +28,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export const metadata = {
-  id: "base64-encoder",
-  name: "Base64 Encoder/Decoder",
-  description: "Encode text or binary files as Base64/Base64url and decode in strict or forgiving mode",
-  category: "Encoding",
-  tags: ["base64", "encoder", "decoder", "encode", "decode"],
-  path: "/tools/base64-encoder",
-  icon: "🔐",
-};
-
 export default function Base64Encoder() {
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");

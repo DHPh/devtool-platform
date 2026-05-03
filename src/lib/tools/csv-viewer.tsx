@@ -13,16 +13,6 @@ import {
   serializeCSV,
 } from "@/lib/processors/csv";
 
-export const metadata = {
-  id: "csv-viewer",
-  name: "CSV Viewer",
-  description: "Upload and view CSV files with interactive table features",
-  category: "Data Processing",
-  tags: ["csv", "table", "data", "viewer"],
-  path: "/tools/csv-viewer",
-  icon: "📊",
-};
-
 type CSVRow = Record<string, unknown>;
 
 export default function CSVViewer() {

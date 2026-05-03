@@ -13,16 +13,6 @@ import {
   type GeneratedUuidVersion,
 } from "@/lib/processors/uuid";
 
-export const metadata = {
-  id: "uuid-generator",
-  name: "UUID Generator",
-  description: "Generate and inspect RFC 9562 UUIDv4 and UUIDv7 identifiers",
-  category: "Generators",
-  tags: ["uuid", "uuidv4", "uuidv7", "rfc-9562", "generator", "inspector"],
-  path: "/tools/uuid-generator",
-  icon: "🔑",
-};
-
 export default function UuidGenerator() {
   const [uuids, setUuids] = useState<string[]>([]);
   const [count, setCount] = useState(1);

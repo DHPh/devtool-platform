@@ -14,18 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Download, Table, Upload } from "lucide-react";
 import { toast } from "sonner";
-import { parseJSON } from "@/lib/utils/json-parser";
-
-export const metadata = {
-  id: "json-table-viewer",
-  name: "JSON Table Viewer",
-  description:
-    "Convert JSON data to interactive table with filtering and sorting",
-  category: "Data Processing",
-  tags: ["json", "table", "data", "viewer"],
-  path: "/tools/json-table-viewer",
-  icon: "🗂️",
-};
+import { parseJsonTable } from "@/lib/processors/json-table";
 
 type JSONRow = Record<string, unknown>;
 
@@ -37,29 +26,28 @@ export default function JSONTableViewer() {
   const [hasNestedData, setHasNestedData] = useState(false);
 
   const processJSONData = (text: string) => {
-    try {
-      const result = parseJSON(text, { maxDepth: 20 });
+    const parsed = parseJsonTable(text, { maxDepth: 20 });
+    if (!parsed.ok) {
+      toast.error(`Error parsing JSON: ${parsed.error}`);
+      return;
+    }
 
-      if (result.data.length === 0) {
-        toast.error("Could not parse JSON data. Please check the format.");
-        return;
-      }
+    const result = parsed.value;
+    if (result.data.length === 0) {
+      toast.error("Could not parse JSON data. Please check the format.");
+      return;
+    }
 
-      setData(result.data);
-      setHeaders(result.headers);
-      setHasNestedData(result.hasNestedData);
+    setData(result.data);
+    setHeaders(result.headers);
+    setHasNestedData(result.hasNestedData);
 
-      toast.success(
-        `Loaded ${result.rowCount} rows with ${result.headers.length} columns`,
-      );
+    toast.success(
+      `Loaded ${result.rowCount} rows with ${result.headers.length} columns`,
+    );
 
-      if (result.hasNestedData) {
-        toast.info("Nested data has been flattened into columns");
-      }
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
-      toast.error(`Error parsing JSON: ${errorMessage}`);
+    if (result.hasNestedData) {
+      toast.info("Nested data has been flattened into columns");
     }
   };
 

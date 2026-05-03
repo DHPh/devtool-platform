@@ -18,16 +18,6 @@ import {
   encodeUrlComponent,
 } from "@/lib/processors/url";
 
-export const metadata = {
-  id: "url-encoder",
-  name: "URL Encoder/Decoder",
-  description: "Encode and decode URLs and URI components",
-  category: "Encoding & Decoding",
-  tags: ["url", "encode", "decode", "uri"],
-  path: "/tools/url-encoder",
-  icon: "🔗",
-};
-
 export default function UrlEncoder() {
   const [input, setInput] = useState(
     "https://example.com/search?q=hello world&lang=en"
