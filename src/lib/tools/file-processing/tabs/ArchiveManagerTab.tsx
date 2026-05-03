@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { toast } from "sonner";
+import { triggerBlobDownload, useObjectUrls } from "@/hooks/use-object-urls";
 import {
   extractZip,
   inspectZip,
   type ZipEntryInfo,
 } from "@/lib/processors/archive-core";
+import { formatFileSize } from "@/lib/processors/file-core";
 import {
   Card,
   CardContent,
@@ -77,23 +79,7 @@ export default function ArchiveManagerTab() {
 
   const archiveInputRef = useRef<HTMLInputElement>(null);
   const filesInputRef = useRef<HTMLInputElement>(null);
-  const objectUrlsRef = useRef(new Set<string>());
-
-  useEffect(() => {
-    const objectUrls = objectUrlsRef.current;
-    return () => {
-      objectUrls.forEach((url) => URL.revokeObjectURL(url));
-      objectUrls.clear();
-    };
-  }, []);
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  };
+  const { createObjectUrl, revokeObjectUrl } = useObjectUrls();
 
   const handleArchiveUpload = async (files: FileList | null) => {
     if (!files) return;
@@ -187,14 +173,7 @@ export default function ArchiveManagerTab() {
       setProgress(95);
 
       // Create download link
-      const url = URL.createObjectURL(zipBlob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${archiveName}.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      triggerBlobDownload(zipBlob, `${archiveName}.zip`);
 
       setProgress(100);
 
@@ -228,13 +207,11 @@ export default function ArchiveManagerTab() {
       setProgress(70);
 
       archive.extractedFiles?.forEach((file) => {
-        URL.revokeObjectURL(file.url);
-        objectUrlsRef.current.delete(file.url);
+        revokeObjectUrl(file.url);
       });
       const extractedFiles = files.map((file): ExtractedFile => {
         const blob = new Blob([new Uint8Array(file.data)], { type: "application/octet-stream" });
-        const url = URL.createObjectURL(blob);
-        objectUrlsRef.current.add(url);
+        const url = createObjectUrl(blob);
         return { name: file.path, size: file.size, type: blob.type, url, blob };
       });
 
@@ -254,20 +231,14 @@ export default function ArchiveManagerTab() {
   };
 
   const downloadArchive = (archive: ProcessedArchive) => {
-    const url = URL.createObjectURL(archive.file);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = archive.name;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 0);
+    triggerBlobDownload(archive.file, archive.name);
   };
 
   const removeArchive = (archiveId: string) => {
     setArchives((prev) => {
       const archive = prev.find((item) => item.id === archiveId);
       archive?.extractedFiles?.forEach((file) => {
-        URL.revokeObjectURL(file.url);
-        objectUrlsRef.current.delete(file.url);
+        revokeObjectUrl(file.url);
       });
       return prev.filter((item) => item.id !== archiveId);
     });

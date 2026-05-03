@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useObjectUrls } from "@/hooks/use-object-urls";
+import { formatFileSize } from "@/lib/processors/file-core";
 import {
   convertFileContent,
   effectiveFileType,
@@ -26,28 +28,16 @@ interface ConversionFile {
   error?: string;
 }
 
-function formatFileSize(bytes: number): string {
-  if (bytes === 0) return "0 Bytes";
-  const units = ["Bytes", "KB", "MB", "GB"];
-  const unit = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
-  return `${parseFloat((bytes / 1024 ** unit).toFixed(2))} ${units[unit]}`;
-}
-
 export default function FileConverterTab() {
   const [files, setFiles] = useState<ConversionFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const filesRef = useRef(files);
+  const { createObjectUrl, revokeObjectUrl } = useObjectUrls();
 
   useEffect(() => {
     filesRef.current = files;
   }, [files]);
-
-  useEffect(() => () => {
-    for (const file of filesRef.current) {
-      if (file.convertedUrl) URL.revokeObjectURL(file.convertedUrl);
-    }
-  }, []);
 
   const handleFileSelect = (selection: FileList | null) => {
     if (!selection) return;
@@ -55,7 +45,7 @@ export default function FileConverterTab() {
       const targets = getConversionTargets(file);
       const error = validateConverterFile(file);
       return {
-        id: `${Date.now()}-${index}-${file.name}`,
+        id: `${crypto.randomUUID()}-${index}`,
         file,
         status: error ? "error" : "pending",
         targetFormat: targets[0]?.value ?? "txt",
@@ -73,11 +63,11 @@ export default function FileConverterTab() {
 
     try {
       const blob = await convertFileContent(entry.file, entry.targetFormat);
-      const convertedUrl = URL.createObjectURL(blob);
+      const convertedUrl = createObjectUrl(blob);
 
       setFiles((current) => current.map((file) => {
         if (file.id !== fileId) return file;
-        if (file.convertedUrl) URL.revokeObjectURL(file.convertedUrl);
+        revokeObjectUrl(file.convertedUrl);
         return { ...file, status: "completed", convertedUrl };
       }));
     } catch (error) {
@@ -96,7 +86,7 @@ export default function FileConverterTab() {
   const removeFile = (fileId: string) => {
     setFiles((current) => {
       const removed = current.find((file) => file.id === fileId);
-      if (removed?.convertedUrl) URL.revokeObjectURL(removed.convertedUrl);
+      revokeObjectUrl(removed?.convertedUrl);
       return current.filter((file) => file.id !== fileId);
     });
   };

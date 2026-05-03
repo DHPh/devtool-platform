@@ -32,7 +32,11 @@ import {
   Tag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { categorizeFile as categorizeFileName } from "@/lib/processors/file-core";
+import { useObjectUrls } from "@/hooks/use-object-urls";
+import {
+  categorizeFile as categorizeFileName,
+  formatFileSize,
+} from "@/lib/processors/file-core";
 
 interface OrganizedFile {
   id: string;
@@ -151,6 +155,24 @@ const ORGANIZATION_RULES: OrganizationRule[] = [
   },
 ];
 
+function generateFileTags(file: File): string[] {
+  const tags: string[] = [];
+  const extension = file.name.split(".").pop()?.toLowerCase() || "";
+  const category = categorizeFileName(file.name);
+
+  tags.push(category);
+  tags.push(extension);
+
+  if (file.size < 1024 * 1024) tags.push("small");
+  else if (file.size < 10 * 1024 * 1024) tags.push("medium");
+  else tags.push("large");
+
+  const isRecent = Date.now() - file.lastModified < 7 * 24 * 60 * 60 * 1000;
+  if (isRecent) tags.push("recent");
+
+  return tags;
+}
+
 export default function FileOrganizerTab() {
   const [files, setFiles] = useState<OrganizedFile[]>([]);
   const [selectedRule, setSelectedRule] = useState<string>("by_type");
@@ -159,39 +181,7 @@ export default function FileOrganizerTab() {
   }>({});
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  };
-
-  const categorizeFile = (file: File): string => {
-    return categorizeFileName(file.name);
-  };
-
-  const generateTags = (file: File): string[] => {
-    const tags: string[] = [];
-    const extension = file.name.split(".").pop()?.toLowerCase() || "";
-    const category = categorizeFile(file);
-
-    tags.push(category);
-    tags.push(extension);
-
-    // Size-based tags
-    if (file.size < 1024 * 1024) tags.push("small");
-    else if (file.size < 10 * 1024 * 1024) tags.push("medium");
-    else tags.push("large");
-
-    // Date-based tags
-    const date = new Date(file.lastModified);
-    const isRecent = Date.now() - date.getTime() < 7 * 24 * 60 * 60 * 1000;
-    if (isRecent) tags.push("recent");
-
-    return tags;
-  };
+  const { createObjectUrl, revokeObjectUrl } = useObjectUrls();
 
   const handleFileSelect = async (files: FileList | null) => {
     if (!files) return;
@@ -201,11 +191,11 @@ export default function FileOrganizerTab() {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const extension = file.name.split(".").pop()?.toLowerCase() || "";
-      const category = categorizeFile(file);
-      const tags = generateTags(file);
+      const category = categorizeFileName(file.name);
+      const tags = generateFileTags(file);
 
       const organizedFile: OrganizedFile = {
-        id: Date.now().toString() + i,
+        id: crypto.randomUUID(),
         file,
         name: file.name,
         size: file.size,
@@ -214,7 +204,7 @@ export default function FileOrganizerTab() {
         lastModified: new Date(file.lastModified),
         category,
         suggestedFolder: "",
-        url: URL.createObjectURL(file),
+        url: createObjectUrl(file),
         tags,
       };
 
@@ -276,6 +266,8 @@ export default function FileOrganizerTab() {
   };
 
   const removeFile = (fileId: string) => {
+    const removed = files.find((file) => file.id === fileId);
+    revokeObjectUrl(removed?.url);
     const updatedFiles = files.filter((file) => file.id !== fileId);
     setFiles(updatedFiles);
     updateOrganizationPreview(updatedFiles, selectedRule);

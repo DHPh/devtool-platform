@@ -116,6 +116,16 @@ export function hashFileForDuplicateDetection(file: FileContent): Promise<string
   return hashFileContent(file, "sha256");
 }
 
+export function formatFileSize(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 Bytes";
+  const units = ["Bytes", "KB", "MB", "GB", "TB"] as const;
+  const unitIndex = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    units.length - 1,
+  );
+  return `${parseFloat((bytes / Math.pow(1024, unitIndex)).toFixed(2))} ${units[unitIndex]}`;
+}
+
 export function fileMetadata(file: { name: string; size: number; type: string; lastModified: number }) {
   const extension = file.name.includes(".") ? file.name.split(".").pop()!.toLowerCase() : "";
   return {

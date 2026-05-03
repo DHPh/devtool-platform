@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { formatFileSize } from "@/lib/processors/file-core";
 import {
   basicFileMetadata,
   effectiveFileType,
@@ -29,13 +30,6 @@ function categoryIcon(category: ReturnType<typeof fileCategory>) {
   if (category === "audio") return <Music className="h-5 w-5" />;
   if (category === "video") return <Video className="h-5 w-5" />;
   return <Info className="h-5 w-5" />;
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes === 0) return "0 Bytes";
-  const units = ["Bytes", "KB", "MB", "GB"];
-  const unit = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
-  return `${parseFloat((bytes / 1024 ** unit).toFixed(2))} ${units[unit]}`;
 }
 
 function metadataRows(metadata: Record<string, unknown>) {

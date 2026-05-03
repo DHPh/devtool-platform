@@ -22,6 +22,13 @@ import {
   Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { triggerBlobDownload, useObjectUrls } from "@/hooks/use-object-urls";
+import { formatFileSize } from "@/lib/processors/file-core";
+import {
+  mergePdfFiles,
+  rotatePdfPages,
+  splitPdfPages,
+} from "@/lib/processors/pdf-core";
 
 interface PDFFile {
   id: string;
@@ -38,14 +45,7 @@ export default function PdfToolsTab() {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  };
+  const { createObjectUrl, revokeObjectUrl } = useObjectUrls();
 
   const handleFileSelect = async (files: FileList | null) => {
     if (!files) return;
@@ -58,11 +58,11 @@ export default function PdfToolsTab() {
       if (file.type !== "application/pdf") continue;
 
       const pdfFile: PDFFile = {
-        id: Date.now().toString() + i,
+        id: crypto.randomUUID(),
         file,
         name: file.name,
         size: file.size,
-        url: URL.createObjectURL(file),
+        url: createObjectUrl(file),
       };
 
       newFiles.push(pdfFile);
@@ -81,7 +81,11 @@ export default function PdfToolsTab() {
   };
 
   const removeFile = (fileId: string) => {
-    setPdfFiles((prev) => prev.filter((file) => file.id !== fileId));
+    setPdfFiles((prev) => {
+      const removed = prev.find((file) => file.id === fileId);
+      revokeObjectUrl(removed?.url);
+      return prev.filter((file) => file.id !== fileId);
+    });
     setSelectedFiles((prev) => prev.filter((id) => id !== fileId));
   };
 
@@ -97,47 +101,16 @@ export default function PdfToolsTab() {
 
     setIsProcessing(true);
     try {
-      const { PDFDocument } = await import("pdf-lib");
-      // Create a new PDF document for the merged result
-      const mergedPdf = await PDFDocument.create();
-
-      // Get the selected PDF files
       const selectedPdfFiles = pdfFiles.filter((file) =>
         selectedFiles.includes(file.id)
       );
-
-      // Process each selected PDF
-      for (const pdfFile of selectedPdfFiles) {
-        // Fetch the PDF file data
-        const pdfBytes = await pdfFile.file.arrayBuffer();
-
-        // Load the PDF document
-        const pdf = await PDFDocument.load(pdfBytes);
-
-        // Copy all pages from this PDF to the merged PDF
-        const pageIndices = pdf.getPageIndices();
-        const copiedPages = await mergedPdf.copyPages(pdf, pageIndices);
-
-        // Add the copied pages to the merged PDF
-        copiedPages.forEach((page) => mergedPdf.addPage(page));
-      }
-
-      // Serialize the merged PDF
-      const mergedPdfBytes = await mergedPdf.save();
-
-      // Create a blob and download link
+      const mergedPdfBytes = await mergePdfFiles(
+        selectedPdfFiles.map((entry) => entry.file),
+      );
       const blob = new Blob([new Uint8Array(mergedPdfBytes)], {
         type: "application/pdf",
       });
-      const url = URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "merged.pdf";
-      link.click();
-
-      // Cleanup
-      URL.revokeObjectURL(url);
+      triggerBlobDownload(blob, "merged.pdf");
       toast.success("Merged PDF downloaded successfully.");
     } catch (error) {
       console.error("Error merging PDFs:", error);
@@ -154,37 +127,20 @@ export default function PdfToolsTab() {
 
     setIsProcessing(true);
     try {
-      const { PDFDocument } = await import("pdf-lib");
-      // Load the PDF document
-      const pdfBytes = await file.file.arrayBuffer();
-      const pdf = await PDFDocument.load(pdfBytes);
+      const pages = await splitPdfPages(file.file);
+      const baseName = file.name.replace(".pdf", "");
 
-      const totalPages = pdf.getPageCount();
-
-      // Split each page into a separate PDF
-      for (let i = 0; i < totalPages; i++) {
-        const newPdf = await PDFDocument.create();
-        const [copiedPage] = await newPdf.copyPages(pdf, [i]);
-        newPdf.addPage(copiedPage);
-
-        const pdfBytes = await newPdf.save();
-        const blob = new Blob([new Uint8Array(pdfBytes)], {
+      for (let i = 0; i < pages.length; i++) {
+        const blob = new Blob([new Uint8Array(pages[i])], {
           type: "application/pdf",
         });
-        const url = URL.createObjectURL(blob);
-
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `${file.name.replace(".pdf", "")}_page_${i + 1}.pdf`;
-        link.click();
-
-        URL.revokeObjectURL(url);
+        triggerBlobDownload(blob, `${baseName}_page_${i + 1}.pdf`);
 
         // Small delay to prevent browser blocking multiple downloads
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
 
-      toast.success(`Successfully split PDF into ${totalPages} separate files.`);
+      toast.success(`Successfully split PDF into ${pages.length} separate files.`);
     } catch (error) {
       console.error("Error splitting PDF:", error);
       toast.error("Error splitting PDF. Please make sure it's a valid PDF document.");
@@ -198,33 +154,14 @@ export default function PdfToolsTab() {
 
     setIsProcessing(true);
     try {
-      const { PDFDocument, degrees } = await import("pdf-lib");
-      // Load the PDF document
-      const pdfBytes = await file.file.arrayBuffer();
-      const pdf = await PDFDocument.load(pdfBytes);
-
-      // Rotate all pages
-      const pages = pdf.getPages();
-      pages.forEach((page) => {
-        page.setRotation(degrees(rotation));
-      });
-
-      // Save the rotated PDF
-      const rotatedPdfBytes = await pdf.save();
+      const rotatedPdfBytes = await rotatePdfPages(file.file, rotation);
       const blob = new Blob([new Uint8Array(rotatedPdfBytes)], {
         type: "application/pdf",
       });
-      const url = URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${file.name.replace(
-        ".pdf",
-        ""
-      )}_rotated_${rotation}deg.pdf`;
-      link.click();
-
-      URL.revokeObjectURL(url);
+      triggerBlobDownload(
+        blob,
+        `${file.name.replace(".pdf", "")}_rotated_${rotation}deg.pdf`,
+      );
       toast.success("Rotated PDF downloaded successfully.");
     } catch (error) {
       console.error("Error rotating PDF:", error);

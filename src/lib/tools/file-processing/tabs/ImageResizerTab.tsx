@@ -36,6 +36,13 @@ import {
   RotateCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useObjectUrls } from "@/hooks/use-object-urls";
+import { formatFileSize } from "@/lib/processors/file-core";
+import {
+  loadImageFromFile,
+  renderCroppedCanvas,
+  renderResizedCanvas,
+} from "@/lib/processors/image-canvas";
 import { calculateConstrainedImageSize } from "@/lib/processors/ui-primitives";
 
 interface ResizedImage {
@@ -105,23 +112,7 @@ export default function ImageResizerTab() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  };
-
-  const loadImage = (file: File): Promise<HTMLImageElement> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = URL.createObjectURL(file);
-    });
-  };
+  const { createObjectUrl, revokeObjectUrl } = useObjectUrls();
 
   const resizeImage = useCallback(
     async (
@@ -133,36 +124,17 @@ export default function ImageResizerTab() {
     ): Promise<{ blob: Blob; dataUrl: string }> => {
       const canvas = canvasRef.current;
       if (!canvas) throw new Error("Canvas not available");
-
-      const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("Canvas context not available");
-
-      canvas.width = targetWidth;
-      canvas.height = targetHeight;
-
-      // Clear canvas
-      ctx.clearRect(0, 0, targetWidth, targetHeight);
-
-      // Draw resized image
-      ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-
-      // Convert to blob
       const mimeType =
         IMAGE_FORMATS.find((f) => f.value === outputFormat)?.mime ||
         "image/jpeg";
-      const dataUrl = canvas.toDataURL(mimeType, outputQuality / 100);
-
-      return new Promise((resolve) => {
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              resolve({ blob, dataUrl });
-            }
-          },
-          mimeType,
-          outputQuality / 100
-        );
-      });
+      return renderResizedCanvas(
+        canvas,
+        img,
+        targetWidth,
+        targetHeight,
+        mimeType,
+        outputQuality / 100,
+      );
     },
     []
   );
@@ -176,47 +148,16 @@ export default function ImageResizerTab() {
     ): Promise<{ blob: Blob; dataUrl: string }> => {
       const canvas = canvasRef.current;
       if (!canvas) throw new Error("Canvas not available");
-
-      const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("Canvas context not available");
-
-      // Set canvas size to crop area size
-      canvas.width = cropArea.width;
-      canvas.height = cropArea.height;
-
-      // Clear canvas
-      ctx.clearRect(0, 0, cropArea.width, cropArea.height);
-
-      // Draw cropped portion of the image
-      ctx.drawImage(
-        img,
-        cropArea.x, // source x
-        cropArea.y, // source y
-        cropArea.width, // source width
-        cropArea.height, // source height
-        0, // destination x
-        0, // destination y
-        cropArea.width, // destination width
-        cropArea.height // destination height
-      );
-
-      // Convert to blob
       const mimeType =
         IMAGE_FORMATS.find((f) => f.value === outputFormat)?.mime ||
         "image/jpeg";
-      const dataUrl = canvas.toDataURL(mimeType, outputQuality / 100);
-
-      return new Promise((resolve) => {
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              resolve({ blob, dataUrl });
-            }
-          },
-          mimeType,
-          outputQuality / 100
-        );
-      });
+      return renderCroppedCanvas(
+        canvas,
+        img,
+        cropArea,
+        mimeType,
+        outputQuality / 100,
+      );
     },
     []
   );
@@ -232,11 +173,11 @@ export default function ImageResizerTab() {
       if (!file.type.startsWith("image/")) continue;
 
       try {
-        const img = await loadImage(file);
-        const originalUrl = URL.createObjectURL(file);
+        const img = await loadImageFromFile(file);
+        const originalUrl = createObjectUrl(file);
 
         const newImage: ResizedImage = {
-          id: Date.now().toString() + i,
+          id: crypto.randomUUID(),
           file,
           originalUrl,
           resizedUrl: originalUrl,
@@ -279,7 +220,7 @@ export default function ImageResizerTab() {
 
     setIsProcessing(true);
     try {
-      const img = await loadImage(selectedImage.file);
+      const img = await loadImageFromFile(selectedImage.file);
       const { blob, dataUrl } = await resizeImage(
         img,
         width,
@@ -312,7 +253,7 @@ export default function ImageResizerTab() {
 
     setIsProcessing(true);
     try {
-      const img = await loadImage(selectedImage.file);
+      const img = await loadImageFromFile(selectedImage.file);
       const { blob, dataUrl } = await cropImage(
         img,
         cropArea,
@@ -407,9 +348,11 @@ export default function ImageResizerTab() {
   };
 
   const removeImage = (imageId: string) => {
-    setImages((prev) => prev.filter((img) => img.id !== imageId));
+    const removed = images.find((img) => img.id === imageId);
+    revokeObjectUrl(removed?.originalUrl);
+    const remaining = images.filter((img) => img.id !== imageId);
+    setImages(remaining);
     if (selectedImage?.id === imageId) {
-      const remaining = images.filter((img) => img.id !== imageId);
       setSelectedImage(remaining.length > 0 ? remaining[0] : null);
     }
   };
@@ -686,6 +629,7 @@ export default function ImageResizerTab() {
                 <div className="space-y-4">
                   {/* Image Preview */}
                   <div className="aspect-video bg-muted rounded-lg overflow-hidden flex items-center justify-center relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- local blob/data URLs cannot be optimized by next/image */}
                     <img
                       src={selectedImage.resizedUrl}
                       alt="Preview"
@@ -787,6 +731,7 @@ export default function ImageResizerTab() {
                     }}
                   >
                     <div className="aspect-video bg-muted rounded overflow-hidden mb-3">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- local blob/data URLs cannot be optimized by next/image */}
                       <img
                         src={image.originalUrl}
                         alt={image.file.name}
