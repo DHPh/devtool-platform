@@ -21,20 +21,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
-  calculateTextDiff,
   type DiffEntry,
   type DiffSplitRow,
 } from "@/lib/processors/ui-primitives";
-
-export const metadata = {
-  id: "diff-checker",
-  name: "Text Diff Checker",
-  description: "Compare two texts and highlight differences",
-  category: "Utilities",
-  tags: ["diff", "compare", "text"],
-  path: "/tools/diff-checker",
-  icon: "🔍",
-};
+import { calculateTextDiffInWorker } from "@/lib/workers/compute-client";
 
 export default function DiffChecker() {
   const [text1, setText1] = useState("");
@@ -51,20 +41,29 @@ export default function DiffChecker() {
     changes: 0,
   });
 
-  const calculateDiff = () => {
+  const calculateDiff = async () => {
     if (!text1 || !text2) {
       toast.error("Please enter both texts to compare");
       return;
     }
 
-    const result = calculateTextDiff(text1, text2, {
-      level: diffLevel,
-      ignoreWhitespace,
-      ignoreCase,
-    });
-    setDiffResult(result.lines);
-    setSplitRows(result.splitRows);
-    setStats(result.stats);
+    const computed = await calculateTextDiffInWorker(
+      text1,
+      text2,
+      {
+        level: diffLevel,
+        ignoreWhitespace,
+        ignoreCase,
+      },
+      { timeoutMs: 10_000 },
+    );
+    if (!computed.ok) {
+      toast.error(computed.error);
+      return;
+    }
+    setDiffResult(computed.value.lines);
+    setSplitRows(computed.value.splitRows);
+    setStats(computed.value.stats);
     toast.success("Diff calculated successfully!");
   };
 

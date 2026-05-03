@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,8 +17,10 @@ import {
   testRegex,
   RegexFlags,
   RegexMatch,
+  RegexTestResult,
   flagsToString,
 } from "@/lib/utils/regex/regex-tester";
+import { runRegexTestWithTimeout } from "@/lib/workers/compute-client";
 import {
   RegexMatchHighlighter,
   RegexFlagsControls,
@@ -31,6 +33,13 @@ interface RegexTesterTabProps {
   initialText?: string;
   initialFlags?: RegexFlags;
 }
+
+const EMPTY_TEST_RESULT: RegexTestResult = {
+  isValid: true,
+  matches: [],
+  totalMatches: 0,
+  executionTime: 0,
+};
 
 export function RegexTesterTab({
   initialPattern = "",
@@ -51,20 +60,51 @@ export function RegexTesterTab({
   );
   const [showPatternLibrary, setShowPatternLibrary] = useState(false);
   const [patternSearch, setPatternSearch] = useState("");
+  const [workerOutcome, setWorkerOutcome] = useState<{
+    key: string;
+    result: RegexTestResult;
+  } | null>(null);
 
-  // Test the regex automatically when inputs change
-  const testResult = useMemo(() => {
-    if (!pattern || !testText) {
-      return {
-        isValid: true,
-        matches: [],
-        totalMatches: 0,
-        executionTime: 0,
-      };
+  const flagString = flagsToString(flags);
+  const hasInputs = Boolean(pattern && testText);
+  const workerAvailable = typeof Worker === "function";
+  const requestKey = `${pattern}\0${testText}\0${flagString}`;
+
+  useEffect(() => {
+    if (!hasInputs || !workerAvailable) return;
+
+    const controller = new AbortController();
+    void runRegexTestWithTimeout(pattern, testText, flagString, {
+      signal: controller.signal,
+    }).then((outcome) => {
+      if (controller.signal.aborted) return;
+      if (outcome.ok) {
+        setWorkerOutcome({ key: requestKey, result: outcome.value });
+      } else {
+        setWorkerOutcome({
+          key: requestKey,
+          result: {
+            isValid: false,
+            matches: [],
+            totalMatches: 0,
+            executionTime: 0,
+            error: outcome.error,
+          },
+        });
+      }
+    });
+
+    return () => controller.abort();
+  }, [flagString, hasInputs, pattern, requestKey, testText, workerAvailable]);
+
+  // Synchronous evaluation fallback for environments without Web Workers (SSR / tests)
+  const syncTestResult = useMemo<RegexTestResult>(() => {
+    if (!hasInputs || workerAvailable) {
+      return EMPTY_TEST_RESULT;
     }
 
     try {
-      return testRegex(pattern, testText, flagsToString(flags));
+      return testRegex(pattern, testText, flagString);
     } catch (error) {
       return {
         isValid: false,
@@ -74,7 +114,15 @@ export function RegexTesterTab({
         error: error instanceof Error ? error.message : "Unknown error",
       };
     }
-  }, [pattern, testText, flags]);
+  }, [flagString, hasInputs, pattern, testText, workerAvailable]);
+
+  const testResult: RegexTestResult = !hasInputs
+    ? EMPTY_TEST_RESULT
+    : workerAvailable
+      ? workerOutcome?.key === requestKey
+        ? workerOutcome.result
+        : EMPTY_TEST_RESULT
+      : syncTestResult;
 
   const handlePatternSelect = (selectedPattern: string) => {
     setPattern(selectedPattern);

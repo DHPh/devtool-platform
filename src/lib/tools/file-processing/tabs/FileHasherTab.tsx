@@ -31,9 +31,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  hashFileContent,
+  formatFileSize,
   type FileHashAlgorithm,
 } from "@/lib/processors/file-core";
+import { hashFileInWorker } from "@/lib/workers/compute-client";
 
 interface HashedFile {
   id: string;
@@ -68,14 +69,6 @@ export default function FileHasherTab() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  };
-
   const handleFileSelect = async (files: FileList | null) => {
     if (!files) return;
 
@@ -85,7 +78,7 @@ export default function FileHasherTab() {
       const file = files[i];
 
       const hashedFile: HashedFile = {
-        id: Date.now().toString() + i,
+        id: crypto.randomUUID(),
         file,
         name: file.name,
         size: file.size,
@@ -116,11 +109,11 @@ export default function FileHasherTab() {
         const algorithm = selectedAlgorithms[i];
         setProgress((i / selectedAlgorithms.length) * 100);
 
-        const hash = await hashFileContent(
-          file.file,
-          algorithm,
-        );
-        hashes[algorithm as keyof HashedFile["hashes"]] = hash;
+        const hashed = await hashFileInWorker(file.file, algorithm);
+        if (!hashed.ok) {
+          throw new Error(hashed.error);
+        }
+        hashes[algorithm as keyof HashedFile["hashes"]] = hashed.value;
       }
 
       setFiles((prev) =>

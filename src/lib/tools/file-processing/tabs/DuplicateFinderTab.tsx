@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useState, useRef } from "react";
+import { useObjectUrls } from "@/hooks/use-object-urls";
 import {
   Card,
   CardContent,
@@ -23,9 +24,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
+  formatFileSize,
   groupDuplicateFiles,
-  hashFileForDuplicateDetection,
 } from "@/lib/processors/file-core";
+import { hashFileInWorker } from "@/lib/workers/compute-client";
 
 interface DuplicateFile {
   id: string;
@@ -55,26 +57,7 @@ export default function DuplicateFinderTab() {
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const filesRef = useRef<DuplicateFile[]>([]);
-
-  useEffect(() => {
-    filesRef.current = files;
-  }, [files]);
-
-  useEffect(
-    () => () => {
-      filesRef.current.forEach((file) => URL.revokeObjectURL(file.url));
-    },
-    [],
-  );
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  };
+  const { createObjectUrl, revokeObjectUrl } = useObjectUrls();
 
   const handleFileSelect = async (files: FileList | null) => {
     if (!files) return;
@@ -85,14 +68,14 @@ export default function DuplicateFinderTab() {
       const file = files[i];
 
       const duplicateFile: DuplicateFile = {
-        id: Date.now().toString() + i,
+        id: crypto.randomUUID(),
         file,
         name: file.name,
         size: file.size,
         type: file.type,
         hash: "",
         lastModified: new Date(file.lastModified),
-        url: URL.createObjectURL(file),
+        url: createObjectUrl(file),
         selected: false,
       };
 
@@ -117,8 +100,11 @@ export default function DuplicateFinderTab() {
       setProgress((i / files.length) * 50); // First 50% for hashing
 
       try {
-        const hash = await hashFileForDuplicateDetection(file.file);
-        filesWithHashes.push({ ...file, hash, error: undefined });
+        const hashed = await hashFileInWorker(file.file, "sha256");
+        if (!hashed.ok) {
+          throw new Error(hashed.error);
+        }
+        filesWithHashes.push({ ...file, hash: hashed.value, error: undefined });
       } catch (error) {
         console.error("Error hashing file:", error);
         filesWithHashes.push({
@@ -190,7 +176,7 @@ export default function DuplicateFinderTab() {
   const deleteSelectedFiles = () => {
     files
       .filter((file) => selectedFiles.includes(file.id))
-      .forEach((file) => URL.revokeObjectURL(file.url));
+      .forEach((file) => revokeObjectUrl(file.url));
     const remainingFiles = files.filter(
       (file) => !selectedFiles.includes(file.id)
     );

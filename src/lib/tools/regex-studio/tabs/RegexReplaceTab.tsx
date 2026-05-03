@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { copyToClipboard } from "@/hooks/use-clipboard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,8 @@ import {
   flagsToString,
 } from "@/lib/utils/regex/regex-tester";
 import { regexReplace } from "@/lib/utils/regex/regex-replace";
+import { runRegexReplaceWithTimeout } from "@/lib/workers/compute-client";
+import type { RegexReplaceOutcome } from "@/lib/workers/compute-tasks";
 import {
   RegexFlagsControls,
   RegexPatternLibrary,
@@ -54,10 +56,53 @@ export function RegexReplaceTab({
   );
   const [showPatternLibrary, setShowPatternLibrary] = useState(false);
   const [patternSearch, setPatternSearch] = useState("");
+  const [workerOutcome, setWorkerOutcome] = useState<{
+    key: string;
+    outcome: RegexReplaceOutcome;
+  } | null>(null);
 
-  // Test and replace automatically when inputs change
-  const replaceResult = useMemo(() => {
-    if (!pattern || !inputText) {
+  const flagString = flagsToString(flags);
+  const hasInputs = Boolean(pattern && inputText);
+  const workerAvailable = typeof Worker === "function";
+  const requestKey = `${pattern}\0${inputText}\0${replacement}\0${flagString}`;
+
+  useEffect(() => {
+    if (!hasInputs || !workerAvailable) return;
+
+    const controller = new AbortController();
+    void runRegexReplaceWithTimeout(pattern, inputText, replacement, flagString, {
+      signal: controller.signal,
+    }).then((result) => {
+      if (controller.signal.aborted) return;
+      if (result.ok) {
+        setWorkerOutcome({ key: requestKey, outcome: result.value });
+      } else {
+        setWorkerOutcome({
+          key: requestKey,
+          outcome: {
+            result: inputText,
+            replacementCount: 0,
+            isValid: false,
+            error: result.error,
+          },
+        });
+      }
+    });
+
+    return () => controller.abort();
+  }, [
+    flagString,
+    hasInputs,
+    inputText,
+    pattern,
+    replacement,
+    requestKey,
+    workerAvailable,
+  ]);
+
+  // Synchronous fallback for SSR / environments without Web Workers
+  const syncReplaceResult = useMemo<RegexReplaceOutcome>(() => {
+    if (!hasInputs || workerAvailable) {
       return {
         result: inputText,
         replacementCount: 0,
@@ -66,7 +111,7 @@ export function RegexReplaceTab({
     }
 
     try {
-      const testResult = testRegex(pattern, inputText, flagsToString(flags));
+      const testResult = testRegex(pattern, inputText, flagString);
       if (!testResult.isValid) {
         return {
           result: inputText,
@@ -80,7 +125,7 @@ export function RegexReplaceTab({
         inputText,
         pattern,
         replacement,
-        flagsToString(flags)
+        flagString
       );
       return {
         result: replaceResult.result,
@@ -95,7 +140,15 @@ export function RegexReplaceTab({
         error: error instanceof Error ? error.message : "Unknown error",
       };
     }
-  }, [pattern, inputText, replacement, flags]);
+  }, [flagString, hasInputs, inputText, pattern, replacement, workerAvailable]);
+
+  const replaceResult: RegexReplaceOutcome = !hasInputs
+    ? { result: inputText, replacementCount: 0, isValid: true }
+    : workerAvailable
+      ? workerOutcome?.key === requestKey
+        ? workerOutcome.outcome
+        : { result: inputText, replacementCount: 0, isValid: true }
+      : syncReplaceResult;
 
   const handlePatternSelect = (selectedPattern: string) => {
     setPattern(selectedPattern);
