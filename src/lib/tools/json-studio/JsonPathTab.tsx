@@ -5,59 +5,45 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, Map, Code } from "lucide-react";
 import { JsonPathExplorer } from "./components/JsonPathExplorer";
 import { JsonStatsDisplay } from "./components/JsonStatsDisplay";
-import { validateJson, type JsonStats } from "@/lib/processors/json";
+import {
+  calculateJsonStats,
+  validateJson,
+  type JsonStats,
+} from "@/lib/processors/json";
 
 interface JsonPathTabProps {
   input: string;
 }
 
 export function JsonPathTab({ input }: JsonPathTabProps) {
-  const [parsedData, setParsedData] = useState<unknown>(null);
-  const [stats, setStats] = useState<JsonStats | null>(null);
-  const [isValid, setIsValid] = useState(false);
-
-  useEffect(() => {
+  const { parsedData, stats, isValid } = useMemo<{
+    parsedData: unknown;
+    stats: JsonStats | null;
+    isValid: boolean;
+  }>(() => {
     if (!input.trim()) {
-      setParsedData(null);
-      setStats(null);
-      setIsValid(false);
-      return;
+      return { parsedData: null, stats: null, isValid: false };
     }
 
     const validation = validateJson(input);
-    setIsValid(validation.isValid);
+    if (!validation.isValid) {
+      return { parsedData: null, stats: null, isValid: false };
+    }
 
-    if (validation.isValid) {
-      try {
-        const parsed = JSON.parse(input);
-        setParsedData(parsed);
-
-        // Calculate basic stats
-        const size = JSON.stringify(parsed).length;
-        const lines = JSON.stringify(parsed, null, 2).split("\n").length;
-        setStats({
-          size,
-          lines,
-          objects: 0,
-          arrays: 0,
-          strings: 0,
-          numbers: 0,
-          booleans: 0,
-          nulls: 0,
-          depth: 0,
-        });
-      } catch {
-        setParsedData(null);
-        setStats(null);
-      }
-    } else {
-      setParsedData(null);
-      setStats(null);
+    try {
+      const parsed = JSON.parse(input);
+      return {
+        parsedData: parsed,
+        stats: calculateJsonStats(parsed),
+        isValid: true,
+      };
+    } catch {
+      return { parsedData: null, stats: null, isValid: false };
     }
   }, [input]);
 

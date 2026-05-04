@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useMemo, useState } from "react";
 import { copyToClipboard } from "@/hooks/use-clipboard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -34,47 +34,50 @@ interface JsonPathExplorerProps {
 
 export function JsonPathExplorer({ data, className }: JsonPathExplorerProps) {
   const [query, setQuery] = useState("$");
-  const [result, setResult] = useState<QueryResult | null>(null);
-  const [error, setError] = useState("");
-  const [samplePaths, setSamplePaths] = useState<string[]>([]);
+  const [submitted, setSubmitted] = useState<{
+    dataRef: unknown;
+    expr: string;
+  }>({ dataRef: data, expr: "$" });
 
-  const executeQuery = useCallback(
-    (queryToExecute: string = query) => {
-      if (data === undefined) {
-        setError("No JSON data to query");
-        return;
-      }
+  const activeExpr = submitted.dataRef === data ? submitted.expr : "$";
 
-      const validation = validateJsonPath(queryToExecute);
-      if (!validation.isValid) {
-        setError(validation.error || "Invalid JSONPath expression");
-        setResult(null);
-        return;
-      }
-
-      try {
-        const queryResult = queryJsonPath(data, queryToExecute);
-        setResult(queryResult);
-        setError("");
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Query execution failed");
-        setResult(null);
-      }
-    },
-    [data, query]
+  const samplePaths = useMemo(
+    () => (data !== undefined ? generateSamplePaths(data).slice(0, 10) : []),
+    [data],
   );
 
-  useEffect(() => {
-    if (data !== undefined) {
-      const samples = generateSamplePaths(data);
-      setSamplePaths(samples.slice(0, 10)); // Limit to 10 samples
-      executeQuery("$"); // Execute default query
+  const { result, error } = useMemo<{
+    result: QueryResult | null;
+    error: string;
+  }>(() => {
+    if (data === undefined) {
+      return { result: null, error: "No JSON data to query" };
     }
-  }, [data, executeQuery]);
+
+    const validation = validateJsonPath(activeExpr);
+    if (!validation.isValid) {
+      return {
+        result: null,
+        error: validation.error || "Invalid JSONPath expression",
+      };
+    }
+
+    try {
+      return {
+        result: queryJsonPath(data, activeExpr),
+        error: "",
+      };
+    } catch (err) {
+      return {
+        result: null,
+        error: err instanceof Error ? err.message : "Query execution failed",
+      };
+    }
+  }, [activeExpr, data]);
 
   const handleQuerySubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    executeQuery();
+    setSubmitted({ dataRef: data, expr: query });
   };
 
   const copyPath = (path: string) => {
@@ -89,7 +92,7 @@ export function JsonPathExplorer({ data, className }: JsonPathExplorerProps) {
 
   const handleUseSamplePath = (path: string) => {
     setQuery(path);
-    executeQuery(path);
+    setSubmitted({ dataRef: data, expr: path });
   };
 
   const renderValue = (value: unknown): string => {

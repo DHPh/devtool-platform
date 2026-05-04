@@ -131,6 +131,7 @@ export function DataTable({
     );
   }, [columnKeys]);
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table manages table instance state internally
   const table = useReactTable({
     data,
     columns,

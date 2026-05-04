@@ -7,10 +7,10 @@ export default defineConfig([
   ...nextTypeScript,
   {
     // Existing client tools use mount flags and URL-to-state synchronization.
-    // Keep Next 16's compiler-oriented findings visible without blocking CI.
+    // Enforce React 19 compiler-oriented hook purity and effect state rules.
     rules: {
-      "react-hooks/purity": "warn",
-      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/purity": "error",
+      "react-hooks/set-state-in-effect": "error",
     },
   },
   globalIgnores([

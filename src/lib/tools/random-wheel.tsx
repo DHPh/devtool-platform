@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useSyncExternalStore } from "react";
 import {
   Card,
   CardContent,
@@ -37,16 +37,6 @@ import {
   FormField,
 } from "@/components/layout";
 import { calculateWheelSegments, getWheelWinner } from "@/lib/processors/ui-primitives";
-
-export const metadata = {
-  id: "random-wheel",
-  name: "Random Wheel",
-  description: "Spin a wheel to randomly select from your list of options",
-  category: "Utilities",
-  tags: ["random", "wheel", "picker", "decision", "spinner"],
-  path: "/tools/random-wheel",
-  icon: "🎯",
-};
 
 interface WheelItem {
   id: string;
@@ -111,6 +101,13 @@ const DEFAULT_COLORS = [
   "#1E3A8A",
 ];
 
+const emptySubscribe = () => () => {};
+
+function subscribeWindowResize(callback: () => void) {
+  window.addEventListener("resize", callback);
+  return () => window.removeEventListener("resize", callback);
+}
+
 export default function RandomWheel() {
   const [items, setItems] = useState<WheelItem[]>([
     { id: "1", text: "Option 1", color: DEFAULT_COLORS[0], weight: 1 },
@@ -130,24 +127,19 @@ export default function RandomWheel() {
   const [showResultPopup, setShowResultPopup] = useState(false);
   const [removeAfterSpin, setRemoveAfterSpin] = useState(false);
   const [showResultDialog, setShowResultDialog] = useState(false);
-  const [windowWidth, setWindowWidth] = useState(1024); // Default to desktop size
-  const [isClient, setIsClient] = useState(false);
+  const windowWidth = useSyncExternalStore(
+    subscribeWindowResize,
+    () => window.innerWidth,
+    () => 1024,
+  );
+  const isClient = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
 
   const wheelRef = useRef<SVGSVGElement>(null);
   const animationRef = useRef<number | undefined>(undefined);
-
-  // Handle client-side hydration and window resize
-  useEffect(() => {
-    setIsClient(true);
-    setWindowWidth(window.innerWidth);
-
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   // Parse input text to items
   const parseInputToItems = () => {
