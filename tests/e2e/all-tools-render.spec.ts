@@ -9,6 +9,10 @@ for (const tool of TOOL_REGISTRY) {
     await page.goto(tool.path);
 
     await expect(
+      page.getByRole("heading", { level: 1 }),
+    ).toBeVisible();
+
+    await expect(
       page.getByRole("button", { name: "Bookmark", exact: true }),
     ).toBeVisible();
 

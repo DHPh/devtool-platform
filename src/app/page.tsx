@@ -10,12 +10,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Zap, Shield, Globe, ArrowRight } from "lucide-react";
 import { TOOL_COUNT, TOOL_REGISTRY } from "@/lib/tool-registry";
+import { getAbsoluteUrl, siteConfig } from "@/config/site";
 import { ToolClassificationView } from "@/components/tool-classification-view";
 import { serializeJsonForHtml } from "@/lib/security/safe-json";
 
 // Enhanced SEO metadata
 export const metadata: Metadata = {
-  title: `DevTool Platform - ${TOOL_COUNT} Free Online Developer Tools`,
+  title: `${siteConfig.name} - ${TOOL_COUNT} Free Online Developer Tools`,
   description:
     `Explore ${TOOL_COUNT} free online developer tools and studio utilities, including JSON formatting, Base64 encoding, regex testing, UUID generation, and network diagnostics. No registration required.`,
   keywords: [
@@ -45,12 +46,12 @@ export const metadata: Metadata = {
     "no registration",
     "instant tools",
   ],
-  authors: [{ name: "DevTool Platform" }],
-  creator: "DevTool Platform",
-  publisher: "DevTool Platform",
+  authors: [{ name: siteConfig.name }],
+  creator: siteConfig.name,
+  publisher: siteConfig.name,
   category: "Technology",
   alternates: {
-    canonical: "https://devtool-platform.vercel.app",
+    canonical: siteConfig.url,
   },
   robots: {
     index: true,
@@ -64,30 +65,30 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: `DevTool Platform - ${TOOL_COUNT} Free Online Developer Tools`,
+    title: `${siteConfig.name} - ${TOOL_COUNT} Free Online Developer Tools`,
     description:
       `Explore ${TOOL_COUNT} free online developer tools and studio utilities. No registration required.`,
-    url: "https://devtool-platform.vercel.app",
-    siteName: "DevTool Platform",
+    url: siteConfig.url,
+    siteName: siteConfig.name,
     type: "website",
     locale: "en_US",
     images: [
       {
-        url: "/og-homepage.png", // TODO: Create and upload homepage OG image (1200x630)
+        url: "/api/og?view=home",
         width: 1200,
         height: 630,
-        alt: `DevTool Platform - ${TOOL_COUNT} Free Online Developer Tools`,
+        alt: `${siteConfig.name} - ${TOOL_COUNT} Free Online Developer Tools`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    site: "@devtoolplatform", // TODO: Replace with real Twitter handle
-    creator: "@devtoolplatform", // TODO: Replace with real Twitter handle
-    title: `DevTool Platform - ${TOOL_COUNT} Free Online Developer Tools`,
+    site: siteConfig.twitter.site,
+    creator: siteConfig.twitter.handle,
+    title: `${siteConfig.name} - ${TOOL_COUNT} Free Online Developer Tools`,
     description:
       `Explore ${TOOL_COUNT} free online developer tools and studio utilities. No registration required.`,
-    images: ["/og-homepage.png"], // TODO: Create and upload homepage OG image
+    images: ["/api/og?view=home"],
   },
 };
 
@@ -100,21 +101,20 @@ export default function HomePage() {
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "DevTool Platform",
+    name: siteConfig.name,
     description: `A collection of ${TOOL_COUNT} free online developer tools and studio utilities`,
-    url: "https://devtool-platform.vercel.app",
+    url: siteConfig.url,
     potentialAction: {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate:
-          "https://devtool-platform.vercel.app/tools?search={search_term_string}",
+        urlTemplate: getAbsoluteUrl("/tools?search={search_term_string}"),
       },
       "query-input": "required name=search_term_string",
     },
     mainEntity: {
       "@type": "SoftwareApplication",
-      name: "DevTool Platform",
+      name: siteConfig.name,
       applicationCategory: "DeveloperApplication",
       operatingSystem: "Web Browser",
       offers: {
@@ -142,8 +142,8 @@ export default function HomePage() {
     },
     provider: {
       "@type": "Organization",
-      name: "DevTool Platform",
-      url: "https://devtool-platform.vercel.app",
+      name: siteConfig.name,
+      url: siteConfig.url,
     },
   };
 

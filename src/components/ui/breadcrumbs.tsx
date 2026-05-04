@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { ChevronRight, Home } from "lucide-react";
+import { getAbsoluteUrl, siteConfig } from "@/config/site";
 import { serializeJsonForHtml } from "@/lib/security/safe-json";
 
 interface BreadcrumbItem {
@@ -21,14 +22,14 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
         "@type": "ListItem",
         position: 1,
         name: "Home",
-        item: "https://devtool-platform.vercel.app",
+        item: siteConfig.url,
       },
       ...items.map((item, index) => ({
         "@type": "ListItem",
         position: index + 2,
         name: item.label,
         ...(item.href && {
-          item: `https://devtool-platform.vercel.app${item.href}`,
+          item: getAbsoluteUrl(item.href),
         }),
       })),
     ],

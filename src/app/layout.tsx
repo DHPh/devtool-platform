@@ -82,7 +82,7 @@ export const metadata: Metadata = {
     siteName: siteConfig.name,
     images: [
       {
-        url: "/og-image.png", // TODO: Create and upload this OG image (1200x630)
+        url: "/api/og",
         width: 1200,
         height: 630,
         alt: `${siteConfig.name} - ${TOOL_COUNT} Developer Tools`,
@@ -95,7 +95,7 @@ export const metadata: Metadata = {
     creator: siteConfig.twitter.handle, // TODO: Update with real Twitter handle
     title: `${siteConfig.name} - ${TOOL_COUNT} Developer Tools`,
     description: siteConfig.description,
-    images: ["/og-image.png"], // TODO: Create and upload this OG image
+    images: ["/api/og"],
   },
   verification: {
     google: siteConfig.verification.google, // TODO: Replace with real Google verification code
@@ -113,9 +113,9 @@ export default function RootLayout({
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    name: "DevTool Platform",
+    name: siteConfig.name,
     description: siteConfig.description,
-    url: "https://devtool-platform.vercel.app",
+    url: siteConfig.url,
     applicationCategory: "DeveloperApplication",
     operatingSystem: "Web Browser",
     offers: {

@@ -74,9 +74,9 @@ export const getCanonicalUrl = (path: string = "") => {
 
 export const getOgImageUrl = (slug?: string) => {
   if (slug) {
-    return getAbsoluteUrl(`/api/og?slug=${slug}`);
+    return getAbsoluteUrl(`/api/og?slug=${encodeURIComponent(slug)}`);
   }
-  return getAbsoluteUrl("/og-homepage.png");
+  return getAbsoluteUrl("/api/og");
 };
 
 export const getTwitterUrl = () => {

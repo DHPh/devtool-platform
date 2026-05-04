@@ -7,6 +7,7 @@ import {
 } from "@/lib/tool-component-ids";
 import { getToolById, TOOL_REGISTRY } from "@/lib/tool-registry";
 import { assertValidToolRegistry } from "@/lib/validate-tool-registry";
+import { getAbsoluteUrl, getOgImageUrl, siteConfig } from "@/config/site";
 
 assertValidToolRegistry(TOOL_REGISTRY, TOOL_COMPONENT_IDS);
 
@@ -63,7 +64,8 @@ export async function generateMetadata({ params }: ToolPageProps) {
     "browser tool",
     "instant tool",
   ];
-  const canonicalUrl = `https://devtool-platform.vercel.app${tool.path}`;
+  const canonicalUrl = getAbsoluteUrl(tool.path);
+  const ogImageUrl = getOgImageUrl(slug);
 
   // Enhanced structured data with more details
   const structuredData = {
@@ -85,16 +87,16 @@ export async function generateMetadata({ params }: ToolPageProps) {
     },
     provider: {
       "@type": "Organization",
-      name: "DevTool Platform",
-      url: "https://devtool-platform.vercel.app",
+      name: siteConfig.name,
+      url: siteConfig.url,
     },
     isPartOf: {
       "@type": "WebSite",
-      name: "DevTool Platform",
-      url: "https://devtool-platform.vercel.app",
+      name: siteConfig.name,
+      url: siteConfig.url,
     },
     featureList: tool.tags,
-    screenshot: `https://devtool-platform.vercel.app/screenshots/${slug}.png`,
+    screenshot: ogImageUrl,
     softwareVersion: "1.0",
     datePublished: "2024-01-01",
     dateModified: new Date().toISOString().split("T")[0],
@@ -108,7 +110,7 @@ export async function generateMetadata({ params }: ToolPageProps) {
     "@type": "HowTo",
     name: `How to use ${tool.name}`,
     description: `Step-by-step guide on using the ${tool.name} tool`,
-    image: `https://devtool-platform.vercel.app/screenshots/${slug}.png`,
+    image: ogImageUrl,
     totalTime: "PT2M",
     estimatedCost: {
       "@type": "MonetaryAmount",
@@ -131,14 +133,14 @@ export async function generateMetadata({ params }: ToolPageProps) {
   };
 
   return {
-    title: `${tool.name} - Free Online Tool | DevTool Platform`,
+    title: `${tool.name} - Free Online Tool | ${siteConfig.name}`,
     description: `${
       tool.description
     } Free online ${tool.name.toLowerCase()} tool. No registration required, works in your browser. Fast, secure, and private.`,
     keywords: toolKeywords,
-    authors: [{ name: "DevTool Platform" }],
-    creator: "DevTool Platform",
-    publisher: "DevTool Platform",
+    authors: [{ name: siteConfig.name }],
+    creator: siteConfig.name,
+    publisher: siteConfig.name,
     category: "Technology",
     classification: "Developer Tools",
     alternates: {
@@ -161,28 +163,28 @@ export async function generateMetadata({ params }: ToolPageProps) {
         tool.description
       } Free online ${tool.name.toLowerCase()} tool. No registration required.`,
       url: canonicalUrl,
-      siteName: "DevTool Platform",
+      siteName: siteConfig.name,
       type: "website",
       locale: "en_US",
       images: [
         {
-          url: `/api/og?slug=${slug}`,
+          url: `/api/og?slug=${encodeURIComponent(slug)}`,
           width: 1200,
           height: 630,
-          alt: `${tool.name} - DevTool Platform`,
+          alt: `${tool.name} - ${siteConfig.name}`,
           type: "image/png",
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      site: "@devtoolplatform",
-      creator: "@devtoolplatform",
+      site: siteConfig.twitter.site,
+      creator: siteConfig.twitter.handle,
       title: `${tool.name} - Free Online Tool`,
       description: `${
         tool.description
       } Free online ${tool.name.toLowerCase()} tool.`,
-      images: [`/api/og?slug=${slug}`],
+      images: [`/api/og?slug=${encodeURIComponent(slug)}`],
     },
     other: {
       "application/ld+json": JSON.stringify([

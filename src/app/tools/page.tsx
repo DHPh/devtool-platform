@@ -16,12 +16,13 @@ import {
   getToolsByCategory,
 } from "@/lib/tool-registry";
 import { getAllCategories } from "@/lib/tool-classification";
+import { getAbsoluteUrl, siteConfig } from "@/config/site";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { ToolsCatalog } from "@/components/tools-catalog";
 
 // Static metadata for SEO
 export const metadata: Metadata = {
-  title: `All Developer Tools | DevTool Platform - ${TOOL_COUNT} Free Online Tools`,
+  title: `All Developer Tools | ${siteConfig.name} - ${TOOL_COUNT} Free Online Tools`,
   description:
     `Browse ${TOOL_COUNT} free developer tools and studio utilities for formatting, encoding, validation, generation, and network diagnostics. No registration required.`,
   keywords: [
@@ -47,30 +48,30 @@ export const metadata: Metadata = {
     "web development tools",
   ],
   alternates: {
-    canonical: "https://devtool-platform.vercel.app/tools",
+    canonical: getAbsoluteUrl("/tools"),
   },
   openGraph: {
-    title: "All Developer Tools | DevTool Platform",
+    title: `All Developer Tools | ${siteConfig.name}`,
     description:
       `Browse ${TOOL_COUNT} free developer tools and studio utilities. No registration required.`,
-    url: "https://devtool-platform.vercel.app/tools",
-    siteName: "DevTool Platform",
+    url: getAbsoluteUrl("/tools"),
+    siteName: siteConfig.name,
     type: "website",
     images: [
       {
-        url: "/og-tools-collection.png",
+        url: "/api/og?view=tools",
         width: 1200,
         height: 630,
-        alt: "DevTool Platform - Complete Tools Collection",
+        alt: `${siteConfig.name} - Complete Tools Collection`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "All Developer Tools | DevTool Platform",
+    title: `All Developer Tools | ${siteConfig.name}`,
     description:
       `Browse ${TOOL_COUNT} free developer tools and studio utilities. No registration required.`,
-    images: ["/og-tools-collection.png"],
+    images: ["/api/og?view=tools"],
   },
 };
 
@@ -88,7 +89,7 @@ export default function ToolsPage() {
     name: "Developer Tools Collection",
     description:
       `A collection of ${TOOL_COUNT} free online developer tools and studio utilities`,
-    url: "https://devtool-platform.vercel.app/tools",
+    url: getAbsoluteUrl("/tools"),
     mainEntity: {
       "@type": "ItemList",
       numberOfItems: TOOL_COUNT,
@@ -97,7 +98,7 @@ export default function ToolsPage() {
         position: index + 1,
         name: tool.name,
         description: tool.description,
-        url: `https://devtool-platform.vercel.app${tool.path}`,
+        url: getAbsoluteUrl(tool.path),
         applicationCategory: "DeveloperApplication",
         operatingSystem: "Web Browser",
         offers: {
@@ -109,8 +110,8 @@ export default function ToolsPage() {
     },
     provider: {
       "@type": "Organization",
-      name: "DevTool Platform",
-      url: "https://devtool-platform.vercel.app",
+      name: siteConfig.name,
+      url: siteConfig.url,
     },
   };
 
