@@ -138,9 +138,9 @@ export function AccessibilityPaletteGenerator() {
 
     const cssVars = palette.colors
       .map((color, index) => `  --color-${index + 1}: ${color.original};`)
-      .join("\\n");
+      .join("\n");
 
-    const cssContent = `:root {\\n${cssVars}\\n}`;
+    const cssContent = `:root {\n${cssVars}\n}`;
 
     const blob = new Blob([cssContent], { type: "text/css" });
     const url = URL.createObjectURL(blob);

@@ -47,6 +47,7 @@ export function RegexTesterTab({
   initialFlags,
 }: RegexTesterTabProps) {
   const [pattern, setPattern] = useState(initialPattern);
+  const textInput = React.useRef<HTMLTextAreaElement>(null);
   const [testText, setTestText] = useState(initialText);
   const [flags, setFlags] = useState<RegexFlags>(
     initialFlags || {
@@ -130,8 +131,8 @@ export function RegexTesterTab({
   };
 
   const handleHighlightMatch = (match: RegexMatch) => {
-    // Could implement highlighting logic here if needed
-    void match;
+    textInput.current?.focus();
+    textInput.current?.setSelectionRange(match.index, match.index + match.length);
   };
 
   return (
@@ -216,6 +217,7 @@ export function RegexTesterTab({
           <div className="space-y-2">
             <Label htmlFor="testText">Input Text</Label>
             <Textarea
+              ref={textInput}
               id="testText"
               value={testText}
               onChange={(e) => setTestText(e.target.value)}
