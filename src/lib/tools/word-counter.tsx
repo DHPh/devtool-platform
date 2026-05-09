@@ -9,21 +9,19 @@ import {
   QuickActions,
   ResultCard,
 } from "@/components/layout";
-import { countText } from "@/lib/processors/tool-core";
+import { countText, segmentWords } from "@/lib/processors/tool-core";
 
 export default function WordCounter() {
   const [text, setText] = useState("");
 
+  const tokens = useMemo(() => segmentWords(text), [text]);
   const stats = useMemo(() => {
-    const counts = countText(text);
+    const counts = countText(text, tokens);
     const { characters, words, lines, paragraphs } = counts;
     const charactersNoSpaces = counts.charactersWithoutSpaces;
 
-    // Enhanced sentence detection for Vietnamese
-    const sentences =
-      text.trim() === ""
-        ? 0
-        : text.split(/[.!?…:;]+/).filter((s) => s.trim() !== "").length;
+    const sentences = Array.from(new Intl.Segmenter(undefined, { granularity: "sentence" }).segment(text))
+      .filter(({ segment }) => segment.trim()).length;
 
     // Reading time estimation (average 200 words per minute)
     const readingTime = Math.ceil(words / 200);
@@ -41,29 +39,16 @@ export default function WordCounter() {
       readingTime,
       speakingTime,
     };
-  }, [text]);
+  }, [text, tokens]);
 
-  // Get word frequency
-  const getWordFrequency = () => {
-    if (!text.trim()) return [];
-
-    const words = text
-      .toLowerCase()
-      .replace(/[^\w\s\u00C0-\u017F\u1EA0-\u1EF9]/g, "")
-      .split(/\s+/)
-      .filter((word) => word.length > 2);
-
-    const frequency: Record<string, number> = {};
-    words.forEach((word) => {
-      frequency[word] = (frequency[word] || 0) + 1;
-    });
-
-    return Object.entries(frequency)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 10);
-  };
-
-  const wordFrequency = getWordFrequency();
+  const wordFrequency = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const token of tokens) {
+      const word = token.toLowerCase();
+      counts.set(word, (counts.get(word) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+  }, [tokens]);
 
   // Example texts for different languages
   const languageExamples = [

@@ -1,3 +1,4 @@
+import { decodeHTMLStrict, encodeNonAsciiHTML } from "entities";
 import { renderMarkdownToSafeHtml } from "@/lib/markdown/markdown-renderer";
 import { validateEmailSyntax } from "./email";
 import { formatCssSource, formatHtmlSource, minifyCssSource } from "./source-formatters";
@@ -29,10 +30,18 @@ export function markdownToHtml(markdown: string): string {
   return renderMarkdownToSafeHtml(markdown);
 }
 
-export function countText(input: string): TextStatistics {
+const wordSegmenter = new Intl.Segmenter(undefined, { granularity: "word" });
+
+export function segmentWords(input: string): string[] {
+  return Array.from(wordSegmenter.segment(input))
+    .filter((part) => part.isWordLike)
+    .map((part) => part.segment);
+}
+
+export function countText(input: string, words = segmentWords(input)): TextStatistics {
   const trimmed = input.trim();
   return {
-    words: trimmed ? trimmed.split(/\s+/).length : 0,
+    words: words.length,
     characters: input.length,
     charactersWithoutSpaces: input.replace(/\s/g, "").length,
     lines: input ? input.split(/\r?\n/).length : 0,
@@ -52,25 +61,12 @@ export function diffLines(left: string, right: string) {
   }));
 }
 
-const HTML_ENTITIES: Record<string, string> = {
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
-  '"': "&quot;",
-  "'": "&#39;",
-};
-
 export function encodeHtmlEntities(input: string): string {
-  return input.replace(/[&<>"']/g, (value) => HTML_ENTITIES[value]);
+  return encodeNonAsciiHTML(input).replaceAll("&apos;", "&#39;");
 }
 
 export function decodeHtmlEntities(input: string): string {
-  const named = Object.fromEntries(Object.entries(HTML_ENTITIES).map(([key, value]) => [value, key]));
-  return input.replace(/&#x([\da-f]+);|&#(\d+);|&(amp|lt|gt|quot);/gi, (entity, hex, decimal) => {
-    if (hex) return String.fromCodePoint(Number.parseInt(hex, 16));
-    if (decimal) return String.fromCodePoint(Number.parseInt(decimal, 10));
-    return named[entity.toLowerCase()] ?? entity;
-  });
+  return decodeHTMLStrict(input);
 }
 
 export function validateEmail(email: string) {
