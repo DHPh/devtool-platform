@@ -1,5 +1,7 @@
 "use client";
 
+import { readDroppedFiles } from "../file-drop";
+
 import React, { useState, useRef } from "react";
 import { useObjectUrls } from "@/hooks/use-object-urls";
 import {
@@ -56,6 +58,7 @@ export default function DuplicateFinderTab() {
   const [progress, setProgress] = useState<number>(0);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
 
+  const scanVersion = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { createObjectUrl, revokeObjectUrl } = useObjectUrls();
 
@@ -82,12 +85,17 @@ export default function DuplicateFinderTab() {
       newFiles.push(duplicateFile);
     }
 
+    scanVersion.current++;
+    setIsScanning(false);
+    setSelectedFiles([]);
+    setDuplicateGroups([]);
     setFiles((prev) => [...prev, ...newFiles]);
   };
 
   const scanForDuplicates = async () => {
     if (files.length === 0) return;
 
+    const version = ++scanVersion.current;
     setIsScanning(true);
     setProgress(0);
     setDuplicateGroups([]);
@@ -96,6 +104,7 @@ export default function DuplicateFinderTab() {
     const filesWithHashes: DuplicateFile[] = [];
 
     for (let i = 0; i < files.length; i++) {
+      if (version !== scanVersion.current) return;
       const file = files[i];
       setProgress((i / files.length) * 50); // First 50% for hashing
 
@@ -115,6 +124,7 @@ export default function DuplicateFinderTab() {
       }
     }
 
+    if (version !== scanVersion.current) return;
     setFiles(filesWithHashes);
 
     const groupedFiles = groupDuplicateFiles(
@@ -173,7 +183,7 @@ export default function DuplicateFinderTab() {
     setSelectedFiles(allDuplicateIds);
   };
 
-  const deleteSelectedFiles = () => {
+  const removeSelectedFiles = () => {
     files
       .filter((file) => selectedFiles.includes(file.id))
       .forEach((file) => revokeObjectUrl(file.url));
@@ -240,6 +250,8 @@ export default function DuplicateFinderTab() {
                 "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors",
                 "hover:border-primary/50 hover:bg-primary/5"
               )}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => handleFileSelect(readDroppedFiles(event))}
               onClick={() => fileInputRef.current?.click()}
               role="button"
               tabIndex={0}
@@ -356,16 +368,16 @@ export default function DuplicateFinderTab() {
                         {selectedFiles.length} files selected
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {formatFileSize(getSelectedFileSize())} will be freed
+                        {formatFileSize(getSelectedFileSize())} selected in this scan
                       </p>
                     </div>
                     <Button
-                      onClick={deleteSelectedFiles}
+                      onClick={removeSelectedFiles}
                       variant="destructive"
                       className="w-full mt-3"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Delete Selected Files
+                      Remove from scan
                     </Button>
                   </div>
                 )}
@@ -378,7 +390,7 @@ export default function DuplicateFinderTab() {
                   Retry the files that could not be hashed before relying on the result.
                 </p>
               </div>
-            ) : files.length > 0 && !isScanning ? (
+            ) : files.length > 0 && files.every((file) => file.hash) && !isScanning ? (
               <div className="text-center text-green-600 py-8">
                 <div className="text-4xl mb-4">🎉</div>
                 <p className="font-medium">No Duplicates Found!</p>
@@ -389,7 +401,7 @@ export default function DuplicateFinderTab() {
             ) : (
               <div className="text-center text-muted-foreground py-8">
                 <Copy className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Upload files to start scanning for duplicates</p>
+                <p>{isScanning ? "Scanning files…" : files.length ? "Run the scan to compare these files." : "Upload files to start scanning for duplicates."}</p>
               </div>
             )}
           </CardContent>

@@ -100,6 +100,27 @@ describe("file processing hooks, processors & studio tabs", () => {
     });
   });
 
+  it("verifies checksums and clears stale results when the expected value changes", async () => {
+    const user = userEvent.setup();
+    render(<FileHasherTab />);
+    await user.click(screen.getByRole("tab", { name: "Verify Hashes" }));
+    const file = new File(["abc"], "sample.txt");
+    Object.defineProperty(file, "arrayBuffer", { value: async () => Uint8Array.of(97, 98, 99).buffer });
+    await user.upload(screen.getByLabelText("File to verify"), file);
+    const checksum = screen.getByLabelText("Expected checksum");
+    const verify = screen.getByRole("button", { name: "Verify checksum" });
+    fireEvent.change(checksum, { target: { value: "900150983CD24FB0D6963F7D28E17F72" } });
+    await user.click(verify);
+    expect(await screen.findByText("Checksums match.")).toBeVisible();
+    fireEvent.change(checksum, { target: { value: "0".repeat(32) } });
+    expect(screen.queryByText("Checksums match.")).toBeNull();
+    await user.click(verify);
+    expect(await screen.findByText("Checksums do not match.")).toBeVisible();
+    fireEvent.change(checksum, { target: { value: "typo" } });
+    await user.click(verify);
+    expect(await screen.findByText(/Enter a hexadecimal/)).toBeVisible();
+  });
+
   it("uploads, categorizes, and revokes ObjectURLs on unmount in FileOrganizerTab", async () => {
     const { container, unmount } = render(<FileOrganizerTab />);
     const input = container.querySelector('input[type="file"]') as HTMLInputElement;

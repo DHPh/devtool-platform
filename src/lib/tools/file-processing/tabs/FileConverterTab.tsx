@@ -1,5 +1,7 @@
 "use client";
 
+import { readDroppedFiles } from "../file-drop";
+
 import React, { useEffect, useRef, useState } from "react";
 import { AlertCircle, CheckCircle, Download, FileText, RefreshCw, Trash2, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -112,7 +114,9 @@ export default function FileConverterTab() {
         <Card>
           <CardHeader><CardTitle>Upload & Convert</CardTitle><CardDescription>Each file only shows formats this browser converter can produce.</CardDescription></CardHeader>
           <CardContent className="space-y-6">
-            <div className={cn("border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors", "hover:border-primary/50 hover:bg-primary/5")} onClick={() => fileInputRef.current?.click()} role="button" tabIndex={0} aria-label="Choose files to convert" onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); fileInputRef.current?.click(); } }}>
+            <div className={cn("border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors", "hover:border-primary/50 hover:bg-primary/5")} onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => handleFileSelect(readDroppedFiles(event))}
+            onClick={() => fileInputRef.current?.click()} role="button" tabIndex={0} aria-label="Choose files to convert" onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); fileInputRef.current?.click(); } }}>
               <Upload className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
               <p className="text-lg font-medium">Upload Files</p>
               <p className="text-sm text-muted-foreground">JPEG, PNG, WebP, TXT, or JSON</p>

@@ -1,5 +1,7 @@
 "use client";
 
+import { readDroppedFiles } from "../file-drop";
+
 import React, { useState, useRef } from "react";
 import {
   Card,
@@ -320,6 +322,8 @@ export default function FileOrganizerTab() {
                     "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors",
                     "hover:border-primary/50 hover:bg-primary/5"
                   )}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => handleFileSelect(readDroppedFiles(event))}
                   onClick={() => fileInputRef.current?.click()}
                   role="button"
                   tabIndex={0}

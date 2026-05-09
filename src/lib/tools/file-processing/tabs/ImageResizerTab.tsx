@@ -1,5 +1,9 @@
 "use client";
 
+import { toast } from "sonner";
+
+import { readDroppedFiles } from "../file-drop";
+
 import React, { useState, useRef, useCallback } from "react";
 import {
   Card,
@@ -208,6 +212,7 @@ export default function ImageResizerTab() {
       }
     }
 
+    if (newImages.length < files.length) toast.error("Some files could not be opened as images.");
     setImages((prev) => [...prev, ...newImages]);
     if (newImages.length > 0 && !selectedImage) {
       setSelectedImage(newImages[0]);
@@ -383,6 +388,8 @@ export default function ImageResizerTab() {
                   "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors",
                   "hover:border-primary/50 hover:bg-primary/5"
                 )}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => handleFileSelect(readDroppedFiles(event))}
                 onClick={() => fileInputRef.current?.click()}
                 role="button"
                 tabIndex={0}

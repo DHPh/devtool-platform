@@ -1,5 +1,7 @@
 "use client";
 
+import { readDroppedFiles } from "../file-drop";
+
 import React, { useRef, useState } from "react";
 import { toast } from "sonner";
 import { triggerBlobDownload, useObjectUrls } from "@/hooks/use-object-urls";
@@ -96,7 +98,7 @@ export default function ArchiveManagerTab() {
         }
         const entries = await inspectZip(await file.arrayBuffer());
         const processedArchive: ProcessedArchive = {
-          id: `${Date.now()}-${i}`,
+          id: crypto.randomUUID(),
           name: file.name,
           size: file.size,
           entries,
@@ -123,7 +125,7 @@ export default function ArchiveManagerTab() {
       const file = files[i];
 
       const archiveFile: ArchiveFile = {
-        id: Date.now().toString() + i,
+        id: crypto.randomUUID(),
         file,
         name: file.name,
         size: file.size,
@@ -295,6 +297,8 @@ export default function ArchiveManagerTab() {
                     "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors",
                     "hover:border-primary/50 hover:bg-primary/5"
                   )}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => handleArchiveUpload(readDroppedFiles(event))}
                   onClick={() => archiveInputRef.current?.click()}
                   role="button"
                   tabIndex={0}
@@ -464,6 +468,8 @@ export default function ArchiveManagerTab() {
                       "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
                       "hover:border-primary/50 hover:bg-primary/5"
                     )}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={(event) => handleFilesToCompressUpload(readDroppedFiles(event))}
                     onClick={() => filesInputRef.current?.click()}
                     role="button"
                     tabIndex={0}

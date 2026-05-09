@@ -1,5 +1,7 @@
 "use client";
 
+import { readDroppedFiles } from "../file-drop";
+
 import React, { useState, useRef } from "react";
 import { copyToClipboard } from "@/hooks/use-clipboard";
 import {
@@ -57,6 +59,59 @@ const HASH_ALGORITHMS = [
   { key: "sha256", name: "SHA-256", description: "256-bit hash (recommended)" },
   { key: "sha512", name: "SHA-512", description: "512-bit hash (most secure)" },
 ] as const;
+
+function VerifyChecksum() {
+  const [file, setFile] = useState<File | null>(null);
+  const [expected, setExpected] = useState("");
+  const [message, setMessage] = useState("");
+  const [checking, setChecking] = useState(false);
+  const revision = useRef(0);
+
+  function resetResult() {
+    revision.current++;
+    setChecking(false);
+    setMessage("");
+  }
+
+  async function verify() {
+    if (!file) return;
+    const value = expected.trim().toLowerCase();
+    const lengths: Record<number, FileHashAlgorithm> = { 32: "md5", 40: "sha1", 64: "sha256", 128: "sha512" };
+    const algorithm = lengths[value.length];
+    if (!algorithm || !/^[0-9a-f]+$/.test(value)) {
+      setMessage("Enter a hexadecimal MD5, SHA-1, SHA-256 or SHA-512 checksum.");
+      return;
+    }
+    const request = ++revision.current;
+    setChecking(true);
+    setMessage("");
+    try {
+      const result = await hashFileInWorker(file, algorithm);
+      if (request === revision.current) {
+        setMessage(result.ok ? (result.value.toLowerCase() === value ? "Checksums match." : "Checksums do not match.") : result.error);
+      }
+    } catch {
+      if (request === revision.current) setMessage("Could not read or hash the file.");
+    } finally {
+      if (request === revision.current) setChecking(false);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <label className="block">File to verify
+        <input className="block" type="file" onChange={(event) => { resetResult(); setFile(event.target.files?.[0] ?? null); }} />
+      </label>
+      <label className="block">Expected checksum
+        <input className="block w-full rounded border bg-background p-2 font-mono" value={expected} onChange={(event) => { resetResult(); setExpected(event.target.value); }} />
+      </label>
+      <Button disabled={!file || !expected.trim() || checking} onClick={() => void verify()}>
+        {checking ? "Verifying..." : "Verify checksum"}
+      </Button>
+      <p role="status">{message}</p>
+    </div>
+  );
+}
 
 export default function FileHasherTab() {
   const [files, setFiles] = useState<HashedFile[]>([]);
@@ -194,11 +249,6 @@ export default function FileHasherTab() {
     );
   };
 
-  // Helper function for future hash verification feature
-  // const verifyHash = (inputHash: string, fileHash: string): boolean => {
-  //   return inputHash.toLowerCase().trim() === fileHash.toLowerCase().trim();
-  // };
-
   return (
     <TooltipProvider>
       <div className="space-y-6">
@@ -265,6 +315,8 @@ export default function FileHasherTab() {
                       "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors",
                       "hover:border-primary/50 hover:bg-primary/5"
                     )}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={(event) => handleFileSelect(readDroppedFiles(event))}
                     onClick={() => fileInputRef.current?.click()}
                     role="button"
                     tabIndex={0}
@@ -528,14 +580,7 @@ export default function FileHasherTab() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center text-muted-foreground py-8">
-                  <Shield className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Hash verification feature coming soon...</p>
-                  <p className="text-sm mt-2">
-                    This will allow you to verify file integrity by comparing
-                    generated hashes with known good values.
-                  </p>
-                </div>
+                <VerifyChecksum />
               </CardContent>
             </Card>
           </TabsContent>
