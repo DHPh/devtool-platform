@@ -180,7 +180,7 @@ export const FILE_TOOLS = [
     processing: "client",
     name: "File Organizer",
     description:
-      "Organize files by type, date, size, or custom rules with preview and batch operations",
+      "Preview a folder structure for your files using preset rules and download the organization plan.",
     category: TOOL_CATEGORIES.FILE_PROCESSING.id,
     type: TOOL_TYPES.UTILITY,
     types: [TOOL_TYPES.ANALYZER],
@@ -192,7 +192,7 @@ export const FILE_TOOLS = [
     parent: "file-processing-studio",
     tab: "file-organizer",
     inputDescription: "Upload files and choose an organization rule.",
-    outputDescription: "Files grouped into category folders with a preview.",
+    outputDescription: "A preview of the proposed folders and a downloadable text plan.",
     example: { input: "photo.jpg", output: "Category: images" },
   },
 ] satisfies ToolMetadata[];

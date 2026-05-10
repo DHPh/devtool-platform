@@ -23,7 +23,7 @@ function IssueResults({ issues }: { issues: ValidationIssue[] }) {
   if (!issues.length) {
     return (
       <CopyableResult
-        value="No issues found."
+        value="Required resource field checks passed."
         label="Validation result"
         copyLabel="Copy validation result"
         rows={1}

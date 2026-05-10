@@ -297,7 +297,7 @@ export default function FileOrganizerTab() {
       <div className="text-center">
         <h2 className="text-3xl font-bold mb-2">File Organizer</h2>
         <p className="text-muted-foreground">
-          Organize files by type, date, size, or custom rules
+          Preview folder layouts by file type, date or size and download the plan as text.
         </p>
       </div>
 
@@ -406,7 +406,7 @@ export default function FileOrganizerTab() {
                 {Object.keys(organizationPreview).length > 0 && (
                   <div className="space-y-2">
                     <p className="text-sm font-medium">
-                      Will create {Object.keys(organizationPreview).length}{" "}
+                      The plan contains {Object.keys(organizationPreview).length}{" "}
                       folders
                     </p>
                     <Button

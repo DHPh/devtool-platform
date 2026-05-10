@@ -17,11 +17,19 @@ export function CronExpressionBuilderTab() {
     [expression, timezone],
   );
 
+  const zone = timezone || "UTC";
+  const localTime = useMemo(() => {
+    if (!result.ok || zone === "UTC") return null;
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone: zone, dateStyle: "medium", timeStyle: "long",
+    });
+  }, [result.ok, zone]);
+
   return (
     <section className="space-y-5">
       <Header
         title="Cron Expression Builder"
-        description="Parse a five-field cron schedule and preview its next UTC runs."
+        description="Parse a five-field cron schedule and preview its next runs in the selected timezone and UTC."
       />
       <div className="grid gap-4 sm:grid-cols-[1fr_14rem]">
         <label className="space-y-2">
@@ -63,10 +71,10 @@ export function CronExpressionBuilderTab() {
               {result.value.nextRuns.map((run, index) => (
                 <CopyableResult
                   key={run}
-                  value={run}
+                  value={localTime ? localTime.format(new Date(run)) + " (" + zone + ")\n" + run : run}
                   label={`Run ${index + 1}`}
                   copyLabel={`Copy run ${index + 1}`}
-                  rows={1}
+                  rows={localTime ? 2 : 1}
                 />
               ))}
             </div>
