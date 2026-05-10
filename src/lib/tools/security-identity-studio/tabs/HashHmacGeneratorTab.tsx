@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   CopyableResult,
   ToolSectionHeader as Header,
@@ -23,18 +23,29 @@ import {
 
 export function HashHmacGeneratorTab() {
   const [input, setInput] = useState("Hello, world!");
-  const [secret, setSecret] = useState("development-secret");
+  const [secret, setSecret] = useState("");
   const [showSecret, setShowSecret] = useState(false);
   const [mode, setMode] = useState<"hash" | "hmac">("hash");
   const [algorithm, setAlgorithm] = useState<DigestAlgorithm>("SHA-256");
   const [output, setOutput] = useState("");
   const [error, setError] = useState("");
 
+  const revision = useRef(0);
+
+  const updateInput = (update: () => void) => {
+    revision.current++;
+    update();
+    setOutput("");
+    setError("");
+  };
+
   const generate = async () => {
+    const request = ++revision.current;
     const result =
       mode === "hash"
         ? await generateDigest(input, algorithm)
         : await generateHmac(input, secret, algorithm);
+    if (request !== revision.current) return;
     if (result.ok) {
       setOutput(result.value);
       setError("");
@@ -55,7 +66,7 @@ export function HashHmacGeneratorTab() {
           <span className="text-sm font-medium">Operation</span>
           <Select
             value={mode}
-            onValueChange={(value) => setMode(value as "hash" | "hmac")}
+            onValueChange={(value) => updateInput(() => setMode(value as "hash" | "hmac"))}
           >
             <SelectTrigger aria-label="Operation">
               <SelectValue />
@@ -70,7 +81,7 @@ export function HashHmacGeneratorTab() {
           <span className="text-sm font-medium">Algorithm</span>
           <Select
             value={algorithm}
-            onValueChange={(value) => setAlgorithm(value as DigestAlgorithm)}
+            onValueChange={(value) => updateInput(() => setAlgorithm(value as DigestAlgorithm))}
           >
             <SelectTrigger aria-label="Algorithm">
               <SelectValue />
@@ -89,7 +100,7 @@ export function HashHmacGeneratorTab() {
         <span className="text-sm font-medium">Input text</span>
         <Textarea
           value={input}
-          onChange={(event) => setInput(event.target.value)}
+          onChange={(event) => updateInput(() => setInput(event.target.value))}
           rows={7}
         />
       </label>
@@ -103,7 +114,7 @@ export function HashHmacGeneratorTab() {
               id="hash-hmac-secret"
               type={showSecret ? "text" : "password"}
               value={secret}
-              onChange={(event) => setSecret(event.target.value)}
+              onChange={(event) => updateInput(() => setSecret(event.target.value))}
               autoComplete="off"
             />
             <Button
@@ -120,7 +131,7 @@ export function HashHmacGeneratorTab() {
           </p>
         </div>
       )}
-      <Button type="button" onClick={() => void generate()}>
+      <Button type="button" disabled={mode === "hmac" && !secret} onClick={() => void generate()}>
         Generate {mode === "hash" ? "hash" : "HMAC"}
       </Button>
       {error ? (

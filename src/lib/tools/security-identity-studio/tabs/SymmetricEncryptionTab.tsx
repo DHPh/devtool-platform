@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   CopyableResult,
   ToolErrorResult as ErrorResult,
@@ -17,19 +17,29 @@ import {
 export function SymmetricEncryptionTab() {
   const [mode, setMode] = useState<"encrypt" | "decrypt">("encrypt");
   const [input, setInput] = useState("Private message");
-  const [password, setPassword] = useState("local-development-password");
+  const [password, setPassword] = useState("");
   const [result, setResult] = useState<
     Awaited<ReturnType<typeof encryptText>> | null
   >(null);
 
-  const run = async () =>
-    setResult(
-      mode === "encrypt"
-        ? await encryptText(password, input)
-        : await decryptText(password, input),
-    );
+  const revision = useRef(0);
+
+  const updateInput = (update: () => void) => {
+    revision.current++;
+    update();
+    setResult(null);
+  };
+
+  const run = async () => {
+    const request = ++revision.current;
+    const nextResult = mode === "encrypt"
+      ? await encryptText(password, input)
+      : await decryptText(password, input);
+    if (request === revision.current) setResult(nextResult);
+  };
 
   const reverse = () => {
+    revision.current++;
     if (result?.ok) setInput(result.value);
     setResult(null);
     setMode((value) => (value === "encrypt" ? "decrypt" : "encrypt"));
@@ -42,7 +52,7 @@ export function SymmetricEncryptionTab() {
         description="Encrypt or decrypt text locally with AES-256-GCM and a PBKDF2-derived key. This is a primitive demonstration, not application key management."
       />
       <div className="flex flex-wrap gap-3">
-        <Button type="button" onClick={() => void run()}>
+        <Button type="button" disabled={!password} onClick={() => void run()}>
           {mode === "encrypt" ? "Encrypt text" : "Decrypt text"}
         </Button>
         <Button type="button" variant="outline" onClick={reverse}>
@@ -55,7 +65,7 @@ export function SymmetricEncryptionTab() {
         </span>
         <Textarea
           value={input}
-          onChange={(event) => setInput(event.target.value)}
+          onChange={(event) => updateInput(() => setInput(event.target.value))}
           rows={12}
           className="font-mono"
         />
@@ -65,7 +75,7 @@ export function SymmetricEncryptionTab() {
         <Input
           type="password"
           value={password}
-          onChange={(event) => setPassword(event.target.value)}
+          onChange={(event) => updateInput(() => setPassword(event.target.value))}
           autoComplete="off"
         />
       </label>

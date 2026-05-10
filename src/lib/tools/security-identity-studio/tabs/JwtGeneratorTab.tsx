@@ -47,7 +47,7 @@ export function JwtGeneratorTab() {
   const [payload, setPayload] = useState(JWT_GENERATOR_PAYLOAD);
   const [algorithm, setAlgorithm] = useState<JwtSigningAlgorithm>("HS256");
   const [keyType, setKeyType] = useState<JwtSigningKeyType>("hmac");
-  const [key, setKey] = useState("development-only-secret-change-me");
+  const [key, setKey] = useState("");
   const [publicJwk, setPublicJwk] = useState("");
   const [showSecret, setShowSecret] = useState(false);
   const [working, setWorking] = useState(false);
@@ -244,7 +244,7 @@ export function JwtGeneratorTab() {
       </div>
       <AsyncActionButton
         pending={generatingKey}
-        pendingLabel="Generating key…"
+        pendingLabel="Generating keyâ€¦"
         variant="outline"
         onClick={() => void generateKey()}
       >
@@ -285,7 +285,10 @@ export function JwtGeneratorTab() {
           </span>
           <Textarea
             value={key}
-            onChange={(event) => updateInput(() => setKey(event.target.value))}
+            onChange={(event) => updateInput(() => {
+              setKey(event.target.value);
+              setPublicJwk("");
+            })}
             rows={10}
             className="font-mono"
             spellCheck={false}
@@ -307,7 +310,8 @@ export function JwtGeneratorTab() {
       )}
       <AsyncActionButton
         pending={working}
-        pendingLabel="Generating JWT…"
+        disabled={!key.trim() || generatingKey}
+        pendingLabel="Generating JWTâ€¦"
         onClick={() => void sign()}
       >
         Generate signed JWT

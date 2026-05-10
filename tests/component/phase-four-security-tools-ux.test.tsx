@@ -11,6 +11,7 @@ import { JwtSignatureVerifierTab as JwtSignatureVerifierTool } from "@/lib/tools
 import { KeypairSignatureTab as KeypairSignatureTool } from "@/lib/tools/security-identity-studio/tabs/KeypairSignatureTab";
 import { SriGeneratorTab as SriGeneratorTool } from "@/lib/tools/security-identity-studio/tabs/SriGeneratorTab";
 import { SymmetricEncryptionTab as SymmetricEncryptionTool } from "@/lib/tools/security-identity-studio/tabs/SymmetricEncryptionTab";
+import * as digestCore from "@/lib/processors/crypto-core";
 import * as cryptoCore from "@/lib/processors/advanced-crypto-core";
 import { TotpTab as TotpTool } from "@/lib/tools/security-identity-studio/tabs/TotpTab";
 
@@ -25,19 +26,40 @@ describe("Phase 4 security-tool UX", () => {
     fireEvent.keyDown(operation, { key: "ArrowDown" });
     fireEvent.keyDown(screen.getByRole("option", { name: "HMAC" }), { key: "Enter" });
     const secret = screen.getByLabelText("Secret key");
+    expect(secret).toHaveValue("");
+    expect(screen.getByRole("button", { name: "Generate HMAC" })).toBeDisabled();
     expect(secret).toHaveAttribute("type", "password");
     await user.click(screen.getByRole("button", { name: "Show" }));
     expect(secret).toHaveAttribute("type", "text");
     await user.click(screen.getByRole("button", { name: "Hide" }));
+    expect(secret).toHaveValue("");
+    expect(screen.getByRole("button", { name: "Generate HMAC" })).toBeDisabled();
     expect(secret).toHaveAttribute("type", "password");
+  });
+
+  it("discards a hash still running when its input changes", async () => {
+    let finish!: (result: { ok: true; value: string }) => void;
+    vi.spyOn(digestCore, "generateDigest").mockImplementation(() =>
+      new Promise((resolve) => { finish = resolve; }),
+    );
+    render(<HashHmacGeneratorTool />);
+    fireEvent.click(screen.getByRole("button", { name: "Generate hash" }));
+    fireEvent.change(screen.getByLabelText("Input text"), { target: { value: "Updated" } });
+    await act(async () => finish({ ok: true, value: "outdated digest" }));
+    expect(screen.getByLabelText("Hash")).toHaveValue("");
   });
 
   it("generates and exposes a copyable signed JWT", async () => {
     const user = userEvent.setup();
     render(<JwtGeneratorTool />);
+    expect(screen.getByLabelText("HMAC signing secret")).toHaveValue("");
+    expect(screen.getByRole("button", { name: "Generate signed JWT" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Generate secure test key" }));
     await user.click(screen.getByRole("button", { name: "Generate signed JWT" }));
     expect(await screen.findByRole("button", { name: "Copy signed JWT" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Copy generator security note" })).toBeVisible();
+    await user.clear(screen.getByLabelText("HMAC signing secret"));
+    expect(screen.queryByRole("button", { name: "Copy signed JWT" })).toBeNull();
   });
 
   it("adds current issue and expiry claims to a generator payload", async () => {
@@ -80,8 +102,29 @@ describe("Phase 4 security-tool UX", () => {
   it("encrypts and copies an authenticated envelope", async () => {
     const user = userEvent.setup();
     render(<SymmetricEncryptionTool />);
+    expect(screen.getByLabelText("Password")).toHaveValue("");
+    expect(screen.getByRole("button", { name: "Encrypt text" })).toBeDisabled();
+    await user.type(screen.getByLabelText("Password"), "user-entered password");
     await user.click(screen.getByRole("button", { name: "Encrypt text" }));
     expect(await screen.findByRole("button", { name: "Copy encryption envelope" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Reverse direction" }));
+    await user.click(screen.getByRole("button", { name: "Decrypt text" }));
+    expect(await screen.findByLabelText("Decrypted text")).toHaveValue("Private message");
+    await user.clear(screen.getByLabelText("Password"));
+    expect(screen.queryByLabelText("Decrypted text")).toBeNull();
+  });
+
+  it("discards an encryption result that completes after reversing direction", async () => {
+    let finish!: (result: { ok: true; value: string }) => void;
+    vi.spyOn(cryptoCore, "encryptText").mockImplementation(() =>
+      new Promise((resolve) => { finish = resolve; }),
+    );
+    render(<SymmetricEncryptionTool />);
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "password" } });
+    fireEvent.click(screen.getByRole("button", { name: "Encrypt text" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reverse direction" }));
+    await act(async () => finish({ ok: true, value: "old ciphertext" }));
+    expect(screen.queryByLabelText("Decrypted text")).toBeNull();
   });
 
   it("generates separately copyable public and private keys", async () => {
