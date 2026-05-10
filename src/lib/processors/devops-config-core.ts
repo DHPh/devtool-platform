@@ -162,15 +162,13 @@ export function parseEnvFile(input: string): EnvDocument {
   return { entries, errors, duplicates: [...duplicates].sort() };
 }
 
-const SECRET_KEY = /(?:SECRET|TOKEN|PASSWORD|PASSWD|PRIVATE|API_KEY|ACCESS_KEY|AUTH)/i;
-
 export function redactEnvFile(input: string): ProcessorResult<string> {
   const parsed = parseEnvFile(input);
   if (parsed.errors.length) return { ok: false, error: parsed.errors.join("\n") };
   return {
     ok: true,
     value: parsed.entries
-      .map(({ key, value }) => `${key}=${SECRET_KEY.test(key) && value ? "[REDACTED]" : value}`)
+      .map(({ key, value }) => `${key}=${value ? "[REDACTED]" : ""}`)
       .join("\n"),
   };
 }

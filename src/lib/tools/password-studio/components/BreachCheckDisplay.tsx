@@ -109,7 +109,7 @@ export function BreachCheckDisplay({
           <div className="flex items-center gap-2">
             {result && (
               <Badge variant={getBadgeVariant(result.severity)}>
-                {result.isBreached ? "Breached" : "Safe"}
+                {result.isBreached === null ? "Unknown" : result.isBreached ? "Breached" : "No match"}
               </Badge>
             )}
             <Button
@@ -160,7 +160,9 @@ export function BreachCheckDisplay({
                   <p
                     className={`font-medium ${getStatusColor(result.severity)}`}
                   >
-                    {result.isBreached
+                    {result.isBreached === null
+                      ? "Breach Status Unknown"
+                      : result.isBreached
                       ? "Password Found in Breaches"
                       : "Password Not Found in Breaches"}
                   </p>

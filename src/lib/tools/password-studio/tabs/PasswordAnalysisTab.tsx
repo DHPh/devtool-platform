@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -26,6 +26,8 @@ export function PasswordAnalysisTab() {
     null
   );
   const [isCheckingBreach, setIsCheckingBreach] = useState(false);
+
+  const checkVersion = useRef(0);
 
   // Analyze password strength in real-time
   const passwordStrength = useMemo(() => {
@@ -53,29 +55,31 @@ export function PasswordAnalysisTab() {
   const handleBreachCheck = async () => {
     if (!password) return;
 
+    const version = ++checkVersion.current;
+    setBreachResult(null);
     setIsCheckingBreach(true);
     try {
       const result = await checkPasswordBreach(password);
-      setBreachResult(result);
+      if (version === checkVersion.current) setBreachResult(result);
     } catch (error) {
+      if (version !== checkVersion.current) return;
       console.error("Breach check failed:", error);
       setBreachResult({
-        isBreached: false,
+        isBreached: null,
         message: "Failed to check breach status",
         severity: "warning",
         checkedAt: new Date(),
       });
     } finally {
-      setIsCheckingBreach(false);
+      if (version === checkVersion.current) setIsCheckingBreach(false);
     }
   };
 
   const handlePasswordChange = (value: string) => {
     setPassword(value);
-    // Clear previous breach result when password changes
-    if (breachResult) {
-      setBreachResult(null);
-    }
+    checkVersion.current++;
+    setIsCheckingBreach(false);
+    setBreachResult(null);
   };
 
   return (

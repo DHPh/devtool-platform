@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { webcrypto } from "node:crypto";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CertificateDecoderTab as CertificateDecoderTool } from "@/lib/tools/security-identity-studio/tabs/CertificateDecoderTab";
@@ -11,10 +11,11 @@ import { JwtSignatureVerifierTab as JwtSignatureVerifierTool } from "@/lib/tools
 import { KeypairSignatureTab as KeypairSignatureTool } from "@/lib/tools/security-identity-studio/tabs/KeypairSignatureTab";
 import { SriGeneratorTab as SriGeneratorTool } from "@/lib/tools/security-identity-studio/tabs/SriGeneratorTab";
 import { SymmetricEncryptionTab as SymmetricEncryptionTool } from "@/lib/tools/security-identity-studio/tabs/SymmetricEncryptionTab";
+import * as cryptoCore from "@/lib/processors/advanced-crypto-core";
 import { TotpTab as TotpTool } from "@/lib/tools/security-identity-studio/tabs/TotpTab";
 
 beforeEach(() => vi.stubGlobal("crypto", webcrypto));
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe("Phase 4 security-tool UX", () => {
   it("lets users reveal and hide the HMAC secret key", async () => {
@@ -101,9 +102,54 @@ describe("Phase 4 security-tool UX", () => {
   it("keeps TOTP secret, code, and validation independently copyable", async () => {
     const user = userEvent.setup();
     render(<TotpTool />);
+    expect(screen.getByLabelText("Base32 secret")).toHaveValue("");
+    expect(screen.getByRole("button", { name: "Generate current code" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Generate secret" }));
     expect(screen.getByRole("button", { name: "Copy Base32 secret" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Generate current code" }));
     expect(await screen.findByRole("button", { name: "Copy current code" })).toBeVisible();
+  });
+
+  it("clears TOTP outputs on secret changes and validation on candidate changes", async () => {
+    const user = userEvent.setup();
+    render(<TotpTool />);
+    await user.click(screen.getByRole("button", { name: "Generate secret" }));
+    await user.click(screen.getByRole("button", { name: "Generate current code" }));
+    await screen.findByRole("button", { name: "Copy current code" });
+    const code = screen.getByLabelText<HTMLTextAreaElement>("Current code");
+    const candidate = screen.getByLabelText("Code to validate");
+    fireEvent.change(candidate, { target: { value: code.value } });
+    await user.click(screen.getByRole("button", { name: "Validate code" }));
+    expect(await screen.findByDisplayValue("Valid")).toBeVisible();
+    fireEvent.change(candidate, { target: { value: "1" } });
+    expect(screen.getByLabelText("Validation result")).toHaveValue("");
+    expect(code.value).toMatch(/^\d{6}$/);
+    await user.click(screen.getByRole("button", { name: "Generate secret" }));
+    expect(code).toHaveValue("");
+  });
+
+  it("ignores pending TOTP results after edits", async () => {
+    let finishCode!: (result: { ok: true; value: string }) => void;
+    let finishValidation!: (result: { ok: true; value: boolean }) => void;
+    vi.spyOn(cryptoCore, "generateTotp").mockImplementation(() =>
+      new Promise((resolve) => { finishCode = resolve; }),
+    );
+    vi.spyOn(cryptoCore, "validateTotp").mockImplementation(() =>
+      new Promise((resolve) => { finishValidation = resolve; }),
+    );
+    render(<TotpTool />);
+    fireEvent.click(screen.getByRole("button", { name: "Generate secret" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate current code" }));
+    fireEvent.change(screen.getByLabelText("Base32 secret"), { target: { value: "NEWSECRET" } });
+    fireEvent.change(screen.getByLabelText("Code to validate"), { target: { value: "111111" } });
+    fireEvent.click(screen.getByRole("button", { name: "Validate code" }));
+    fireEvent.change(screen.getByLabelText("Code to validate"), { target: { value: "222222" } });
+    await act(async () => {
+      finishCode({ ok: true, value: "111111" });
+      finishValidation({ ok: true, value: true });
+    });
+    expect(screen.getByLabelText("Current code")).toHaveValue("");
+    expect(screen.getByLabelText("Validation result")).toHaveValue("");
   });
 
   it("decodes certificate fields into independently copyable results", async () => {

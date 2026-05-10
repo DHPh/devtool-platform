@@ -54,6 +54,17 @@ describe("PasswordStudio component workflows", () => {
     expect(passphraseInput.value.length).toBeGreaterThan(5);
   });
 
+  it("shows an unknown status when the breach service is unavailable", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Offline")));
+    render(<PasswordStudio initialTab="analysis" />);
+    await user.type(await screen.findByLabelText("Password to Analyze"), "hunter2");
+    await user.click(screen.getByRole("button", { name: "Check" }));
+    expect(await screen.findByText("Breach Status Unknown")).toBeVisible();
+    expect(screen.getByText("Unknown")).toBeVisible();
+    expect(screen.queryByText("Password Not Found in Breaches")).toBeNull();
+  });
+
   it("switches to Analysis tab and checks password breach via HIBP k-anonymity", async () => {
     const user = userEvent.setup();
     const sha1Hex = createHash("sha1")

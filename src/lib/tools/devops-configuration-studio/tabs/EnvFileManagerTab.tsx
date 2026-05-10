@@ -28,7 +28,7 @@ export function EnvFileManagerTab() {
     <section className="space-y-5">
       <Header
         title=".env File Manager"
-        description="Parse, compare, and redact environment files locally. Values never leave your browser."
+        description="Parse, compare, and redact environment files locally. The redacted copy masks every non-empty value."
       />
       <div className="grid gap-4 lg:grid-cols-2">
         <label className="space-y-2">

@@ -456,7 +456,7 @@ const cases: FunctionalCase[] = [
     run: () => {
       expect(redactEnvFile("API_TOKEN=secret\nDEBUG=true")).toEqual({
         ok: true,
-        value: "API_TOKEN=[REDACTED]\nDEBUG=true",
+        value: "API_TOKEN=[REDACTED]\nDEBUG=[REDACTED]",
       });
       expect(compareEnvFiles("A=1\nB=2", "A=1\nB=3\nC=4")).toMatchObject({
         ok: true,

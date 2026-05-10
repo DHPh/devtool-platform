@@ -4,7 +4,7 @@
  */
 
 export interface BreachCheckResult {
-  isBreached: boolean;
+  isBreached: boolean | null;
   breachCount?: number;
   message: string;
   severity: "safe" | "warning" | "danger";
@@ -27,7 +27,7 @@ export async function checkPasswordBreach(
   try {
     if (!password || password.length === 0) {
       return {
-        isBreached: false,
+        isBreached: null,
         message: "Please enter a password to check",
         severity: "warning",
         checkedAt: new Date(),
@@ -54,19 +54,20 @@ export async function checkPasswordBreach(
         }
       );
 
-      clearTimeout(timeoutId);
-
       if (!response.ok) {
         throw new Error(`API request failed: ${response.status}`);
       }
 
       const data = await response.text();
-      const lines = data.split("\n");
+      const lines = data.trim().split(/\r?\n/);
+      if (!lines.every((line) => /^[\da-f]{35}:\d+$/i.test(line))) {
+        throw new Error("Invalid breach service response");
+      }
 
       // Look for our password hash in the results
       for (const line of lines) {
         const [hashSuffix, count] = line.split(":");
-        if (hashSuffix.toLowerCase() === suffix.toLowerCase()) {
+        if (hashSuffix.toLowerCase() === suffix.toLowerCase() && Number(count) > 0) {
           const breachCount = parseInt(count.trim(), 10);
           return {
             isBreached: true,
@@ -87,16 +88,15 @@ export async function checkPasswordBreach(
         severity: "safe",
         checkedAt: new Date(),
       };
-    } catch (fetchError) {
+    } finally {
       clearTimeout(timeoutId);
-      throw fetchError;
     }
   } catch (error) {
     // Handle network errors, timeouts, etc.
     console.warn("Password breach check failed:", error);
     return {
-      isBreached: false,
-      message: "Unable to check breach status - network error or timeout",
+      isBreached: null,
+      message: "Unable to check breach status. Try again later.",
       severity: "warning",
       checkedAt: new Date(),
     };
@@ -170,6 +170,10 @@ export function generateSecurityRecommendations(
   breachResult: BreachCheckResult
 ): string[] {
   const recommendations: string[] = [];
+
+  if (breachResult.isBreached === null) {
+    recommendations.push("Retry the breach check to confirm the result.");
+  }
 
   if (breachResult.isBreached) {
     recommendations.push("🚨 Change this password immediately");

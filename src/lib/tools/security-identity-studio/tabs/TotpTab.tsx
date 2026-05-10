@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   CopyableResult,
   ToolErrorResult as ErrorResult,
@@ -15,24 +15,45 @@ import {
 } from "@/lib/processors/advanced-crypto-core";
 
 export function TotpTab() {
-  const [secret, setSecret] = useState("JBSWY3DPEHPK3PXP");
+  const [secret, setSecret] = useState("");
   const [code, setCode] = useState("");
   const [candidate, setCandidate] = useState("");
   const [validation, setValidation] = useState("");
   const [error, setError] = useState("");
 
+  const codeVersion = useRef(0);
+  const validationVersion = useRef(0);
+
+  const changeSecret = (value: string) => {
+    codeVersion.current++;
+    validationVersion.current++;
+    setSecret(value);
+    setCode("");
+    setValidation("");
+    setError("");
+  };
+
+  const changeCandidate = (value: string) => {
+    validationVersion.current++;
+    setCandidate(value);
+    setValidation("");
+    setError("");
+  };
+
   const newSecret = () => {
     const result = generateTotpSecret();
     if (result.ok) {
-      setSecret(result.value);
-      setError("");
+      changeSecret(result.value);
     } else {
       setError(result.error);
     }
   };
 
   const generate = async () => {
+    const version = ++codeVersion.current;
+    setCode("");
     const result = await generateTotp(secret);
+    if (version !== codeVersion.current) return;
     if (result.ok) {
       setCode(result.value);
       setError("");
@@ -42,7 +63,10 @@ export function TotpTab() {
   };
 
   const validate = async () => {
+    const version = ++validationVersion.current;
+    setValidation("");
     const result = await validateTotp(secret, candidate);
+    if (version !== validationVersion.current) return;
     if (result.ok) {
       setValidation(result.value ? "Valid" : "Invalid or expired");
       setError("");
@@ -55,7 +79,7 @@ export function TotpTab() {
     <section className="space-y-5">
       <Header
         title="TOTP Generator and Validator"
-        description="Generate and validate standard SHA-1 TOTP codes locally. Clock synchronization and secure secret storage remain your responsibility."
+        description="Generate a secret or enter your own Base32 secret to generate and validate SHA-1 TOTP codes locally. Clock synchronization and secure secret storage remain your responsibility."
       />
       <div className="flex flex-wrap gap-3">
         <Button type="button" onClick={newSecret}>
@@ -64,6 +88,7 @@ export function TotpTab() {
         <Button
           type="button"
           variant="outline"
+          disabled={!secret.trim()}
           onClick={() => void generate()}
         >
           Generate current code
@@ -75,7 +100,7 @@ export function TotpTab() {
         copyLabel="Copy Base32 secret"
         rows={2}
         readOnly={false}
-        onValueChange={setSecret}
+        onValueChange={changeSecret}
         showToggleVisibility
       />
       <CopyableResult
@@ -90,10 +115,10 @@ export function TotpTab() {
           <Input
             inputMode="numeric"
             value={candidate}
-            onChange={(event) => setCandidate(event.target.value)}
+            onChange={(event) => changeCandidate(event.target.value)}
           />
         </label>
-        <Button type="button" onClick={() => void validate()}>
+        <Button type="button" disabled={!secret.trim() || !candidate.trim()} onClick={() => void validate()}>
           Validate code
         </Button>
       </div>

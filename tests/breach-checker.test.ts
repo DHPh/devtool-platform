@@ -25,7 +25,7 @@ describe("breach-checker (HIBP k-anonymity)", () => {
     vi.stubGlobal("fetch", fetchSpy);
 
     const result = await checkPasswordBreach("");
-    expect(result.isBreached).toBe(false);
+    expect(result.isBreached).toBeNull();
     expect(result.severity).toBe("warning");
     expect(fetchSpy).not.toHaveBeenCalled();
   });
@@ -92,7 +92,7 @@ describe("breach-checker (HIBP k-anonymity)", () => {
       vi.fn().mockResolvedValueOnce(new Response("Service Unavailable", { status: 503 })),
     );
     const apiError = await checkPasswordBreach("some-password");
-    expect(apiError.isBreached).toBe(false);
+    expect(apiError.isBreached).toBeNull();
     expect(apiError.severity).toBe("warning");
 
     vi.stubGlobal(
@@ -100,7 +100,7 @@ describe("breach-checker (HIBP k-anonymity)", () => {
       vi.fn().mockRejectedValueOnce(new Error("Network offline")),
     );
     const networkError = await checkPasswordBreach("some-password");
-    expect(networkError.isBreached).toBe(false);
+    expect(networkError.isBreached).toBeNull();
     expect(networkError.severity).toBe("warning");
   });
 

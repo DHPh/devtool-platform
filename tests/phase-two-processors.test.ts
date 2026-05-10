@@ -45,8 +45,11 @@ describe("DevOps quick-tool processors", () => {
     expect(parseEnvFile('A="unterminated').errors[0]).toContain("unterminated");
   });
 
-  it("redacts secret-like keys and compares environments", () => {
-    expect(redactEnvFile("PASSWORD=p\nPUBLIC=value")).toEqual({ ok: true, value: "PASSWORD=[REDACTED]\nPUBLIC=value" });
+  it("redacts values regardless of key name and compares environments", () => {
+    expect(redactEnvFile("PASSWORD=p\nDATABASE_URL=https://user:pass@host\nPUBLIC=value\nEMPTY=")).toEqual({
+      ok: true,
+      value: "PASSWORD=[REDACTED]\nDATABASE_URL=[REDACTED]\nPUBLIC=[REDACTED]\nEMPTY=",
+    });
     expect(compareEnvFiles("A=1", "A=2")).toMatchObject({ ok: true, value: { changed: ["A"] } });
   });
 
