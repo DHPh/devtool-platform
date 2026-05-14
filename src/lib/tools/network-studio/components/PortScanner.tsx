@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -15,7 +14,10 @@ import {
 } from "@/components/ui/select";
 import { Shield, Clock, AlertCircle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
-import { SCAN_PROFILES } from "@/lib/utils/network/network-monitor";
+import {
+  SCAN_PROFILES,
+  SUPPORTED_SCAN_PROFILES,
+} from "@/lib/utils/network/network-monitor";
 import {
   serverPortScan,
   type ServerPortScanResult,
@@ -26,7 +28,8 @@ export function PortScanner() {
   const [selectedProfile, setSelectedProfile] = useState("Quick Scan");
   const [results, setResults] = useState<ServerPortScanResult[]>([]);
   const [isScanning, setIsScanning] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [scanError, setScanError] = useState("");
+  const availableProfiles = SUPPORTED_SCAN_PROFILES;
 
   const handleScan = async () => {
     if (!host) {
@@ -36,10 +39,10 @@ export function PortScanner() {
 
     setIsScanning(true);
     setResults([]);
-    setProgress(0);
+    setScanError("");
 
     try {
-      const profile = Object.values(SCAN_PROFILES).find(
+      const profile = availableProfiles.find(
         (p) => p.name === selectedProfile
       );
 
@@ -47,33 +50,25 @@ export function PortScanner() {
         throw new Error("Invalid scan profile");
       }
 
-      // Simulate progress updates
-      const progressInterval = setInterval(() => {
-        setProgress((prev) => Math.min(prev + Math.random() * 20, 90));
-      }, 200);
-
       const scanResults = await serverPortScan(
         host,
         profile.ports,
         profile.timeout
       );
 
-      clearInterval(progressInterval);
-      setProgress(100);
       setResults(scanResults);
     } catch (error) {
-      toast.error(
-        "Scan failed: " +
-          (error instanceof Error ? error.message : "Unknown error")
-      );
+      const message = error instanceof Error ? error.message : "Unknown error";
+      setScanError(message);
+      toast.error("Scan failed: " + message);
     } finally {
       setIsScanning(false);
-      setProgress(0);
     }
   };
 
   const openPorts = results.filter((r) => r.open);
-  const closedPorts = results.filter((r) => !r.open);
+  const failedPorts = results.filter((r) => !r.open && r.error);
+  const closedPorts = results.filter((r) => !r.open && !r.error);
 
   return (
     <div className="space-y-6">
@@ -109,7 +104,7 @@ export function PortScanner() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.values(SCAN_PROFILES).map((profile) => (
+                {availableProfiles.map((profile) => (
                     <SelectItem key={profile.name} value={profile.name}>
                       {profile.name}
                     </SelectItem>
@@ -137,14 +132,12 @@ export function PortScanner() {
             {isScanning ? "Scanning..." : "Start Scan"}
           </Button>
 
-          {isScanning && (
-            <div className="space-y-2">
-              <Progress value={progress} className="w-full" />
-              <div className="text-sm text-center text-muted-foreground">
-                {Math.round(progress)}% complete
-              </div>
+          {scanError && (
+            <div role="alert" className="text-sm text-destructive">
+              Scan failed: {scanError}
             </div>
           )}
+
         </CardContent>
       </Card>
 
@@ -156,7 +149,7 @@ export function PortScanner() {
               <Shield className="h-5 w-5" />
               Scan Results
               <Badge variant="outline">
-                {openPorts.length} open / {results.length} total
+                {openPorts.length} open / {closedPorts.length} closed / {failedPorts.length} failed
               </Badge>
             </CardTitle>
           </CardHeader>
@@ -221,6 +214,27 @@ export function PortScanner() {
                     {closedPorts.length > 10 && (
                       <div className="text-center text-sm text-muted-foreground">
                         ... and {closedPorts.length - 10} more closed ports
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {failedPorts.length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-3 text-amber-600">
+                    Could Not Check
+                  </h4>
+                  <div className="grid gap-2">
+                    {failedPorts.slice(0, 10).map((result) => (
+                      <div key={result.port} className="rounded-lg border border-amber-200 p-3 text-sm dark:border-amber-800">
+                        <span className="font-medium">Port {result.port}</span>
+                        <span className="ml-2 text-muted-foreground">{result.error}</span>
+                      </div>
+                    ))}
+                    {failedPorts.length > 10 && (
+                      <div className="text-center text-sm text-muted-foreground">
+                        ... and {failedPorts.length - 10} more ports could not be checked
                       </div>
                     )}
                   </div>

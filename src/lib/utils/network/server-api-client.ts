@@ -18,6 +18,7 @@ export interface ServerPortScanResult {
   open: boolean;
   service?: string;
   responseTime?: number;
+  error?: string;
   timestamp: number;
 }
 
@@ -152,13 +153,7 @@ export async function serverPortScan(
 
     return data.results || [];
   } catch (error) {
-    return ports.map((port) => ({
-      host,
-      port,
-      open: false,
-      error: error instanceof Error ? error.message : "Network error",
-      timestamp: Date.now(),
-    }));
+    throw error instanceof Error ? error : new Error("Network error");
   }
 }
 
@@ -312,6 +307,10 @@ export async function serverSpeedTest(
 
     if (!response.ok) {
       throw new Error(data.error || "Server speed test failed");
+    }
+
+    if (data.error || data.completed !== true) {
+      throw new Error(data.error || "Speed test did not complete.");
     }
 
     return data;

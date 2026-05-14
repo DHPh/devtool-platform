@@ -58,7 +58,10 @@ export function FileLinkChecker() {
             <Input
               placeholder="https://example.com/file.pdf"
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              onChange={(e) => {
+                setUrl(e.target.value);
+                setResult(null);
+              }}
             />
             <Button
               onClick={handleCheck}
@@ -77,8 +80,18 @@ export function FileLinkChecker() {
               <File className="h-5 w-5" />
               File Information
               {result && (
-                <Badge variant={result.exists ? "default" : "destructive"}>
-                  {result.exists ? "Available" : "Not Found"}
+                <Badge
+                  variant={
+                    result.error ? "outline" : result.exists ? "default" : "destructive"
+                  }
+                >
+                  {result.error
+                    ? "Check Failed"
+                    : result.exists
+                      ? "Available"
+                      : result.statusCode === 404
+                        ? "Not Found"
+                        : "Unavailable"}
                 </Badge>
               )}
             </CardTitle>

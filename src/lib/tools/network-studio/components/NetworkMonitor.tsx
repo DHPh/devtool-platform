@@ -22,6 +22,7 @@ export function NetworkMonitor() {
   );
   const [isLoading, setIsLoading] = useState(false);
   const [pingLogs, setPingLogs] = useState<string[]>([]);
+  const [speedTestError, setSpeedTestError] = useState("");
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -69,12 +70,20 @@ export function NetworkMonitor() {
   const handleSpeedTest = async () => {
     setIsLoading(true);
     setSpeedTest(null);
+    setSpeedTestError("");
 
     try {
       addLog("Starting speed test...");
       addLog("Testing download speed...");
 
       const result = await serverSpeedTest("download", 10);
+      if (result.error || result.completed !== true) {
+        const message = result.error || "Speed test did not complete.";
+        setSpeedTestError(message);
+        addLog(`❌ Speed test failed: ${message}`);
+        toast.error("Speed test failed");
+        return;
+      }
       setSpeedTest(result);
 
       addLog(`✅ Speed test completed`);
@@ -84,10 +93,10 @@ export function NetworkMonitor() {
 
       toast.success("Speed test completed successfully");
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      setSpeedTestError(message);
       addLog(
-        `❌ Speed test failed: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
+        `❌ Speed test failed: ${message}`
       );
       toast.error("Speed test failed");
       console.error("Speed test error:", error);
@@ -118,7 +127,10 @@ export function NetworkMonitor() {
             <Input
               placeholder="https://google.com"
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              onChange={(e) => {
+                setUrl(e.target.value);
+                setPingResult(null);
+              }}
             />
             <Button
               onClick={handlePing}
@@ -133,7 +145,7 @@ export function NetworkMonitor() {
               <div className="flex items-start gap-2">
                 <Info className="h-4 w-4 text-blue-600 mt-0.5" />
                 <div className="text-sm text-blue-700 dark:text-blue-300">
-                  <p className="font-medium">Browser Ping Method:</p>
+                  <p className="font-medium">Server HTTP Probe:</p>
                   <p>
                     Uses HTTP HEAD requests instead of ICMP. Results may differ
                     from traditional ping tools due to HTTP overhead and server
@@ -204,6 +216,12 @@ export function NetworkMonitor() {
             >
               {isLoading ? "Testing..." : "Run Speed Test"}
             </Button>
+
+            {speedTestError && (
+              <div role="alert" className="text-sm text-destructive">
+                Speed test failed: {speedTestError}
+              </div>
+            )}
 
             {speedTest && (
               <div className="space-y-3">

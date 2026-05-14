@@ -23,6 +23,27 @@ function mockDiagnosticResult(result: unknown) {
 }
 
 describe("Phase 5 website-diagnostics UX", () => {
+  it("resets the destination and result when the selected diagnostic changes", async () => {
+    mockDiagnosticResult({ title: "Old diagnostic" });
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <WebsiteDiagnosticTool operation="open-graph-inspector" />,
+    );
+
+    const input = screen.getByRole("textbox", { name: "Public page URL" });
+    await user.clear(input);
+    await user.type(input, "https://custom.example/path");
+    await user.click(screen.getByRole("button", { name: "Inspect metadata" }));
+    expect(await screen.findByText("Old diagnostic")).toBeVisible();
+
+    rerender(<WebsiteDiagnosticTool operation="sitemap-validator" />);
+
+    expect(screen.getByRole("textbox", { name: "Sitemap URL" })).toHaveValue(
+      "https://example.com/sitemap.xml",
+    );
+    expect(screen.queryByText("Old diagnostic")).not.toBeInTheDocument();
+  });
+
   it("discloses server processing and gives every returned value its own copy action", async () => {
     const fetchMock = mockDiagnosticResult({
       title: "Example",

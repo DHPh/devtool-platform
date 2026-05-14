@@ -654,6 +654,10 @@ export const SCAN_PROFILES = {
   },
 };
 
+export const SUPPORTED_SCAN_PROFILES = Object.values(SCAN_PROFILES).filter(
+  (profile) => profile.ports.length <= 20,
+);
+
 /**
  * Scan ports using a predefined profile
  */

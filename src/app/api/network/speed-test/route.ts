@@ -84,7 +84,10 @@ export async function POST(request: NextRequest) {
             });
 
       if (response.status < 200 || response.status >= 300) {
-        return NextResponse.json({ testType, error: `Upstream returned HTTP ${response.status}`, timestamp: Date.now() });
+        return NextResponse.json(
+          { testType, error: `Upstream returned HTTP ${response.status}`, timestamp: Date.now() },
+          { status: 502 },
+        );
       }
       const bytes = testType === "download" ? response.body.byteLength : UPLOAD_BYTES;
       logNetworkSecurityEvent({ endpoint: ENDPOINT, operation: testType, outcome: "completed", clientId: rateLimit.clientId, durationMs: Date.now() - startedAt });

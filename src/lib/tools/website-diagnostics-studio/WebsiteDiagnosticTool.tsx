@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   AsyncActionButton,
   CopyableResult,
@@ -129,24 +129,41 @@ export function WebsiteDiagnosticTool({
 }: {
   operation: WebsiteDiagnosticOperation;
 }) {
+  return <WebsiteDiagnosticToolForm key={operation} operation={operation} />;
+}
+
+function WebsiteDiagnosticToolForm({
+  operation,
+}: {
+  operation: WebsiteDiagnosticOperation;
+}) {
   const config = CONFIG[operation];
   const [input, setInput] = useState(config.sample);
   const [recordType, setRecordType] = useState("A");
   const [result, setResult] = useState<unknown>(null);
   const [error, setError] = useState("");
   const [working, setWorking] = useState(false);
+  const requestIdRef = useRef(0);
+
   const run = async () => {
+    const requestId = ++requestIdRef.current;
     setWorking(true);
     try {
-      setResult(await runWebsiteDiagnostic(operation, input, recordType));
-      setError("");
+      const nextResult = await runWebsiteDiagnostic(operation, input, recordType);
+      if (requestId === requestIdRef.current) {
+        setResult(nextResult);
+        setError("");
+      }
     } catch (runError) {
-      setResult(null);
-      setError(
-        runError instanceof Error ? runError.message : "Diagnostic failed.",
-      );
+      if (requestId === requestIdRef.current) {
+        setResult(null);
+        setError(
+          runError instanceof Error ? runError.message : "Diagnostic failed.",
+        );
+      }
+    } finally {
+      if (requestId === requestIdRef.current) setWorking(false);
     }
-    setWorking(false);
   };
   const outputs = result === null ? [] : flattenResult(result);
   return (
@@ -166,13 +183,28 @@ export function WebsiteDiagnosticTool({
           <span className="text-sm font-medium">{config.inputLabel}</span>
           <Input
             value={input}
-            onChange={(event) => setInput(event.target.value)}
+            onChange={(event) => {
+              requestIdRef.current += 1;
+              setInput(event.target.value);
+              setResult(null);
+              setError("");
+              setWorking(false);
+            }}
           />
         </label>
         {operation === "dns-propagation-checker" && (
           <label className="w-40 space-y-2">
             <span className="text-sm font-medium">Record type</span>
-            <Select value={recordType} onValueChange={setRecordType}>
+            <Select
+              value={recordType}
+              onValueChange={(value) => {
+                requestIdRef.current += 1;
+                setRecordType(value);
+                setResult(null);
+                setError("");
+                setWorking(false);
+              }}
+            >
               <SelectTrigger aria-label="Record type">
                 <SelectValue />
               </SelectTrigger>
