@@ -84,7 +84,7 @@ export function JsonFormatterTab({
     setIsProcessing(true);
 
     try {
-      const result = minifyJson(input);
+      const result = minifyJson(input, { removeComments });
       setOutput(result.result);
       setStats(result.stats);
       toast.success("JSON minified successfully!");

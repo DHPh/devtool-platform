@@ -12,6 +12,7 @@ import { JsonPathExplorer } from "./components/JsonPathExplorer";
 import { JsonStatsDisplay } from "./components/JsonStatsDisplay";
 import {
   calculateJsonStats,
+  stripJsonComments,
   validateJson,
   type JsonStats,
 } from "@/lib/processors/json";
@@ -30,13 +31,13 @@ export function JsonPathTab({ input }: JsonPathTabProps) {
       return { parsedData: null, stats: null, isValid: false };
     }
 
-    const validation = validateJson(input);
+    const validation = validateJson(input, { allowComments: true });
     if (!validation.isValid) {
       return { parsedData: null, stats: null, isValid: false };
     }
 
     try {
-      const parsed = JSON.parse(input);
+      const parsed = JSON.parse(stripJsonComments(input));
       return {
         parsedData: parsed,
         stats: calculateJsonStats(parsed),
@@ -56,7 +57,7 @@ export function JsonPathTab({ input }: JsonPathTabProps) {
               <Search className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No JSON Data</h3>
               <p className="text-muted-foreground">
-                Please provide valid JSON in the formatter tab to explore paths.
+                Enter valid JSON in the JSON input above to explore paths.
               </p>
             </div>
           </CardContent>
@@ -76,8 +77,7 @@ export function JsonPathTab({ input }: JsonPathTabProps) {
                 Invalid JSON
               </h3>
               <p className="text-muted-foreground">
-                Please fix the JSON syntax in the formatter tab before exploring
-                paths.
+                Fix the JSON syntax in the JSON input above before exploring paths.
               </p>
             </div>
           </CardContent>

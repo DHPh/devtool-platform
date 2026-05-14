@@ -25,6 +25,51 @@ export interface JsonValidationResult {
   suggestion?: string;
 }
 
+/** Remove JSONC comments without changing offsets or line breaks. */
+export function stripJsonComments(input: string): string {
+  let output = "";
+  let inString = false;
+  let escaped = false;
+  for (let index = 0; index < input.length; index += 1) {
+    const char = input[index];
+    const next = input[index + 1];
+    if (inString) {
+      output += char;
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') {
+      inString = true;
+      output += char;
+    } else if (char === "/" && next === "/") {
+      output += "  ";
+      index += 1;
+      while (index + 1 < input.length && input[index + 1] !== "\n" && input[index + 1] !== "\r") {
+        output += " ";
+        index += 1;
+      }
+    } else if (char === "/" && next === "*") {
+      output += "  ";
+      index += 1;
+      let closed = false;
+      while (index + 1 < input.length) {
+        if (input[index + 1] === "*" && input[index + 2] === "/") {
+          output += "  ";
+          index += 2;
+          closed = true;
+          break;
+        }
+        const hidden = input[++index];
+        output += hidden === "\n" || hidden === "\r" ? hidden : " ";
+      }
+      if (!closed) throw new SyntaxError("Unterminated JSON block comment");
+    } else output += char;
+  }
+  return output;
+}
+
 export interface JsonStats {
   size: number;
   lines: number;
@@ -48,7 +93,7 @@ export function formatJson(
 
   try {
     // Remove comments if requested
-    const processedInput = removeComments ? removeJsonComments(input) : input;
+    const processedInput = removeComments ? stripJsonComments(input) : input;
 
     const parsed = JSON.parse(processedInput);
     const formatted = sortKeys
@@ -75,12 +120,17 @@ export function formatJson(
 /**
  * Minify JSON
  */
-export function minifyJson(input: string): {
+export function minifyJson(
+  input: string,
+  options: Pick<JsonFormatOptions, "removeComments"> = {},
+): {
   result: string;
   stats: JsonStats;
 } {
   try {
-    const parsed = JSON.parse(input);
+    const parsed = JSON.parse(
+      options.removeComments ? stripJsonComments(input) : input,
+    );
     const minified = JSON.stringify(parsed);
     const stats = calculateJsonStats(parsed);
 
@@ -102,7 +152,10 @@ export function minifyJson(input: string): {
 /**
  * Validate JSON with detailed error information
  */
-export function validateJson(input: string): JsonValidationResult {
+export function validateJson(
+  input: string,
+  options: { allowComments?: boolean } = {},
+): JsonValidationResult {
   if (!input.trim()) {
     return {
       isValid: false,
@@ -112,7 +165,7 @@ export function validateJson(input: string): JsonValidationResult {
   }
 
   try {
-    JSON.parse(input);
+    JSON.parse(options.allowComments ? stripJsonComments(input) : input);
     return { isValid: true };
   } catch (error) {
     if (error instanceof SyntaxError) {
@@ -158,15 +211,6 @@ function sortObjectKeys(obj: any): any {
   }
 
   return obj;
-}
-
-/**
- * Remove JSON comments (single line and block comments)
- */
-function removeJsonComments(input: string): string {
-  return input
-    .replace(/\/\*[\s\S]*?\*\//g, "") // Remove block comments
-    .replace(/\/\/.*$/gm, ""); // Remove single line comments
 }
 
 /**

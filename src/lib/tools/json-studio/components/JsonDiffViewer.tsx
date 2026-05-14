@@ -36,6 +36,7 @@ import {
   type JsonDiffResult,
   type DiffEntry,
 } from "@/lib/utils/json/json-diff";
+import { stripJsonComments } from "@/lib/processors/json";
 
 interface JsonDiffViewerProps {
   data: unknown;
@@ -62,7 +63,7 @@ export function JsonDiffViewer({ data, className }: JsonDiffViewerProps) {
     setIsComparing(true);
 
     try {
-      const parsedCompareData = JSON.parse(compareData);
+      const parsedCompareData = JSON.parse(stripJsonComments(compareData));
       const result = compareJsonObjects(data, parsedCompareData);
       setDiffResult(result);
       const applied = applyJsonPatch(data, result.patches);

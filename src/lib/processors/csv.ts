@@ -244,7 +244,11 @@ export function protectSpreadsheetCell(value: string): string {
 
 function serializeCell(value: unknown, delimiter: string, safeSpreadsheet: boolean): string {
   let text = value === null || value === undefined ? "" : String(value);
-  if (safeSpreadsheet) text = protectSpreadsheetCell(text);
+  // Numeric values are data, not formulas. Protect formula-looking strings
+  // while preserving numeric round trips such as -42.5.
+  if (safeSpreadsheet && typeof value === "string") {
+    text = protectSpreadsheetCell(text);
+  }
   return /["\r\n]/.test(text) || text.includes(delimiter) || /^\s|\s$/.test(text)
     ? `"${text.replace(/"/g, '""')}"`
     : text;

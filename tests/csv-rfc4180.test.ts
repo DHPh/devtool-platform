@@ -97,4 +97,20 @@ describe("RFC 4180-style CSV processing", () => {
       "'\ufeff+cmd|' /C calc'!A0"
     );
   });
+
+  it("preserves typed numeric values while keeping spreadsheet-safe text opt-in", () => {
+    const rows = [{ amount: -42.5, formula: "=1+1" }];
+    const csv = serializeCSV(rows, ["amount", "formula"]);
+    expect(csv).toContain("-42.5");
+    expect(csv).toContain("'=1+1");
+    expect(parseCSV(csv).data).toEqual([
+      { amount: -42.5, formula: "'=1+1" },
+    ]);
+
+    const unsafe = serializeCSV(rows, ["amount", "formula"], {
+      safeSpreadsheet: false,
+    });
+    expect(unsafe).toContain("=1+1");
+    expect(parseCSV(unsafe).data).toEqual(rows);
+  });
 });

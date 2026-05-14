@@ -27,7 +27,7 @@ function JsonStudioContent({
     if (!input.trim()) {
       return { isValid: false, error: null };
     }
-    const result = validateJson(input);
+    const result = validateJson(input, { allowComments: true });
     return { isValid: result.isValid, error: result.error || null };
   }, [input]);
   const { isValid, error } = validation;
@@ -155,7 +155,7 @@ function JsonStudioContent({
               {isValid ? (
                 <div className="flex items-center gap-1 text-green-600">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>Valid JSON</span>
+                  <span>Valid JSON / JSONC</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1 text-red-600">

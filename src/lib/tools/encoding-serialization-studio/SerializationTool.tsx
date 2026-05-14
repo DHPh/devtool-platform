@@ -8,6 +8,7 @@ import {
   type CodeLanguage,
 } from "@/components/layout";
 import { Button } from "@/components/ui/button";
+import { useRef } from "react";
 import {
   convertCsvJson,
   convertIntegerBase,
@@ -94,6 +95,8 @@ export function SerializationTool({ tool }: { tool: SerializationToolId }) {
   const [direction, setDirection] =
     useState<ConversionDirection>(initialDirection);
   const [sourceBase, setSourceBase] = useState<IntegerBase>(10);
+  const [safeSpreadsheet, setSafeSpreadsheet] = useState(true);
+  const directionDrafts = useRef<Partial<Record<ConversionDirection, string>>>({});
 
   const result = useMemo(() => {
     if (tool === "yaml-formatter") return formatYaml(input, indent);
@@ -106,12 +109,12 @@ export function SerializationTool({ tool }: { tool: SerializationToolId }) {
     }
     if (tool === "csv-json-converter") {
       const selected = direction === "json-to-csv" ? direction : "csv-to-json";
-      return convertCsvJson(input, selected);
+      return convertCsvJson(input, selected, { safeSpreadsheet });
     }
     if (tool === "number-base-converter")
       return convertIntegerBase(input, sourceBase);
     return tool === "yaml-validator" ? validateYaml(input) : validateXml(input);
-  }, [direction, indent, input, sourceBase, tool]);
+  }, [direction, indent, input, safeSpreadsheet, sourceBase, tool]);
 
   let output: string;
   let successful: boolean;
@@ -171,9 +174,12 @@ export function SerializationTool({ tool }: { tool: SerializationToolId }) {
       : null;
 
   const handleDirectionChange = (nextDirection: ConversionDirection) => {
-    if ("ok" in result && result.ok && "output" in result) {
-      setInput(result.output);
-    }
+    directionDrafts.current[direction] = input;
+    const nextDraft = directionDrafts.current[nextDirection];
+    const convertedOutput = "ok" in result && result.ok && "output" in result
+      ? result.output
+      : undefined;
+    setInput(nextDraft ?? convertedOutput ?? input);
     setDirection(nextDirection);
   };
 
@@ -241,6 +247,16 @@ export function SerializationTool({ tool }: { tool: SerializationToolId }) {
                 </>
               )}
             </select>
+          </label>
+        )}
+        {tool === "csv-json-converter" && (
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={safeSpreadsheet}
+              onChange={(event) => setSafeSpreadsheet(event.target.checked)}
+            />
+            Spreadsheet-safe CSV export
           </label>
         )}
         {tool === "number-base-converter" && (

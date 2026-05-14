@@ -20,6 +20,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { CodeEditor } from "@/components/layout";
+import { stripJsonComments } from "@/lib/processors/json";
 import {
   validateJsonSchema,
   generateSchemaFromData,
@@ -56,7 +57,7 @@ export function JsonSchemaValidator({
     setIsValidating(true);
 
     try {
-      const parsedSchema: JsonSchema = JSON.parse(schema);
+      const parsedSchema: JsonSchema = JSON.parse(stripJsonComments(schema));
       const result = validateJsonSchema(data, parsedSchema);
       setValidationResult(result);
 

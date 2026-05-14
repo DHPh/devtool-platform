@@ -17,6 +17,13 @@ describe("Phase 3 data workflow processors", () => {
     expect(formatSql("").ok).toBe(false);
   });
 
+  it("preserves line-comment boundaries while formatting SQL", () => {
+    expect(formatSql("select 1 -- note\n+ 2;")).toEqual({
+      ok: true,
+      value: "SELECT 1 -- note\n+ 2;\n",
+    });
+  });
+
   it("builds safe SELECT queries", () => {
     expect(buildSelectQuery({ table: "users", columns: ["id", "name"], conditions: [{ column: "active", operator: "=", value: "true" }], orderBy: "name", limit: 25 })).toEqual({
       ok: true,

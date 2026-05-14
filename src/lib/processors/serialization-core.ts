@@ -173,6 +173,7 @@ export function convertJsonYaml(
 export function convertCsvJson(
   input: string,
   direction: "csv-to-json" | "json-to-csv",
+  options: { safeSpreadsheet?: boolean } = {},
 ): SerializationResult {
   try {
     if (!input.trim()) throw new Error("Input is empty");
@@ -194,7 +195,9 @@ export function convertCsvJson(
       throw new Error("JSON rows must contain at least one property");
     return {
       ok: true,
-      output: serializeCSV(rows, headers, { safeSpreadsheet: true }),
+      output: serializeCSV(rows, headers, {
+        safeSpreadsheet: options.safeSpreadsheet ?? true,
+      }),
     };
   } catch (error) {
     return errorResult(error);

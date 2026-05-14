@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, FileCheck, Code } from "lucide-react";
 import { JsonSchemaValidator } from "./components/JsonSchemaValidator";
 import { JsonStatsDisplay } from "./components/JsonStatsDisplay";
-import { validateJson, type JsonStats } from "@/lib/processors/json";
+import { calculateJsonStats, stripJsonComments, validateJson, type JsonStats } from "@/lib/processors/json";
 
 interface JsonSchemaTabProps {
   input: string;
@@ -26,26 +26,14 @@ export function JsonSchemaTab({ input }: JsonSchemaTabProps) {
       return { parsedData: null, stats: null, isValid: false };
     }
 
-    const validation = validateJson(input);
+    const validation = validateJson(input, { allowComments: true });
     if (!validation.isValid) return { parsedData: null, stats: null, isValid: false };
     try {
-      const parsed = JSON.parse(input);
-      const size = JSON.stringify(parsed).length;
-      const lines = JSON.stringify(parsed, null, 2).split("\n").length;
+      const parsed = JSON.parse(stripJsonComments(input));
       return {
         parsedData: parsed,
         isValid: true,
-        stats: {
-          size,
-          lines,
-          objects: 0,
-          arrays: 0,
-          strings: 0,
-          numbers: 0,
-          booleans: 0,
-          nulls: 0,
-          depth: 0,
-        },
+        stats: calculateJsonStats(parsed),
       };
     } catch {
       return { parsedData: null, stats: null, isValid: false };
@@ -61,8 +49,7 @@ export function JsonSchemaTab({ input }: JsonSchemaTabProps) {
               <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No JSON Data</h3>
               <p className="text-muted-foreground">
-                Please provide valid JSON in the formatter tab to validate
-                against a schema.
+                Enter valid JSON in the JSON input above to validate against a schema.
               </p>
             </div>
           </CardContent>
@@ -82,8 +69,7 @@ export function JsonSchemaTab({ input }: JsonSchemaTabProps) {
                 Invalid JSON
               </h3>
               <p className="text-muted-foreground">
-                Please fix the JSON syntax in the formatter tab before
-                validating against a schema.
+                Fix the JSON syntax in the JSON input above before validating against a schema.
               </p>
             </div>
           </CardContent>

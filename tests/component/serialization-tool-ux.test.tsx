@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { cleanup, render, screen } from "@testing-library/react";
+import { fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -71,6 +72,49 @@ describe("serialization studio UX", () => {
     );
 
     expect(input).toHaveValue("not-json");
+  });
+
+  it("restores each successful converter draft when returning to its direction", async () => {
+    const user = userEvent.setup();
+    render(<SerializationTool tool="json-yaml-converter" />);
+    const input = screen.getByRole("textbox", { name: "Input" });
+    await user.clear(input);
+    fireEvent.change(input, { target: { value: '{"first":true}' } });
+    await user.selectOptions(screen.getByLabelText("Direction"), "yaml-to-json");
+    expect(input).toHaveValue("first: true\n");
+    await user.clear(input);
+    fireEvent.change(input, { target: { value: "second: true" } });
+    await user.selectOptions(screen.getByLabelText("Direction"), "json-to-yaml");
+    expect(input).toHaveValue('{"first":true}');
+    await user.selectOptions(screen.getByLabelText("Direction"), "yaml-to-json");
+    expect(input).toHaveValue("second: true");
+  });
+
+  it("round-trips negative numeric CSV values and exposes spreadsheet-safe mode", async () => {
+    const user = userEvent.setup();
+    render(<SerializationTool tool="csv-json-converter" />);
+    const input = screen.getByRole("textbox", { name: "Input" });
+    await user.clear(input);
+    await user.type(input, "amount,formula\n-42.5,=1+1");
+    expect(screen.getByRole("textbox", { name: "Result" })).toHaveValue(
+      '[\n  {\n    "amount": -42.5,\n    "formula": "=1+1"\n  }\n]',
+    );
+
+    await user.selectOptions(screen.getByLabelText("Direction"), "json-to-csv");
+    expect(screen.getByRole("textbox", { name: "Result" })).toHaveValue(
+      "amount,formula\n-42.5,'=1+1",
+    );
+    await user.click(screen.getByLabelText("Spreadsheet-safe CSV export"));
+    expect(screen.getByRole("textbox", { name: "Result" })).toHaveValue(
+      "amount,formula\n-42.5,=1+1",
+    );
+    await user.selectOptions(screen.getByLabelText("Direction"), "csv-to-json");
+    expect(screen.getByRole("textbox", { name: "Input" })).toHaveValue(
+      "amount,formula\n-42.5,=1+1",
+    );
+    expect(screen.getByRole("textbox", { name: "Result" })).toHaveValue(
+      '[\n  {\n    "amount": -42.5,\n    "formula": "=1+1"\n  }\n]',
+    );
   });
 
   it("preserves the numeric value when the input base changes", async () => {

@@ -52,6 +52,9 @@ export function formatSql(input: string): ProcessorResult<string> {
   let depth = 0;
   const flush = () => { if (line.trim()) lines.push(`${"  ".repeat(Math.max(0, depth))}${line.trim()}`); line = ""; };
   normalized.forEach((token) => {
+    // A line comment consumes the rest of its source line. Preserve that
+    // boundary so following SQL cannot accidentally become part of the comment.
+    if (token.startsWith("--")) { line += `${line && !/\s$/.test(line) ? " " : ""}${token}`; flush(); return; }
     if (SQL_NEWLINE_KEYWORDS.has(token)) { flush(); line = `${token} `; return; }
     if (token === "AND" || token === "OR") { flush(); line = `${token} `; return; }
     if (token === "(") { line = `${line.trimEnd()} (`; depth += 1; return; }
