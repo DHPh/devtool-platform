@@ -38,13 +38,9 @@ Replace placeholder site, contact, and verification values before production. Tr
 
 ## GitHub Actions and Vercel
 
-`.github/workflows/ci.yml` runs quality and browser checks before deployment. Production deployment runs for pushes to `main`; preview deployment runs for `develop` and pull requests. Configure these GitHub Actions secrets:
+The Vercel Git integration builds production deployments from `main` and manages preview deployments according to the Vercel project settings. It can start as soon as a commit is pushed.
 
-- `VERCEL_TOKEN`
-- `VERCEL_ORG_ID`
-- `VERCEL_PROJECT_ID`
-
-The workflow currently uses `amondnet/vercel-action@v25`. Review third-party action updates and pinning policy as part of routine supply-chain maintenance.
+GitHub Actions runs the quality and browser checks. For a push to `main`, the final job then verifies that the Vercel GitHub App reported a successful Production deployment for the exact commit SHA. This check uses the workflow's read-only GitHub deployment permission.
 
 ## Operational requirements
 
