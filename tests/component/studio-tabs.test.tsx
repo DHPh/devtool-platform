@@ -96,6 +96,19 @@ describe("studio tabs", () => {
     );
   });
 
+  it("keeps each user-selected tab in browser history", async () => {
+    const user = userEvent.setup();
+    window.history.replaceState({}, "", "/tools/example-studio?tab=tab-1");
+    const initialHistoryLength = window.history.length;
+
+    render(<StudioTabs manifest={createManifest(4)} componentProps={{}} />);
+    await user.click(screen.getByRole("tab", { name: /Example tool 2/i }));
+    await user.click(screen.getByRole("tab", { name: /Example tool 3/i }));
+
+    expect(window.location.search).toBe("?tab=tab-3");
+    expect(window.history.length).toBe(initialHistoryLength + 2);
+  });
+
   it("syncs programmatic controlled tab changes to URL without snapping back", async () => {
     const user = userEvent.setup();
     window.history.replaceState({}, "", "/tools/example-studio?tab=tab-3");

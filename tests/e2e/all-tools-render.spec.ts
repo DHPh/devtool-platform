@@ -8,8 +8,11 @@ for (const tool of TOOL_REGISTRY) {
 
     await page.goto(tool.path);
 
+    const routeId = tool.path.split("?")[0].split("/").pop();
+    const routeTitle = TOOL_REGISTRY.find((entry) => entry.id === routeId)?.name;
+    expect(routeTitle).toBeDefined();
     await expect(
-      page.getByRole("heading", { level: 1 }),
+      page.getByRole("heading", { level: 1, name: routeTitle, exact: true }),
     ).toBeVisible();
 
     await expect(

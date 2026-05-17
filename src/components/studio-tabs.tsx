@@ -106,12 +106,15 @@ export function getStudioGridColumns(tabCount: number) {
   return "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4";
 }
 
-function writeTabQueryParam(tab: string) {
+function writeTabQueryParam(tab: string, addHistoryEntry = false) {
   if (typeof window === "undefined") return;
   const url = new URL(window.location.href);
   if (url.searchParams.get("tab") === tab) return;
   url.searchParams.set("tab", tab);
-  window.history.replaceState(window.history.state, "", url.toString());
+  const updateHistory = addHistoryEntry
+    ? window.history.pushState
+    : window.history.replaceState;
+  updateHistory.call(window.history, window.history.state, "", url.toString());
 }
 
 function StudioUrlObserver({
@@ -239,7 +242,7 @@ export function StudioTabs<Props extends object>({
       setInternalTab(tab);
     }
     onTabChange?.(tab);
-    writeTabQueryParam(tab);
+    writeTabQueryParam(tab, true);
   };
 
   return (

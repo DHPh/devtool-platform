@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 import { DataToSqlTab as DataToSqlTool } from "@/lib/tools/data-api-studio/tabs/DataToSqlTab";
@@ -44,7 +44,7 @@ describe("Phase 3 data-workflow UX", () => {
     render(<GraphqlFormatterTool />);
     await user.click(screen.getByRole("button", { name: "Format GraphQL" }));
     expect(await screen.findByRole("button", { name: "Copy result" })).toBeVisible();
-    expect(screen.getByRole<HTMLInputElement>("textbox", { name: "Result" }).value).toContain("query User");
+    await waitFor(() => expect(screen.getByRole<HTMLInputElement>("textbox", { name: "Result" }).value).toContain("query User"));
   });
 
   it("updates and copies deterministic fake data", async () => {

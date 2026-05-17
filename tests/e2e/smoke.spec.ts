@@ -36,10 +36,10 @@ test("navigates from the homepage to a studio sub-tool and syncs ?tab= history",
     page.getByRole("tab", { name: "DNS Lookup", exact: true }),
   ).toHaveAttribute("data-state", "active");
 
-  await page.getByRole("tab", { name: "IP Lookup", exact: true }).click();
-  await expect(page).toHaveURL(/\/tools\/network-studio\?tab=ip-lookup$/);
+  await page.getByRole("tab", { name: "IP Information", exact: true }).click();
+  await expect(page).toHaveURL(/\/tools\/network-studio\?tab=ip-info$/);
   await expect(
-    page.getByRole("tab", { name: "IP Lookup", exact: true }),
+    page.getByRole("tab", { name: "IP Information", exact: true }),
   ).toHaveAttribute("data-state", "active");
 
   await page.goBack();
