@@ -25,12 +25,30 @@ import {
 
 export default function LoremIpsum() {
   const [count, setCount] = useState(3);
+  const [countInput, setCountInput] = useState("3");
   const [type, setType] = useState<LoremIpsumUnit>("paragraphs");
   const [startWithLorem, setStartWithLorem] = useState(true);
-  const [generated, setGenerated] = useState("");
+  const [generated, setGenerated] = useState(() =>
+    generateLoremIpsum({ count: 3, unit: "paragraphs", startWithLorem: true }),
+  );
 
-  const generateLorem = () => {
-    setGenerated(generateLoremIpsum({ count, unit: type, startWithLorem }));
+  const clampCount = (value: number) => Math.min(100, Math.max(1, Math.trunc(value) || 1));
+
+  const generateLorem = (
+    nextCount = count,
+    nextType = type,
+    nextStartWithLorem = startWithLorem,
+  ) => {
+    const safeCount = clampCount(nextCount);
+    setCount(safeCount);
+    setCountInput(String(safeCount));
+    setGenerated(
+      generateLoremIpsum({
+        count: safeCount,
+        unit: nextType,
+        startWithLorem: nextStartWithLorem,
+      }),
+    );
   };
 
   const presets: Array<{ name: string; type: LoremIpsumUnit; count: number }> = [
@@ -41,6 +59,13 @@ export default function LoremIpsum() {
     { name: "100 Words", type: "words", count: 100 },
     { name: "5 Sentences", type: "sentences", count: 5 },
   ];
+
+  const wordCount = generated.trim()
+    ? generated.trim().split(/\s+/).filter(Boolean).length
+    : 0;
+  const sentenceCount = generated.trim()
+    ? (generated.match(/[.!?]+/g) ?? []).length
+    : 0;
 
   return (
     <div className="space-y-6">
@@ -55,8 +80,8 @@ export default function LoremIpsum() {
           id: preset.name.toLowerCase().replace(/\s+/g, "-"),
           label: preset.name,
           onClick: () => {
-            setCount(preset.count);
             setType(preset.type);
+            generateLorem(preset.count, preset.type, startWithLorem);
           },
         }))}
       />
@@ -72,23 +97,39 @@ export default function LoremIpsum() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="count">Count</Label>
+                  <Label htmlFor="count">Count (1–100)</Label>
                   <Input
                     id="count"
                     type="number"
                     min="1"
                     max="100"
-                    value={count}
-                    onChange={(e) => setCount(parseInt(e.target.value) || 1)}
+                    value={countInput}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setCountInput(raw);
+                      const parsed = parseInt(raw, 10);
+                      if (!Number.isNaN(parsed) && parsed >= 1) {
+                        setCount(Math.min(100, parsed));
+                      }
+                    }}
+                    onBlur={() => {
+                      const parsed = parseInt(countInput, 10);
+                      const safe = clampCount(Number.isNaN(parsed) ? 1 : parsed);
+                      setCount(safe);
+                      setCountInput(String(safe));
+                    }}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="type">Type</Label>
-              <Select
-                value={type}
-                onValueChange={(value: LoremIpsumUnit) => setType(value)}
-              >
+                  <Select
+                    value={type}
+                    onValueChange={(value: LoremIpsumUnit) => {
+                      setType(value);
+                      generateLorem(count, value, startWithLorem);
+                    }}
+                  >
                     <SelectTrigger aria-label="Lorem ipsum unit type">
                       <SelectValue />
                     </SelectTrigger>
@@ -106,7 +147,11 @@ export default function LoremIpsum() {
                   type="checkbox"
                   id="startWithLorem"
                   checked={startWithLorem}
-                  onChange={(e) => setStartWithLorem(e.target.checked)}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setStartWithLorem(checked);
+                    generateLorem(count, type, checked);
+                  }}
                   className="rounded"
                 />
                 <Label htmlFor="startWithLorem" className="text-sm">
@@ -114,7 +159,7 @@ export default function LoremIpsum() {
                 </Label>
               </div>
 
-              <Button onClick={generateLorem} className="w-full">
+              <Button onClick={() => generateLorem()} className="w-full">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Generate Lorem Ipsum
               </Button>
@@ -137,8 +182,7 @@ export default function LoremIpsum() {
             />
             {generated && (
               <div className="text-xs text-muted-foreground mt-2">
-                Generated: {generated.split(" ").length} words,{" "}
-                {generated.split(".").length - 1} sentences
+                Generated: {wordCount} words, {sentenceCount} sentences
               </div>
             )}
           </ResultCard>

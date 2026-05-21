@@ -95,6 +95,14 @@ export function DataTable({
     pageIndex: 0,
     pageSize: defaultPageSize,
   });
+  const [prevData, setPrevData] = useState(data);
+
+  if (prevData !== data) {
+    setPrevData(data);
+    if (pagination.pageIndex !== 0) {
+      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+    }
+  }
 
   const columnKeys = useMemo(() => {
     if (headers && headers.length > 0) return headers;

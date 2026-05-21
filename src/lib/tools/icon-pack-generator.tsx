@@ -70,10 +70,7 @@ interface IconSpecs {
     legacy: boolean;
     playStore: boolean;
   };
-  ios: {
-    all: boolean;
-    appStore: boolean;
-  };
+  iosMode: "all" | "appStore" | "none";
 }
 
 interface GenerationProgress {
@@ -89,7 +86,7 @@ export default function IconPackGenerator() {
   const [backgroundColor, setBackgroundColor] = useState("#ffffff");
   const [iconSpecs, setIconSpecs] = useState<IconSpecs>({
     android: { adaptive: true, legacy: true, playStore: true },
-    ios: { all: true, appStore: true },
+    iosMode: "all",
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState<GenerationProgress>({
@@ -106,21 +103,41 @@ export default function IconPackGenerator() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  const loadSelectedImage = (file: File) => {
     if (!file.type.startsWith("image/")) {
       toast.error("Please select a valid image file");
       return;
     }
 
     setSourceImage(file);
+    setGeneratedZips({});
     const reader = new FileReader();
     reader.onload = (e) => {
       setImagePreview(e.target?.result as string);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      loadSelectedImage(file);
+    }
+    event.target.value = "";
+  };
+
+  const createSolidBackground = (size: number, background: string): Promise<Blob> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d")!;
+      canvas.width = size;
+      canvas.height = size;
+      ctx.fillStyle = background;
+      ctx.fillRect(0, 0, size, size);
+      canvas.toBlob((blob) => {
+        resolve(blob!);
+      }, "image/png");
+    });
   };
 
   const resizeImage = (
@@ -183,8 +200,7 @@ export default function IconPackGenerator() {
         ...prev,
         current: "Generating adaptive background...",
       }));
-      const background = await resizeImage(
-        img,
+      const background = await createSolidBackground(
         ANDROID_SPECS.adaptive.background.size,
         backgroundColor
       );
@@ -251,9 +267,10 @@ export default function IconPackGenerator() {
     const zip = new JSZip();
     let completed = 0;
 
-    const specsToGenerate = iconSpecs.ios.all
-      ? IOS_SPECS
-      : IOS_SPECS.filter((spec) => spec.size === 1024);
+    const specsToGenerate =
+      iconSpecs.iosMode === "all"
+        ? IOS_SPECS
+        : IOS_SPECS.filter((spec) => spec.size === 1024);
 
     for (const spec of specsToGenerate) {
       setProgress((prev) => ({
@@ -289,8 +306,14 @@ Note: The 1024x1024 icon is required for App Store submission.
     return zip.generateAsync({ type: "blob" });
   };
 
+  const hasSelectedSpecs =
+    iconSpecs.android.adaptive ||
+    iconSpecs.android.legacy ||
+    iconSpecs.android.playStore ||
+    iconSpecs.iosMode !== "none";
+
   const generateIcons = async () => {
-    if (!sourceImage) return;
+    if (!sourceImage || !hasSelectedSpecs) return;
 
     setIsGenerating(true);
     setProgress({
@@ -318,8 +341,8 @@ Note: The 1024x1024 icon is required for App Store submission.
               (iconSpecs.android.legacy ? ANDROID_SPECS.legacy.length : 0) +
               (iconSpecs.android.playStore ? 1 : 0);
           }
-          if (iconSpecs.ios.all || iconSpecs.ios.appStore) {
-            totalOps += iconSpecs.ios.all ? IOS_SPECS.length : 1;
+          if (iconSpecs.iosMode !== "none") {
+            totalOps += iconSpecs.iosMode === "all" ? IOS_SPECS.length : 1;
           }
 
           setProgress((prev) => ({ ...prev, total: totalOps }));
@@ -334,7 +357,7 @@ Note: The 1024x1024 icon is required for App Store submission.
           }
 
           // Generate iOS icons
-          if (iconSpecs.ios.all || iconSpecs.ios.appStore) {
+          if (iconSpecs.iosMode !== "none") {
             zips.ios = await generateIOSIcons(img);
           }
 
@@ -407,13 +430,20 @@ Note: The 1024x1024 icon is required for App Store submission.
                   className="hidden"
                 />
                 <Button
+                  type="button"
                   onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const file = e.dataTransfer.files?.[0];
+                    if (file) loadSelectedImage(file);
+                  }}
                   variant="outline"
                   className="w-full h-32 border-dashed"
                 >
                   <div className="text-center">
                     <ImageIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                    <p>Click to upload image</p>
+                    <p>Click or drop an image</p>
                     <p className="text-sm text-muted-foreground whitespace-normal">
                       PNG, JPG, SVG • Min 1024×1024px recommended
                     </p>
@@ -427,7 +457,10 @@ Note: The 1024x1024 icon is required for App Store submission.
                   <input
                     type="color"
                     value={backgroundColor}
-                    onChange={(e) => setBackgroundColor(e.target.value)}
+                    onChange={(e) => {
+                      setBackgroundColor(e.target.value);
+                      setGeneratedZips({});
+                    }}
                     className="w-full h-10 rounded border"
                   />
                   <p className="text-xs text-muted-foreground">
@@ -438,12 +471,15 @@ Note: The 1024x1024 icon is required for App Store submission.
 
               {imagePreview && (
                 <div className="space-y-4">
-                  <div className="aspect-square w-48 mx-auto border rounded-lg overflow-hidden">
+                  <div
+                    className="aspect-square w-48 mx-auto border rounded-lg overflow-hidden"
+                    style={{ backgroundColor }}
+                  >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={imagePreview}
                       alt="Preview"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                   </div>
                   <div className="text-center">
@@ -482,15 +518,16 @@ Note: The 1024x1024 icon is required for App Store submission.
                     <input
                       type="checkbox"
                       checked={iconSpecs.android.adaptive}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        setGeneratedZips({});
                         setIconSpecs((prev) => ({
                           ...prev,
                           android: {
                             ...prev.android,
                             adaptive: e.target.checked,
                           },
-                        }))
-                      }
+                        }));
+                      }}
                     />
                     <span>Adaptive Icons (Android 8.0+)</span>
                     <Badge variant="outline">432×432</Badge>
@@ -500,15 +537,16 @@ Note: The 1024x1024 icon is required for App Store submission.
                     <input
                       type="checkbox"
                       checked={iconSpecs.android.legacy}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        setGeneratedZips({});
                         setIconSpecs((prev) => ({
                           ...prev,
                           android: {
                             ...prev.android,
                             legacy: e.target.checked,
                           },
-                        }))
-                      }
+                        }));
+                      }}
                     />
                     <span>Legacy Icons (All densities)</span>
                     <Badge variant="outline">48-192px</Badge>
@@ -518,15 +556,16 @@ Note: The 1024x1024 icon is required for App Store submission.
                     <input
                       type="checkbox"
                       checked={iconSpecs.android.playStore}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        setGeneratedZips({});
                         setIconSpecs((prev) => ({
                           ...prev,
                           android: {
                             ...prev.android,
                             playStore: e.target.checked,
                           },
-                        }))
-                      }
+                        }));
+                      }}
                     />
                     <span>Play Store Icon</span>
                     <Badge variant="outline">512×512</Badge>
@@ -535,17 +574,17 @@ Note: The 1024x1024 icon is required for App Store submission.
               </TabsContent>
 
               <TabsContent value="ios" className="space-y-4">
-                <div className="space-y-3">
+                <div className="space-y-3" role="radiogroup" aria-label="iOS icon preset">
                   <label className="flex items-center space-x-2">
                     <input
-                      type="checkbox"
-                      checked={iconSpecs.ios.all}
-                      onChange={(e) =>
-                        setIconSpecs((prev) => ({
-                          ...prev,
-                          ios: { ...prev.ios, all: e.target.checked },
-                        }))
-                      }
+                      type="radio"
+                      name="ios-mode"
+                      value="all"
+                      checked={iconSpecs.iosMode === "all"}
+                      onChange={() => {
+                        setGeneratedZips({});
+                        setIconSpecs((prev) => ({ ...prev, iosMode: "all" }));
+                      }}
                     />
                     <span>All iOS Icons (Complete Set)</span>
                     <Badge variant="outline">20-1024px</Badge>
@@ -553,17 +592,31 @@ Note: The 1024x1024 icon is required for App Store submission.
 
                   <label className="flex items-center space-x-2">
                     <input
-                      type="checkbox"
-                      checked={iconSpecs.ios.appStore}
-                      onChange={(e) =>
-                        setIconSpecs((prev) => ({
-                          ...prev,
-                          ios: { ...prev.ios, appStore: e.target.checked },
-                        }))
-                      }
+                      type="radio"
+                      name="ios-mode"
+                      value="appStore"
+                      checked={iconSpecs.iosMode === "appStore"}
+                      onChange={() => {
+                        setGeneratedZips({});
+                        setIconSpecs((prev) => ({ ...prev, iosMode: "appStore" }));
+                      }}
                     />
                     <span>App Store Icon Only</span>
                     <Badge variant="outline">1024×1024</Badge>
+                  </label>
+
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      name="ios-mode"
+                      value="none"
+                      checked={iconSpecs.iosMode === "none"}
+                      onChange={() => {
+                        setGeneratedZips({});
+                        setIconSpecs((prev) => ({ ...prev, iosMode: "none" }));
+                      }}
+                    />
+                    <span>None (Skip iOS Pack)</span>
                   </label>
                 </div>
               </TabsContent>
@@ -581,6 +634,7 @@ Note: The 1024x1024 icon is required for App Store submission.
               {!isGenerating && (
                 <Button
                   onClick={generateIcons}
+                  disabled={!hasSelectedSpecs}
                   variant={
                     generatedZips.android || generatedZips.ios
                       ? "outline"

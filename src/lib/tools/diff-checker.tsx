@@ -22,6 +22,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
   type DiffEntry,
+  type DiffLevel,
   type DiffSplitRow,
 } from "@/lib/processors/ui-primitives";
 import { calculateTextDiffInWorker } from "@/lib/workers/compute-client";
@@ -31,8 +32,9 @@ export default function DiffChecker() {
   const [text2, setText2] = useState("");
   const [diffResult, setDiffResult] = useState<DiffEntry[]>([]);
   const [splitRows, setSplitRows] = useState<DiffSplitRow[]>([]);
+  const [hasCompared, setHasCompared] = useState(false);
   const [diffType, setDiffType] = useState<"unified" | "split">("unified");
-  const [diffLevel, setDiffLevel] = useState<"line" | "word" | "char">("line");
+  const [diffLevel, setDiffLevel] = useState<DiffLevel>("line");
   const [ignoreWhitespace, setIgnoreWhitespace] = useState(false);
   const [ignoreCase, setIgnoreCase] = useState(false);
   const [stats, setStats] = useState({
@@ -41,20 +43,21 @@ export default function DiffChecker() {
     changes: 0,
   });
 
-  const calculateDiff = async () => {
-    if (!text1 || !text2) {
-      toast.error("Please enter both texts to compare");
+  const runDiff = async (
+    left: string,
+    right: string,
+    opts: { level: DiffLevel; ignoreWhitespace: boolean; ignoreCase: boolean },
+    notifySuccess: boolean,
+  ) => {
+    if (!left && !right) {
+      toast.error("Please enter text to compare");
       return;
     }
 
     const computed = await calculateTextDiffInWorker(
-      text1,
-      text2,
-      {
-        level: diffLevel,
-        ignoreWhitespace,
-        ignoreCase,
-      },
+      left,
+      right,
+      opts,
       { timeoutMs: 10_000 },
     );
     if (!computed.ok) {
@@ -64,41 +67,53 @@ export default function DiffChecker() {
     setDiffResult(computed.value.lines);
     setSplitRows(computed.value.splitRows);
     setStats(computed.value.stats);
-    toast.success("Diff calculated successfully!");
+    setHasCompared(true);
+    if (notifySuccess) {
+      toast.success("Diff calculated successfully!");
+    }
+  };
+
+  const calculateDiff = async () => {
+    await runDiff(text1, text2, { level: diffLevel, ignoreWhitespace, ignoreCase }, true);
+  };
+
+  const formatDiffExportText = () => {
+    if (diffLevel !== "line") {
+      return diffResult
+        .map((token) =>
+          token.type === "added"
+            ? `[+${token.text}]`
+            : token.type === "removed"
+              ? `[-${token.text}]`
+              : token.text,
+        )
+        .join("");
+    }
+    return diffResult
+      .map((line) => {
+        const prefix =
+          line.type === "added" ? "+" : line.type === "removed" ? "-" : " ";
+        return `${prefix} ${line.text}`;
+      })
+      .join("\n");
   };
 
   const copyResults = () => {
-    if (diffResult.length === 0) {
+    if (!hasCompared) {
       toast.error("No diff results to copy");
       return;
     }
 
-    const diffText = diffResult
-      .map((line) => {
-        const prefix =
-          line.type === "added" ? "+" : line.type === "removed" ? "-" : " ";
-        return `${prefix} ${line.text}`;
-      })
-      .join("\n");
-
-    void copyToClipboard(diffText, "Diff copied to clipboard!");
+    void copyToClipboard(formatDiffExportText(), "Diff copied to clipboard!");
   };
 
   const downloadResults = () => {
-    if (diffResult.length === 0) {
+    if (!hasCompared) {
       toast.error("No diff results to download");
       return;
     }
 
-    const diffText = diffResult
-      .map((line) => {
-        const prefix =
-          line.type === "added" ? "+" : line.type === "removed" ? "-" : " ";
-        return `${prefix} ${line.text}`;
-      })
-      .join("\n");
-
-    const blob = new Blob([diffText], { type: "text/plain" });
+    const blob = new Blob([formatDiffExportText()], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -113,31 +128,59 @@ export default function DiffChecker() {
     setText2("");
     setDiffResult([]);
     setSplitRows([]);
+    setHasCompared(false);
     setStats({ additions: 0, deletions: 0, changes: 0 });
     toast.success("All data cleared!");
   };
 
   const loadSampleTexts = () => {
-    setText1(`Hello World!
+    const sample1 = `Hello World!
 This is a sample text.
 Line 3
 Line 4
 Common line
-Another line`);
-    setText2(`Hello Universe!
+Another line`;
+    const sample2 = `Hello Universe!
 This is a sample text.
 New Line 3
 Line 4 modified
 Common line
-New line added`);
+New line added`;
+    setText1(sample1);
+    setText2(sample2);
     toast.success("Sample texts loaded!");
   };
 
   const swapTexts = () => {
-    const temp = text1;
-    setText1(text2);
-    setText2(temp);
+    const next1 = text2;
+    const next2 = text1;
+    setText1(next1);
+    setText2(next2);
+    if (hasCompared) {
+      void runDiff(next1, next2, { level: diffLevel, ignoreWhitespace, ignoreCase }, false);
+    }
     toast.success("Texts swapped!");
+  };
+
+  const handleDiffLevelChange = (nextLevel: DiffLevel) => {
+    setDiffLevel(nextLevel);
+    if (hasCompared) {
+      void runDiff(text1, text2, { level: nextLevel, ignoreWhitespace, ignoreCase }, false);
+    }
+  };
+
+  const handleIgnoreWhitespaceChange = (checked: boolean) => {
+    setIgnoreWhitespace(checked);
+    if (hasCompared) {
+      void runDiff(text1, text2, { level: diffLevel, ignoreWhitespace: checked, ignoreCase }, false);
+    }
+  };
+
+  const handleIgnoreCaseChange = (checked: boolean) => {
+    setIgnoreCase(checked);
+    if (hasCompared) {
+      void runDiff(text1, text2, { level: diffLevel, ignoreWhitespace, ignoreCase: checked }, false);
+    }
   };
 
   return (
@@ -154,7 +197,7 @@ New line added`);
             id: "compare",
             label: "Compare Texts",
             onClick: calculateDiff,
-            disabled: !text1 || !text2,
+            disabled: !text1 && !text2,
             variant: "default" as const,
           },
           {
@@ -207,8 +250,8 @@ New line added`);
             <Label htmlFor="diff-level">Comparison Level</Label>
             <Select
               value={diffLevel}
-              onValueChange={(value: "line" | "word" | "char") =>
-                setDiffLevel(value)
+              onValueChange={(value: DiffLevel) =>
+                handleDiffLevelChange(value)
               }
             >
               <SelectTrigger id="diff-level" aria-label="Comparison level">
@@ -227,7 +270,7 @@ New line added`);
               <Switch
                 id="ignore-whitespace"
                 checked={ignoreWhitespace}
-                onCheckedChange={setIgnoreWhitespace}
+                onCheckedChange={handleIgnoreWhitespaceChange}
               />
               <Label htmlFor="ignore-whitespace">Ignore Whitespace</Label>
             </div>
@@ -235,7 +278,7 @@ New line added`);
               <Switch
                 id="ignore-case"
                 checked={ignoreCase}
-                onCheckedChange={setIgnoreCase}
+                onCheckedChange={handleIgnoreCaseChange}
               />
               <Label htmlFor="ignore-case">Ignore Case</Label>
             </div>
@@ -273,15 +316,22 @@ New line added`);
         </div>
       </div>
 
-      {diffResult.length > 0 && (
+      {hasCompared && (
         <ResultCard
           title="Diff Results"
-          description={`Found ${stats.additions} additions, ${stats.deletions} deletions, and ${stats.changes} changes`}
+          description={
+            stats.additions === 0 && stats.deletions === 0
+              ? "Texts are identical under the current comparison settings"
+              : `Found ${stats.additions} additions, ${stats.deletions} deletions, and ${stats.changes} changes`
+          }
           status="success"
         >
           <div className="space-y-4">
             {/* Stats */}
             <div className="flex flex-wrap gap-2">
+              {stats.additions === 0 && stats.deletions === 0 && (
+                <Badge variant="secondary">Texts are identical</Badge>
+              )}
               <Badge
                 variant="outline"
                 className="bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800"
@@ -324,7 +374,69 @@ New line added`);
 
             {/* Diff Display */}
             <div className="border rounded-lg overflow-auto max-h-96">
-              {diffType === "unified" ? (
+              {diffLevel !== "line" ? (
+                diffType === "unified" ? (
+                  <pre
+                    data-testid="inline-diff-unified"
+                    className="p-4 font-mono text-sm whitespace-pre-wrap break-words leading-relaxed"
+                  >
+                    {diffResult.map((token, index) =>
+                      token.type === "added" ? (
+                        <ins
+                          key={index}
+                          className="bg-green-100 text-green-900 dark:bg-green-900/40 dark:text-green-100 no-underline rounded px-0.5"
+                        >
+                          {token.text}
+                        </ins>
+                      ) : token.type === "removed" ? (
+                        <del
+                          key={index}
+                          className="bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-100 line-through rounded px-0.5"
+                        >
+                          {token.text}
+                        </del>
+                      ) : (
+                        <span key={index}>{token.text}</span>
+                      ),
+                    )}
+                  </pre>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x font-mono text-sm">
+                    <pre className="p-4 whitespace-pre-wrap break-words leading-relaxed">
+                      {diffResult
+                        .filter((token) => token.type !== "added")
+                        .map((token, index) =>
+                          token.type === "removed" ? (
+                            <del
+                              key={index}
+                              className="bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-100 rounded px-0.5"
+                            >
+                              {token.text}
+                            </del>
+                          ) : (
+                            <span key={index}>{token.text}</span>
+                          ),
+                        )}
+                    </pre>
+                    <pre className="p-4 whitespace-pre-wrap break-words leading-relaxed">
+                      {diffResult
+                        .filter((token) => token.type !== "removed")
+                        .map((token, index) =>
+                          token.type === "added" ? (
+                            <ins
+                              key={index}
+                              className="bg-green-100 text-green-900 dark:bg-green-900/40 dark:text-green-100 no-underline rounded px-0.5"
+                            >
+                              {token.text}
+                            </ins>
+                          ) : (
+                            <span key={index}>{token.text}</span>
+                          ),
+                        )}
+                    </pre>
+                  </div>
+                )
+              ) : diffType === "unified" ? (
                 <div className="font-mono text-sm">
                   {diffResult.map((line, index) => (
                     <div

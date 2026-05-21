@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowRightLeft, Link } from "lucide-react";
@@ -18,33 +19,39 @@ import {
   encodeUrlComponent,
 } from "@/lib/processors/url";
 
+type ConversionOutcome =
+  | { ok: true; value: string }
+  | { ok: false; error: string };
+
 export default function UrlEncoder() {
   const [input, setInput] = useState(
     "https://example.com/search?q=hello world&lang=en"
   );
   const [activeTab, setActiveTab] = useState("converter");
+  const [plusAsSpace, setPlusAsSpace] = useState(true);
 
-  const encodeUrl = (text: string): string => {
+  const encodeUrl = (text: string): ConversionOutcome => {
     try {
-      return encodeUrlComponent(text);
+      return { ok: true, value: encodeUrlComponent(text) };
     } catch {
-      return "Invalid input";
+      return { ok: false, error: "Invalid input (lone surrogate or malformed UTF-16 sequence)" };
     }
   };
 
-  const decodeUrl = (text: string) => {
+  const decodeUrl = (text: string): ConversionOutcome => {
     try {
-      return decodeUrlComponent(text);
+      const normalized = plusAsSpace ? text.replace(/\+/g, " ") : text;
+      return { ok: true, value: decodeUrlComponent(normalized) };
     } catch {
-      return "Invalid encoded URL";
+      return { ok: false, error: "Invalid percent-encoding sequence in input" };
     }
   };
 
-  const safelyEncodeFullUrl = (text: string) => {
+  const safelyEncodeFullUrl = (text: string): ConversionOutcome => {
     try {
-      return encodeFullUrl(text);
+      return { ok: true, value: encodeFullUrl(text) };
     } catch {
-      return "Invalid URL";
+      return { ok: false, error: "Invalid URL characters (malformed UTF-16 sequence)" };
     }
   };
 
@@ -69,6 +76,7 @@ export default function UrlEncoder() {
 
   const loadSample = (key: keyof typeof sampleData) => {
     setInput(sampleData[key]);
+    setActiveTab("converter");
   };
 
   const tryExample = (example: string) => {
@@ -147,7 +155,19 @@ export default function UrlEncoder() {
         <TabsContent value="converter" className="space-y-6">
           <div className="space-y-4">
             <div>
-              <Label htmlFor="input" className="text-sm font-medium">Input</Label>
+              <div className="flex items-center justify-between gap-4">
+                <Label htmlFor="input" className="text-sm font-medium">Input</Label>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="plus-as-space"
+                    checked={plusAsSpace}
+                    onCheckedChange={setPlusAsSpace}
+                  />
+                  <Label htmlFor="plus-as-space" className="text-xs text-muted-foreground cursor-pointer">
+                    Treat + as space when decoding
+                  </Label>
+                </div>
+              </div>
               <Textarea
                 id="input"
                 placeholder="Enter URL or text to encode/decode..."
@@ -163,72 +183,87 @@ export default function UrlEncoder() {
               <ResultCard
                 title="URL Component Encoded (encodeURIComponent)"
                 description="Encodes all characters except: A-Z a-z 0-9 - _ . ! ~ * ' ( )"
-                status="info"
+                status={encoded.ok ? "info" : "error"}
               >
                 <div className="flex items-center gap-2 mb-2">
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => swapInputOutput(encoded)}
+                    disabled={!encoded.ok}
+                    onClick={() => encoded.ok && swapInputOutput(encoded.value)}
                     className="h-8"
                   >
                     <ArrowRightLeft className="h-4 w-4 mr-1" />
                     Use as Input
                   </Button>
                 </div>
-                <CopyableResult
-                  value={encoded}
-                  fontFamily="mono"
-                  rows={2}
-                />
+                {encoded.ok ? (
+                  <CopyableResult
+                    value={encoded.value}
+                    fontFamily="mono"
+                    rows={2}
+                  />
+                ) : (
+                  <p role="alert" className="text-sm text-destructive">{encoded.error}</p>
+                )}
               </ResultCard>
 
               {/* URL Decoded */}
               <ResultCard
                 title="URL Decoded (decodeURIComponent)"
                 description="Decodes percent-encoded characters back to their original form"
-                status="info"
+                status={decoded.ok ? "info" : "error"}
               >
                 <div className="flex items-center gap-2 mb-2">
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => swapInputOutput(decoded)}
+                    disabled={!decoded.ok}
+                    onClick={() => decoded.ok && swapInputOutput(decoded.value)}
                     className="h-8"
                   >
                     <ArrowRightLeft className="h-4 w-4 mr-1" />
                     Use as Input
                   </Button>
                 </div>
-                <CopyableResult
-                  value={decoded}
-                  fontFamily="mono"
-                  rows={2}
-                />
+                {decoded.ok ? (
+                  <CopyableResult
+                    value={decoded.value}
+                    fontFamily="mono"
+                    rows={2}
+                  />
+                ) : (
+                  <p role="alert" className="text-sm text-destructive">{decoded.error}</p>
+                )}
               </ResultCard>
 
               {/* Full URL Encoding */}
               <ResultCard
                 title="Full URL Encoded (encodeURI)"
                 description="Preserves URL structure, only encodes characters that are not valid in URLs"
-                status="info"
+                status={fullUrlEncoded.ok ? "info" : "error"}
               >
                 <div className="flex items-center gap-2 mb-2">
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => swapInputOutput(fullUrlEncoded)}
+                    disabled={!fullUrlEncoded.ok}
+                    onClick={() => fullUrlEncoded.ok && swapInputOutput(fullUrlEncoded.value)}
                     className="h-8"
                   >
                     <ArrowRightLeft className="h-4 w-4 mr-1" />
                     Use as Input
                   </Button>
                 </div>
-                <CopyableResult
-                  value={fullUrlEncoded}
-                  fontFamily="mono"
-                  rows={2}
-                />
+                {fullUrlEncoded.ok ? (
+                  <CopyableResult
+                    value={fullUrlEncoded.value}
+                    fontFamily="mono"
+                    rows={2}
+                  />
+                ) : (
+                  <p role="alert" className="text-sm text-destructive">{fullUrlEncoded.error}</p>
+                )}
               </ResultCard>
             </div>
           </div>

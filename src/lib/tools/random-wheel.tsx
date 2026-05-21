@@ -108,17 +108,47 @@ function subscribeWindowResize(callback: () => void) {
   return () => window.removeEventListener("resize", callback);
 }
 
-export default function RandomWheel() {
-  const [items, setItems] = useState<WheelItem[]>([
-    { id: "1", text: "Option 1", color: DEFAULT_COLORS[0], weight: 1 },
-    { id: "2", text: "Option 2", color: DEFAULT_COLORS[1], weight: 1 },
-    { id: "3", text: "Option 3", color: DEFAULT_COLORS[2], weight: 1 },
-    { id: "4", text: "Option 4", color: DEFAULT_COLORS[3], weight: 1 },
-  ]);
+function parseWheelText(
+  text: string,
+  startId = 1,
+): WheelItem[] {
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line, index) => {
+      const colonIdx = line.lastIndexOf(":");
+      let label = line;
+      let weight = 1;
+      if (colonIdx > 0) {
+        const candidateWeight = Number(line.slice(colonIdx + 1).trim());
+        const candidateLabel = line.slice(0, colonIdx).trim();
+        if (
+          candidateLabel &&
+          Number.isFinite(candidateWeight) &&
+          candidateWeight > 0
+        ) {
+          label = candidateLabel;
+          weight = candidateWeight;
+        }
+      }
+      return {
+        id: `wheel-${startId}-${index}`,
+        text: label,
+        color: DEFAULT_COLORS[index % DEFAULT_COLORS.length],
+        weight,
+      };
+    });
+}
 
-  const [inputText, setInputText] = useState(
-    "Option 1\nOption 2\nOption 3\nOption 4"
+const DEFAULT_WHEEL_TEXT = "Option 1\nOption 2\nOption 3\nOption 4";
+
+export default function RandomWheel() {
+  const [items, setItems] = useState<WheelItem[]>(() =>
+    parseWheelText(DEFAULT_WHEEL_TEXT, 0),
   );
+
+  const [inputText, setInputText] = useState(DEFAULT_WHEEL_TEXT);
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [selectedItem, setSelectedItem] = useState<WheelItem | null>(null);
@@ -140,36 +170,46 @@ export default function RandomWheel() {
 
   const wheelRef = useRef<SVGSVGElement>(null);
   const animationRef = useRef<number | undefined>(undefined);
+  const removeTimerRef = useRef<number | undefined>(undefined);
+  const idCounterRef = useRef(1);
+  const snapshotTextRef = useRef(DEFAULT_WHEEL_TEXT);
 
-  // Parse input text to items
-  const parseInputToItems = () => {
-    const lines = inputText
-      .trim()
-      .split("\n")
-      .filter((line) => line.trim());
-    if (lines.length === 0) {
-      toast.error("Please enter at least one option");
-      return;
-    }
+  const formatItemsToText = (list: WheelItem[]) =>
+    list.map((item) => (item.weight !== 1 ? `${item.text}: ${item.weight}` : item.text)).join("\n");
 
-    const newItems: WheelItem[] = lines.map((line, index) => ({
-      id: Date.now() + index + "",
-      text: line.trim(),
-      color: DEFAULT_COLORS[index % DEFAULT_COLORS.length],
-      weight: 1,
-    }));
-
-    setItems(newItems);
-    toast.success(`Updated wheel with ${newItems.length} options`);
+  const handleInputTextChange = (nextText: string) => {
+    setInputText(nextText);
+    snapshotTextRef.current = nextText;
+    idCounterRef.current += 1;
+    setItems(parseWheelText(nextText, idCounterRef.current));
   };
 
-  // Remove item
-  const removeItem = (id: string) => {
-    const newItems = items.filter((item) => item.id !== id);
-    setItems(newItems);
+  // Shuffle current wheel options
+  const shuffleOptions = () => {
+    if (items.length < 2) return;
+    const shuffled = [...items];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    const recolored = shuffled.map((item, idx) => ({
+      ...item,
+      color: DEFAULT_COLORS[idx % DEFAULT_COLORS.length],
+    }));
+    setItems(recolored);
+    const nextText = formatItemsToText(recolored);
+    setInputText(nextText);
+    snapshotTextRef.current = nextText;
+    toast.success("Wheel options shuffled");
+  };
 
-    // Update input text
-    setInputText(newItems.map((item) => item.text).join("\n"));
+  // Remove item by id (safe against stale closures inside timers)
+  const removeItem = (id: string) => {
+    setItems((prev) => {
+      const newItems = prev.filter((item) => item.id !== id);
+      setInputText(formatItemsToText(newItems));
+      return newItems;
+    });
   };
 
   // Calculate wheel segments starting from top
@@ -248,8 +288,12 @@ export default function RandomWheel() {
 
           // Remove winner from wheel if enabled
           if (removeAfterSpin) {
-            setTimeout(() => {
-              removeItem(winner.item.id);
+            if (removeTimerRef.current) {
+              window.clearTimeout(removeTimerRef.current);
+            }
+            const winnerId = winner.item.id;
+            removeTimerRef.current = window.setTimeout(() => {
+              removeItem(winnerId);
             }, 1000);
           }
         }
@@ -260,11 +304,19 @@ export default function RandomWheel() {
     animationRef.current = requestAnimationFrame(animate);
   };
 
-  // Reset everything
+  // Reset everything (and restore any eliminated options from snapshot)
   const resetWheel = () => {
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
     }
+    if (removeTimerRef.current) {
+      window.clearTimeout(removeTimerRef.current);
+      removeTimerRef.current = undefined;
+    }
+    const restoredText = snapshotTextRef.current;
+    setInputText(restoredText);
+    idCounterRef.current += 1;
+    setItems(parseWheelText(restoredText, idCounterRef.current));
     setIsSpinning(false);
     setRotation(0);
     setSelectedItem(null);
@@ -512,6 +564,9 @@ export default function RandomWheel() {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
+      if (removeTimerRef.current) {
+        window.clearTimeout(removeTimerRef.current);
+      }
     };
   }, []);
 
@@ -564,9 +619,9 @@ export default function RandomWheel() {
                   },
                   {
                     icon: Shuffle,
-                    label: "Update Options",
-                    onClick: parseInputToItems,
-                    disabled: isSpinning,
+                    label: "Shuffle Options",
+                    onClick: shuffleOptions,
+                    disabled: isSpinning || items.length < 2,
                     variant: "outline",
                   },
                 ]}
@@ -576,11 +631,11 @@ export default function RandomWheel() {
             {/* Options Management */}
             <div className="w-full max-w-2xl space-y-4 px-4">
               <div className="space-y-2">
-                <Label>Wheel Options</Label>
+                <Label>Wheel Options (one per line, optional &quot;Option: Weight&quot;)</Label>
                 <ResponsiveTextArea
-                  placeholder="Option 1&#10;Option 2&#10;Option 3&#10;Option 4"
+                  placeholder="Option 1&#10;Option 2: 2&#10;Option 3&#10;Option 4"
                   value={inputText}
-                  onChange={setInputText}
+                  onChange={handleInputTextChange}
                   minHeight={120}
                   showLineCount={true}
                 />
@@ -600,8 +655,13 @@ export default function RandomWheel() {
                           borderLeftWidth: "4px",
                         }}
                       >
-                        <span className="font-medium text-sm truncate">
-                          {item.text}
+                        <span className="font-medium text-sm truncate flex items-center gap-2">
+                          <span className="truncate">{item.text}</span>
+                          {item.weight !== 1 && (
+                            <Badge variant="outline" className="text-[11px] shrink-0">
+                              ×{item.weight}
+                            </Badge>
+                          )}
                         </span>
                         <Button
                           size="sm"

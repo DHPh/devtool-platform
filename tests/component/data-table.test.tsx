@@ -63,4 +63,20 @@ describe("shared DataTable", () => {
     expect(screen.getByText("Showing 11 to 12 of 12 entries")).toBeVisible();
     expect(screen.getByText("Page 2 of 2")).toBeVisible();
   });
+
+  it("resets pagination to page 1 when data changes to a smaller dataset", async () => {
+    const user = userEvent.setup();
+    const initialRows = Array.from({ length: 12 }, (_, index) => ({
+      id: index + 1,
+      label: `Row ${index + 1}`,
+    }));
+
+    const { rerender } = render(<DataTable data={initialRows} defaultPageSize={10} />);
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByText("Page 2 of 2")).toBeVisible();
+
+    rerender(<DataTable data={[{ id: 99, label: "Single Row" }]} defaultPageSize={10} />);
+    expect(screen.getByText("Page 1 of 1")).toBeVisible();
+    expect(screen.getByText("Single Row")).toBeVisible();
+  });
 });

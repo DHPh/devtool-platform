@@ -39,7 +39,9 @@ export default function TimestampConverter() {
   const [timestamp, setTimestamp] = useState("");
   const [dateInput, setDateInput] = useState("");
   const [dateResult, setDateResult] = useState("");
+  const [timestampResult, setTimestampResult] = useState("");
   const [conversionMessage, setConversionMessage] = useState("");
+  const [conversionStatus, setConversionStatus] = useState<"info" | "success" | "error">("info");
   const [unit, setUnit] = useState<UnixTimestampUnit>("seconds");
   const [timeZone, setTimeZone] = useState("UTC");
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
@@ -51,51 +53,77 @@ export default function TimestampConverter() {
     return () => window.clearInterval(timer);
   }, []);
 
-  const convertToDate = () => {
+  const runConvertToDate = (
+    tsValue = timestamp,
+    unitValue = unit,
+    zoneValue = timeZone,
+    notify = true,
+  ) => {
     try {
-      const result = unixToDateTime(timestamp, unit, timeZone);
+      const result = unixToDateTime(tsValue, unitValue, zoneValue);
       setDateResult(result.timeZone === "UTC" ? result.iso : `${result.zoned}\nUTC: ${result.iso}`);
       setConversionMessage("");
-      toast.success("Timestamp converted");
+      setConversionStatus("info");
+      if (notify) toast.success("Timestamp converted");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Invalid timestamp";
       setDateResult("");
       setConversionMessage(message);
-      toast.error(message);
+      setConversionStatus("error");
+      if (notify) toast.error(message);
     }
   };
 
-  const convertToTimestamp = () => {
+  const convertToDate = () => runConvertToDate(timestamp, unit, timeZone, true);
+
+  const runConvertToTimestamp = (
+    rawDate = dateInput,
+    unitValue = unit,
+    zoneValue = timeZone,
+    notify = true,
+  ) => {
     try {
-      const { resolution, values } = dateTimeInputToUnix(dateInput, unit, timeZone);
+      const { resolution, values } = dateTimeInputToUnix(rawDate, unitValue, zoneValue);
       if (resolution.status === "invalid") {
-        setTimestamp("");
+        setTimestampResult("");
         setConversionMessage(resolution.message ?? "The local time does not exist");
-        toast.error(resolution.message ?? "Invalid local time");
+        setConversionStatus("error");
+        if (notify) toast.error(resolution.message ?? "Invalid local time");
         return;
       }
       if (resolution.status === "ambiguous") {
         const candidates = values.join(" or ");
-        setTimestamp("");
+        setTimestampResult("");
         setConversionMessage(
-          `${resolution.message ?? "The local time is ambiguous"}. Possible ${unit}: ${candidates}`,
+          `${resolution.message ?? "The local time is ambiguous"}. Possible ${unitValue}: ${candidates}`,
         );
-        toast.error("Ambiguous local time; both candidates are shown");
+        setConversionStatus("error");
+        if (notify) toast.error("Ambiguous local time; both candidates are shown");
         return;
       }
-      setTimestamp(values[0]);
+      setTimestampResult(values[0]);
+      setConversionStatus("success");
       setConversionMessage(
         resolution.explicitOffset
           ? "The RFC 3339 offset in the input determined the instant."
           : `Interpreted as a wall time in ${resolution.timeZone}.`,
       );
-      toast.success("Date-time converted");
+      if (notify) toast.success("Date-time converted");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Invalid date-time";
-      setTimestamp("");
+      setTimestampResult("");
       setConversionMessage(message);
-      toast.error(message);
+      setConversionStatus("error");
+      if (notify) toast.error(message);
     }
+  };
+
+  const convertToTimestamp = () => runConvertToTimestamp(dateInput, unit, timeZone, true);
+
+  const applyCommonTimestamp = (value: string) => {
+    setUnit("seconds");
+    setTimestamp(value);
+    runConvertToDate(value, "seconds", timeZone, false);
   };
 
   const useCurrentTime = () => {
@@ -104,8 +132,10 @@ export default function TimestampConverter() {
     try {
       setDateResult(unixToDateTime(value, unit, timeZone).zoned);
       setConversionMessage("");
+      setConversionStatus("info");
     } catch (error) {
       setConversionMessage(error instanceof Error ? error.message : "Invalid timezone");
+      setConversionStatus("error");
     }
   };
 
@@ -124,9 +154,9 @@ export default function TimestampConverter() {
       <QuickActions
         actions={[
           { id: "current", label: "Current Time", onClick: useCurrentTime },
-          { id: "epoch", label: "Unix Epoch", onClick: () => setTimestamp("0") },
-          { id: "y2k", label: "Y2K", onClick: () => setTimestamp("946684800") },
-          { id: "2038", label: "2038 Limit", onClick: () => setTimestamp("2147483647") },
+          { id: "epoch", label: "Unix Epoch", onClick: () => applyCommonTimestamp("0") },
+          { id: "y2k", label: "Y2K", onClick: () => applyCommonTimestamp("946684800") },
+          { id: "2038", label: "2038 Limit", onClick: () => applyCommonTimestamp("2147483647") },
         ]}
       />
 
@@ -148,7 +178,19 @@ export default function TimestampConverter() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="timestamp-unit">Timestamp unit</Label>
-                <Select value={unit} onValueChange={(value) => setUnit(value as UnixTimestampUnit)}>
+                <Select
+                  value={unit}
+                  onValueChange={(value) => {
+                    const nextUnit = value as UnixTimestampUnit;
+                    setUnit(nextUnit);
+                    if (dateResult && timestamp.trim()) {
+                      runConvertToDate(timestamp, nextUnit, timeZone, false);
+                    }
+                    if (timestampResult && dateInput.trim()) {
+                      runConvertToTimestamp(dateInput, nextUnit, timeZone, false);
+                    }
+                  }}
+                >
                   <SelectTrigger id="timestamp-unit"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="seconds">Seconds</SelectItem>
@@ -192,7 +234,7 @@ export default function TimestampConverter() {
                 />
                 <Button onClick={convertToDate} disabled={!timestamp.trim()} size="sm">Convert</Button>
               </div>
-              {dateResult && <CopyableResult value={dateResult} fontFamily="mono" rows={2} />}
+              {dateResult && <CopyableResult value={dateResult} label="Converted date-time" fontFamily="mono" rows={2} />}
               <div className="space-y-1">
                 <Label>Common timestamps (seconds)</Label>
                 {COMMON_TIMESTAMPS.map((item) => (
@@ -200,7 +242,7 @@ export default function TimestampConverter() {
                     type="button"
                     key={item.name}
                     className="flex w-full items-center justify-between rounded border p-2 text-left text-xs hover:bg-accent"
-                    onClick={() => { setUnit("seconds"); setTimestamp(item.value); }}
+                    onClick={() => applyCommonTimestamp(item.value)}
                   >
                     <span><strong>{item.name}</strong><br /><span className="text-muted-foreground">{item.description}</span></span>
                     <code>{item.value}</code>
@@ -213,7 +255,7 @@ export default function TimestampConverter() {
           <ResultCard
             title="Date-time → Timestamp"
             description="Use RFC 3339 with an offset, or an offset-less wall time in the selected timezone"
-            status={conversionMessage ? "info" : "success"}
+            status={conversionStatus}
           >
             <div className="space-y-4">
               <div className="flex gap-2">
@@ -226,8 +268,24 @@ export default function TimestampConverter() {
                 />
                 <Button onClick={convertToTimestamp} disabled={!dateInput.trim()} size="sm">Convert</Button>
               </div>
+              {timestampResult && (
+                <CopyableResult
+                  value={timestampResult}
+                  label={`Converted timestamp (${unit})`}
+                  copyLabel="Copy converted timestamp"
+                  fontFamily="mono"
+                  rows={1}
+                />
+              )}
               {conversionMessage && (
-                <p role="status" className="rounded border p-3 text-xs text-muted-foreground">
+                <p
+                  role="status"
+                  className={`rounded border p-3 text-xs ${
+                    conversionStatus === "error"
+                      ? "border-destructive/50 text-destructive"
+                      : "text-muted-foreground"
+                  }`}
+                >
                   {conversionMessage}
                 </p>
               )}
@@ -238,7 +296,10 @@ export default function TimestampConverter() {
                     type="button"
                     key={example}
                     className="rounded border p-2 text-left font-mono text-xs hover:bg-accent"
-                    onClick={() => setDateInput(example)}
+                    onClick={() => {
+                      setDateInput(example);
+                      runConvertToTimestamp(example, unit, timeZone, false);
+                    }}
                   >{example}</button>
                 ))}
               </div>

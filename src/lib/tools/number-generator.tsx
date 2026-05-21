@@ -29,24 +29,60 @@ import {
 
 export default function NumberGenerator() {
   const [generatedNumbers, setGeneratedNumbers] = useState<number[]>([]);
-  const [min, setMin] = useState(1);
-  const [max, setMax] = useState(100);
-  const [count, setCount] = useState(10);
+  const [minInput, setMinInput] = useState("1");
+  const [maxInput, setMaxInput] = useState("100");
+  const [countInput, setCountInput] = useState("10");
   const [allowDuplicates, setAllowDuplicates] = useState(true);
-  const [decimalPlaces, setDecimalPlaces] = useState(0);
+  const [decimalInput, setDecimalInput] = useState("0");
   const [format, setFormat] = useState<NumberOutputFormat>("decimal");
+
+  const parsedDecimalPlaces = (() => {
+    const parsed = parseInt(decimalInput, 10);
+    return Number.isNaN(parsed) ? 0 : Math.max(0, Math.min(10, parsed));
+  })();
+
+  const effectiveFormat: NumberOutputFormat =
+    parsedDecimalPlaces > 0 ? "decimal" : format;
+
+  const formatForDisplay = (num: number) =>
+    effectiveFormat === "decimal" && parsedDecimalPlaces > 0
+      ? num.toFixed(parsedDecimalPlaces)
+      : formatGeneratedNumber(num, effectiveFormat);
 
   const runGeneration = (overrides?: {
     min?: number;
     max?: number;
     count?: number;
+    allowDuplicates?: boolean;
+    decimalPlaces?: number;
   }) => {
+    const resolvedMin = overrides?.min ?? Number(minInput);
+    const resolvedMax = overrides?.max ?? Number(maxInput);
+    const resolvedCount = overrides?.count ?? parseInt(countInput, 10);
+    const resolvedDecimals =
+      overrides?.decimalPlaces ?? parsedDecimalPlaces;
+    const resolvedDuplicates = overrides?.allowDuplicates ?? allowDuplicates;
+
+    if (
+      !Number.isFinite(resolvedMin) ||
+      !Number.isFinite(resolvedMax) ||
+      minInput.trim() === "" ||
+      maxInput.trim() === ""
+    ) {
+      toast.error("Please enter valid minimum and maximum numbers");
+      return;
+    }
+    if (!Number.isInteger(resolvedCount) || resolvedCount < 1 || resolvedCount > 1000) {
+      toast.error("Count must be an integer between 1 and 1000");
+      return;
+    }
+
     const result = generateNumberBatch({
-      min: overrides?.min ?? min,
-      max: overrides?.max ?? max,
-      count: overrides?.count ?? count,
-      allowDuplicates,
-      decimalPlaces,
+      min: resolvedMin,
+      max: resolvedMax,
+      count: resolvedCount,
+      allowDuplicates: resolvedDuplicates,
+      decimalPlaces: resolvedDecimals,
     });
     if (!result.ok) {
       toast.error(result.error);
@@ -63,22 +99,29 @@ export default function NumberGenerator() {
   const generateQuickRange = (
     newMin: number,
     newMax: number,
-    newCount?: number,
+    newCount: number,
+    options?: { allowDuplicates?: boolean; decimalPlaces?: number },
   ) => {
-    setMin(newMin);
-    setMax(newMax);
-    if (newCount !== undefined) setCount(newCount);
+    setMinInput(String(newMin));
+    setMaxInput(String(newMax));
+    setCountInput(String(newCount));
+    if (options?.allowDuplicates !== undefined) {
+      setAllowDuplicates(options.allowDuplicates);
+    }
+    if (options?.decimalPlaces !== undefined) {
+      setDecimalInput(String(options.decimalPlaces));
+    }
     runGeneration({
       min: newMin,
       max: newMax,
-      count: newCount ?? count,
+      count: newCount,
+      allowDuplicates: options?.allowDuplicates ?? allowDuplicates,
+      decimalPlaces: options?.decimalPlaces ?? parsedDecimalPlaces,
     });
   };
 
   const copyNumbers = async () => {
-    const formattedNumbers = generatedNumbers.map((num) =>
-      formatGeneratedNumber(num, format),
-    );
+    const formattedNumbers = generatedNumbers.map((num) => formatForDisplay(num));
     try {
       await writeClipboardText(formattedNumbers.join("\n"));
       toast.success("Numbers copied to clipboard!");
@@ -88,7 +131,7 @@ export default function NumberGenerator() {
   };
 
   const copyNumber = async (number: number) => {
-    const formatted = formatGeneratedNumber(number, format);
+    const formatted = formatForDisplay(number);
     try {
       await writeClipboardText(formatted);
       toast.success(`${formatted} copied to clipboard!`);
@@ -102,9 +145,7 @@ export default function NumberGenerator() {
   };
 
   const downloadNumbers = () => {
-    const formattedNumbers = generatedNumbers.map((num) =>
-      formatGeneratedNumber(num, format),
-    );
+    const formattedNumbers = generatedNumbers.map((num) => formatForDisplay(num));
     const content = formattedNumbers.join("\n");
     const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -117,8 +158,8 @@ export default function NumberGenerator() {
   };
 
   const stats = useMemo(
-    () => calculateNumberStats(generatedNumbers, decimalPlaces),
-    [generatedNumbers, decimalPlaces],
+    () => calculateNumberStats(generatedNumbers, parsedDecimalPlaces),
+    [generatedNumbers, parsedDecimalPlaces],
   );
 
   return (
@@ -134,13 +175,15 @@ export default function NumberGenerator() {
           {
             id: "dice",
             label: "Roll Dice (1-6)",
-            onClick: () => generateQuickRange(1, 6, 6),
+            onClick: () =>
+              generateQuickRange(1, 6, 6, { allowDuplicates: true, decimalPlaces: 0 }),
             variant: "outline" as const,
           },
           {
             id: "lottery",
             label: "Lottery (1-49)",
-            onClick: () => generateQuickRange(1, 49, 6),
+            onClick: () =>
+              generateQuickRange(1, 49, 6, { allowDuplicates: false, decimalPlaces: 0 }),
             variant: "outline" as const,
           },
           {
@@ -166,11 +209,9 @@ export default function NumberGenerator() {
                   <Input
                     id="min"
                     type="number"
-                    value={min}
-                    onChange={(e) => {
-                      const parsed = parseFloat(e.target.value);
-                      setMin(Number.isNaN(parsed) ? 0 : parsed);
-                    }}
+                    step="any"
+                    value={minInput}
+                    onChange={(e) => setMinInput(e.target.value)}
                   />
                 </div>
                 <div>
@@ -178,11 +219,9 @@ export default function NumberGenerator() {
                   <Input
                     id="max"
                     type="number"
-                    value={max}
-                    onChange={(e) => {
-                      const parsed = parseFloat(e.target.value);
-                      setMax(Number.isNaN(parsed) ? 100 : parsed);
-                    }}
+                    step="any"
+                    value={maxInput}
+                    onChange={(e) => setMaxInput(e.target.value)}
                   />
                 </div>
               </div>
@@ -194,15 +233,8 @@ export default function NumberGenerator() {
                   type="number"
                   min="1"
                   max="1000"
-                  value={count}
-                  onChange={(e) =>
-                    setCount(
-                      Math.max(
-                        1,
-                        Math.min(1000, parseInt(e.target.value, 10) || 1),
-                      ),
-                    )
-                  }
+                  value={countInput}
+                  onChange={(e) => setCountInput(e.target.value)}
                 />
               </div>
 
@@ -213,25 +245,19 @@ export default function NumberGenerator() {
                   type="number"
                   min="0"
                   max="10"
-                  value={decimalPlaces}
-                  onChange={(e) =>
-                    setDecimalPlaces(
-                      Math.max(
-                        0,
-                        Math.min(10, parseInt(e.target.value, 10) || 0),
-                      ),
-                    )
-                  }
+                  value={decimalInput}
+                  onChange={(e) => setDecimalInput(e.target.value)}
                 />
               </div>
 
               <div>
                 <Label htmlFor="format">Number Format</Label>
                 <Select
-                  value={format}
+                  value={effectiveFormat}
                   onValueChange={(value) =>
                     setFormat(value as NumberOutputFormat)
                   }
+                  disabled={parsedDecimalPlaces > 0}
                 >
                   <SelectTrigger id="format" aria-label="Number format">
                     <SelectValue />
@@ -243,6 +269,11 @@ export default function NumberGenerator() {
                     <SelectItem value="octal">Octal</SelectItem>
                   </SelectContent>
                 </Select>
+                {parsedDecimalPlaces > 0 && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Binary, Hex, and Octal output require 0 decimal places.
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center space-x-2">
@@ -286,7 +317,7 @@ export default function NumberGenerator() {
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 max-h-80 overflow-y-auto">
                   {generatedNumbers.map((number, index) => {
-                    const formatted = formatGeneratedNumber(number, format);
+                    const formatted = formatForDisplay(number);
                     return (
                       <button
                         type="button"

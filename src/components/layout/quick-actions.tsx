@@ -164,12 +164,13 @@ export const ActionGroups = {
     onFormat: () => void,
     onClear: () => void,
     onLoadSample: () => void,
-    hasOutput = false
+    hasOutput = false,
+    onCopy?: () => void,
   ): QuickAction[] => [
     CommonActions.process(onFormat, "Format"),
     CommonActions.clearAll(onClear),
     CommonActions.loadSample(onLoadSample),
-    CommonActions.copy(() => {}, !hasOutput),
+    CommonActions.copy(onCopy ?? (() => {}), !hasOutput || !onCopy),
   ],
 
   // For generator tools

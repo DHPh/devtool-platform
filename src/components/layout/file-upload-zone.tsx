@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 interface FileUploadZoneProps {
   onFileSelect: (content: string, fileName: string) => void;
+  onClear?: () => void;
   acceptedTypes?: string[];
   maxSizeInMB?: number;
   placeholder?: string;
@@ -17,6 +18,7 @@ interface FileUploadZoneProps {
 
 export function FileUploadZone({
   onFileSelect,
+  onClear,
   acceptedTypes = [".txt", ".json", ".csv", ".html", ".css", ".js", ".md"],
   maxSizeInMB = 5,
   placeholder = "Drag and drop a file here, or click to select",
@@ -119,6 +121,7 @@ export function FileUploadZone({
     e.stopPropagation();
     setSelectedFile(null);
     setIsLoading(false);
+    onClear?.();
   };
 
   const isPromptInteractive = !disabled && !selectedFile;
@@ -240,7 +243,7 @@ export function FileUploadZone({
         <div className="flex items-start gap-1">
           <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
           <span>
-            Upload a file or paste content directly into the input field above.
+            Upload a file or paste content directly into the editor below.
           </span>
         </div>
       </div>
