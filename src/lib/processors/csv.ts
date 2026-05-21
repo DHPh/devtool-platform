@@ -242,11 +242,26 @@ export function protectSpreadsheetCell(value: string): string {
     : value;
 }
 
+function isFiniteNegativeNumberString(value: string): boolean {
+  if (!/^-(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?$/.test(value)) {
+    return false;
+  }
+  return Number.isFinite(Number(value));
+}
+
 function serializeCell(value: unknown, delimiter: string, safeSpreadsheet: boolean): string {
-  let text = value === null || value === undefined ? "" : String(value);
-  // Numeric values are data, not formulas. Protect formula-looking strings
-  // while preserving numeric round trips such as -42.5.
-  if (safeSpreadsheet && typeof value === "string") {
+  let text: string;
+  if (value === null || value === undefined) {
+    text = "";
+  } else if (typeof value === "object") {
+    text = JSON.stringify(value) ?? String(value);
+  } else {
+    text = String(value);
+  }
+  // Numeric values (including plain negative numeric strings from un-typed CSV
+  // viewers) are data, not formulas. Protect formula-looking strings while
+  // preserving numeric round trips such as -42.5.
+  if (safeSpreadsheet && typeof value === "string" && !isFiniteNegativeNumberString(text)) {
     text = protectSpreadsheetCell(text);
   }
   return /["\r\n]/.test(text) || text.includes(delimiter) || /^\s|\s$/.test(text)

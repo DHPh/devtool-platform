@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import {
   CopyableResult,
   ToolErrorResult as ErrorResult,
   ToolSectionHeader as Header,
 } from "@/components/layout";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,12 +15,26 @@ import {
   validateTotp,
 } from "@/lib/processors/advanced-crypto-core";
 
+function subscribeSeconds(callback: () => void) {
+  const interval = window.setInterval(callback, 1000);
+  return () => window.clearInterval(interval);
+}
+
+function getTotpRemainingSeconds(): number {
+  return 30 - (Math.floor(Date.now() / 1000) % 30);
+}
+
 export function TotpTab() {
   const [secret, setSecret] = useState("");
   const [code, setCode] = useState("");
   const [candidate, setCandidate] = useState("");
   const [validation, setValidation] = useState("");
   const [error, setError] = useState("");
+  const secondsRemaining = useSyncExternalStore(
+    subscribeSeconds,
+    getTotpRemainingSeconds,
+    () => null,
+  );
 
   const codeVersion = useRef(0);
   const validationVersion = useRef(0);
@@ -81,7 +96,7 @@ export function TotpTab() {
         title="TOTP Generator and Validator"
         description="Generate a secret or enter your own Base32 secret to generate and validate SHA-1 TOTP codes locally. Clock synchronization and secure secret storage remain your responsibility."
       />
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Button type="button" onClick={newSecret}>
           Generate secret
         </Button>
@@ -93,6 +108,11 @@ export function TotpTab() {
         >
           Generate current code
         </Button>
+        {secondsRemaining !== null && (
+          <Badge variant="outline" className="font-mono" aria-live="off">
+            Period: {secondsRemaining}s remaining
+          </Badge>
+        )}
       </div>
       <CopyableResult
         value={secret}

@@ -20,9 +20,15 @@ export function CronExpressionBuilderTab() {
   const zone = timezone || "UTC";
   const localTime = useMemo(() => {
     if (!result.ok || zone === "UTC") return null;
-    return new Intl.DateTimeFormat("en-GB", {
-      timeZone: zone, dateStyle: "medium", timeStyle: "long",
-    });
+    try {
+      return new Intl.DateTimeFormat("en-GB", {
+        timeZone: zone,
+        dateStyle: "medium",
+        timeStyle: "long",
+      });
+    } catch {
+      return null;
+    }
   }, [result.ok, zone]);
 
   return (

@@ -18,6 +18,7 @@ export function SymmetricEncryptionTab() {
   const [mode, setMode] = useState<"encrypt" | "decrypt">("encrypt");
   const [input, setInput] = useState("Private message");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [result, setResult] = useState<
     Awaited<ReturnType<typeof encryptText>> | null
   >(null);
@@ -70,15 +71,31 @@ export function SymmetricEncryptionTab() {
           className="font-mono"
         />
       </label>
-      <label className="block max-w-xl space-y-2">
-        <span className="text-sm font-medium">Password</span>
-        <Input
-          type="password"
-          value={password}
-          onChange={(event) => updateInput(() => setPassword(event.target.value))}
-          autoComplete="off"
-        />
-      </label>
+      <div className="max-w-xl space-y-2">
+        <label htmlFor="symmetric-encryption-password" className="text-sm font-medium">
+          Password
+        </label>
+        <div className="flex gap-2">
+          <Input
+            id="symmetric-encryption-password"
+            type={showPassword ? "text" : "password"}
+            value={password}
+            onChange={(event) => updateInput(() => setPassword(event.target.value))}
+            placeholder="Enter a passphrase to enable encryption/decryption"
+            autoComplete="off"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setShowPassword((value) => !value)}
+          >
+            {showPassword ? "Hide" : "Show"}
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Enter a passphrase to derive the AES-256-GCM key locally. Empty passwords are disabled.
+        </p>
+      </div>
       {result?.ok ? (
         <CopyableResult
           value={result.value}

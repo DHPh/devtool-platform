@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GitCompare, Code } from "lucide-react";
 import { JsonDiffViewer } from "./components/JsonDiffViewer";
@@ -16,70 +16,86 @@ interface JsonDiffTabProps {
   input: string;
 }
 
-export function JsonDiffTab({ input }: JsonDiffTabProps) {
-  const { parsedData, stats, isValid } = useMemo<{
-    parsedData: unknown;
-    stats: JsonStats | null;
-    isValid: boolean;
-  }>(() => {
-    if (!input.trim()) {
-      return { parsedData: null, stats: null, isValid: false };
-    }
-
-    const validation = validateJson(input, { allowComments: true });
-    if (!validation.isValid) return { parsedData: null, stats: null, isValid: false };
-    try {
-      const parsed = JSON.parse(stripJsonComments(input));
-      return {
-        parsedData: parsed,
-        isValid: true,
-        stats: calculateJsonStats(parsed),
-      };
-    } catch {
-      return { parsedData: null, stats: null, isValid: false };
-    }
-  }, [input]);
-
+function parseJsonDiffTabInput(input: string): {
+  status: "empty" | "valid" | "invalid";
+  parsedData: unknown;
+  stats: JsonStats | null;
+} {
   if (!input.trim()) {
-    return (
-      <div className="space-y-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-12">
-              <GitCompare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No JSON Data</h3>
-              <p className="text-muted-foreground">
-                Enter valid JSON in the JSON input above to compare with other JSON.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return { status: "empty", parsedData: undefined, stats: null };
+  }
+  const validation = validateJson(input, { allowComments: true });
+  if (!validation.isValid) {
+    return { status: "invalid", parsedData: undefined, stats: null };
+  }
+  try {
+    const parsed = JSON.parse(stripJsonComments(input));
+    return {
+      status: "valid",
+      parsedData: parsed,
+      stats: calculateJsonStats(parsed),
+    };
+  } catch {
+    return { status: "invalid", parsedData: undefined, stats: null };
+  }
+}
+
+export function JsonDiffTab({ input }: JsonDiffTabProps) {
+  const current = useMemo(() => parseJsonDiffTabInput(input), [input]);
+  const [prevInput, setPrevInput] = useState(input);
+  const [lastValid, setLastValid] = useState<{
+    parsedData: unknown;
+    stats: JsonStats;
+  } | null>(() => {
+    const initial = parseJsonDiffTabInput(input);
+    return initial.status === "valid" && initial.stats
+      ? { parsedData: initial.parsedData, stats: initial.stats }
+      : null;
+  });
+
+  if (input !== prevInput) {
+    setPrevInput(input);
+    if (current.status === "valid" && current.stats) {
+      setLastValid({ parsedData: current.parsedData, stats: current.stats });
+    }
   }
 
-  if (!isValid) {
-    return (
-      <div className="space-y-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-12">
-              <Code className="h-12 w-12 mx-auto text-red-500 mb-4" />
-              <h3 className="text-lg font-medium mb-2 text-red-700">
-                Invalid JSON
-              </h3>
-              <p className="text-muted-foreground">
-                Fix the JSON syntax in the JSON input above before comparing with other JSON.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const parsedData =
+    current.status === "valid"
+      ? current.parsedData
+      : current.status === "invalid"
+        ? lastValid?.parsedData
+        : undefined;
+  const stats =
+    current.status === "valid"
+      ? current.stats
+      : current.status === "invalid"
+        ? lastValid?.stats ?? null
+        : null;
 
   return (
     <div className="space-y-6">
+      {current.status === "empty" && (
+        <Card className="border-dashed">
+          <CardContent className="py-4 flex items-center gap-3 text-sm text-muted-foreground">
+            <GitCompare className="h-5 w-5 shrink-0" />
+            <span>
+              No JSON data yet. Enter valid JSON in the editor above to compare against your target JSON.
+            </span>
+          </CardContent>
+        </Card>
+      )}
+      {current.status === "invalid" && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="py-4 flex items-center gap-3 text-sm text-destructive">
+            <Code className="h-5 w-5 shrink-0" />
+            <span>
+              Invalid JSON in the editor above — fix syntax to update comparison. Your comparison JSON below is preserved.
+            </span>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Header */}
       <Card>
         <CardHeader>

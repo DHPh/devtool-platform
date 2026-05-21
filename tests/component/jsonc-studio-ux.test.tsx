@@ -48,4 +48,13 @@ describe("JSONC studio UX", () => {
     expect(screen.queryByText(/Invalid JSON/i)).not.toBeInTheDocument();
     expect(screen.getAllByText(name === "JSONPath" ? "JSONPath Explorer" : name === "JSON Schema" ? "JSON Schema Validator" : "JSON Diff Viewer").length).toBeGreaterThan(0);
   });
+
+  it("preserves child diff input across temporary syntax errors in the parent JSON", () => {
+    const { rerender } = render(<JsonDiffTab input='{"a":1}' />);
+    const compareInput = screen.getByPlaceholderText("Enter JSON data to compare with the original...");
+    fireEvent.change(compareInput, { target: { value: '{"a":2}' } });
+    rerender(<JsonDiffTab input='{"a":' />);
+    expect(screen.getByText(/Invalid JSON in the editor above/i)).toBeVisible();
+    expect(screen.getByPlaceholderText("Enter JSON data to compare with the original...")).toHaveValue('{"a":2}');
+  });
 });

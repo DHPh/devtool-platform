@@ -113,4 +113,13 @@ describe("RFC 4180-style CSV processing", () => {
     expect(unsafe).toContain("=1+1");
     expect(parseCSV(unsafe).data).toEqual(rows);
   });
+
+  it("preserves stringified negative numbers and JSON-serializes nested objects", () => {
+    const rows = [
+      { amount: "-42.5", formula: "-1+1", meta: { role: "admin" } },
+    ];
+    const csv = serializeCSV(rows, ["amount", "formula", "meta"]);
+    expect(csv).toContain("-42.5,'-1+1,");
+    expect(csv).toContain('"{""role"":""admin""}"');
+  });
 });

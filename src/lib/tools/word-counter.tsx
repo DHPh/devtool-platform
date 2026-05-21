@@ -11,6 +11,11 @@ import {
 } from "@/components/layout";
 import { countText, segmentWords } from "@/lib/processors/tool-core";
 
+const SENTENCE_SEGMENTER =
+  typeof Intl !== "undefined" && "Segmenter" in Intl
+    ? new Intl.Segmenter(undefined, { granularity: "sentence" })
+    : null;
+
 export default function WordCounter() {
   const [text, setText] = useState("");
 
@@ -20,8 +25,13 @@ export default function WordCounter() {
     const { characters, words, lines, paragraphs } = counts;
     const charactersNoSpaces = counts.charactersWithoutSpaces;
 
-    const sentences = Array.from(new Intl.Segmenter(undefined, { granularity: "sentence" }).segment(text))
-      .filter(({ segment }) => segment.trim()).length;
+    const sentences = SENTENCE_SEGMENTER
+      ? Array.from(SENTENCE_SEGMENTER.segment(text)).filter(({ segment }) =>
+          segment.trim(),
+        ).length
+      : text
+          .split(/[.!?]+/)
+          .filter((part) => part.trim().length > 0).length;
 
     // Reading time estimation (average 200 words per minute)
     const readingTime = Math.ceil(words / 200);

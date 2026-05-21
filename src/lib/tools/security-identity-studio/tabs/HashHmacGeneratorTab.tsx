@@ -39,6 +39,13 @@ export function HashHmacGeneratorTab() {
     setError("");
   };
 
+  const generateRandomSecret = () => {
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    const randomHex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    updateInput(() => setSecret(randomHex));
+  };
+
   const generate = async () => {
     const request = ++revision.current;
     const result =
@@ -109,12 +116,14 @@ export function HashHmacGeneratorTab() {
           <label htmlFor="hash-hmac-secret" className="text-sm font-medium">
             Secret key
           </label>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Input
               id="hash-hmac-secret"
               type={showSecret ? "text" : "password"}
               value={secret}
               onChange={(event) => updateInput(() => setSecret(event.target.value))}
+              placeholder="Enter shared secret key"
+              className="flex-1 min-w-48 font-mono"
               autoComplete="off"
             />
             <Button
@@ -123,6 +132,13 @@ export function HashHmacGeneratorTab() {
               onClick={() => setShowSecret((value) => !value)}
             >
               {showSecret ? "Hide" : "Show"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={generateRandomSecret}
+            >
+              Generate random secret
             </Button>
           </div>
           <p className="text-sm text-muted-foreground">

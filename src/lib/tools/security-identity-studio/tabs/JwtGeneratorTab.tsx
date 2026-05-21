@@ -244,7 +244,7 @@ export function JwtGeneratorTab() {
       </div>
       <AsyncActionButton
         pending={generatingKey}
-        pendingLabel="Generating keyâ€¦"
+        pendingLabel="Generating key…"
         variant="outline"
         onClick={() => void generateKey()}
       >
@@ -266,6 +266,7 @@ export function JwtGeneratorTab() {
               onChange={(event) =>
                 updateInput(() => setKey(event.target.value))
               }
+              placeholder="Enter a signing secret or click Generate secure test key"
               className="font-mono"
               autoComplete="off"
             />
@@ -311,7 +312,7 @@ export function JwtGeneratorTab() {
       <AsyncActionButton
         pending={working}
         disabled={!key.trim() || generatingKey}
-        pendingLabel="Generating JWTâ€¦"
+        pendingLabel="Generating JWT…"
         onClick={() => void sign()}
       >
         Generate signed JWT

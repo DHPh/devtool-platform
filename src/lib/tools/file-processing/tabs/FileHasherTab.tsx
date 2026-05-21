@@ -32,6 +32,8 @@ import {
   Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   formatFileSize,
   type FileHashAlgorithm,
@@ -64,34 +66,60 @@ function VerifyChecksum() {
   const [file, setFile] = useState<File | null>(null);
   const [expected, setExpected] = useState("");
   const [message, setMessage] = useState("");
+  const [statusKind, setStatusKind] = useState<"idle" | "match" | "mismatch" | "error">("idle");
   const [checking, setChecking] = useState(false);
+  const verifyInputRef = useRef<HTMLInputElement>(null);
   const revision = useRef(0);
 
   function resetResult() {
     revision.current++;
     setChecking(false);
     setMessage("");
+    setStatusKind("idle");
+  }
+
+  function applyDroppedFile(files: FileList | null) {
+    const nextFile = files?.[0] ?? null;
+    if (!nextFile) return;
+    resetResult();
+    setFile(nextFile);
   }
 
   async function verify() {
     if (!file) return;
-    const value = expected.trim().toLowerCase();
+    const rawExpected = expected.trim();
+    const firstToken = rawExpected.split(/\s+/)[0] ?? "";
+    const value = firstToken.toLowerCase();
     const lengths: Record<number, FileHashAlgorithm> = { 32: "md5", 40: "sha1", 64: "sha256", 128: "sha512" };
     const algorithm = lengths[value.length];
     if (!algorithm || !/^[0-9a-f]+$/.test(value)) {
+      setStatusKind("error");
       setMessage("Enter a hexadecimal MD5, SHA-1, SHA-256 or SHA-512 checksum.");
       return;
     }
     const request = ++revision.current;
     setChecking(true);
     setMessage("");
+    setStatusKind("idle");
     try {
       const result = await hashFileInWorker(file, algorithm);
       if (request === revision.current) {
-        setMessage(result.ok ? (result.value.toLowerCase() === value ? "Checksums match." : "Checksums do not match.") : result.error);
+        if (!result.ok) {
+          setStatusKind("error");
+          setMessage(result.error);
+        } else if (result.value.toLowerCase() === value) {
+          setStatusKind("match");
+          setMessage("Checksums match.");
+        } else {
+          setStatusKind("mismatch");
+          setMessage("Checksums do not match.");
+        }
       }
     } catch {
-      if (request === revision.current) setMessage("Could not read or hash the file.");
+      if (request === revision.current) {
+        setStatusKind("error");
+        setMessage("Could not read or hash the file.");
+      }
     } finally {
       if (request === revision.current) setChecking(false);
     }
@@ -99,16 +127,69 @@ function VerifyChecksum() {
 
   return (
     <div className="space-y-4">
-      <label className="block">File to verify
-        <input className="block" type="file" onChange={(event) => { resetResult(); setFile(event.target.files?.[0] ?? null); }} />
-      </label>
-      <label className="block">Expected checksum
-        <input className="block w-full rounded border bg-background p-2 font-mono" value={expected} onChange={(event) => { resetResult(); setExpected(event.target.value); }} />
-      </label>
+      <div className="space-y-2">
+        <Label htmlFor="verify-checksum-file">File to verify</Label>
+        <div
+          className={cn(
+            "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
+            "hover:border-primary/50 hover:bg-primary/5",
+            file && "border-primary/40 bg-primary/5",
+          )}
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={(event) => applyDroppedFile(readDroppedFiles(event))}
+          onClick={() => verifyInputRef.current?.click()}
+          role="button"
+          tabIndex={0}
+          aria-label="Choose file to verify checksum"
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              verifyInputRef.current?.click();
+            }
+          }}
+        >
+          <Upload className="h-7 w-7 mx-auto mb-2 text-muted-foreground" />
+          <p className="text-sm font-medium">
+            {file ? `${file.name} (${formatFileSize(file.size)})` : "Click to choose or drag and drop a file"}
+          </p>
+        </div>
+        <Input
+          id="verify-checksum-file"
+          ref={verifyInputRef}
+          type="file"
+          onChange={(event) => {
+            resetResult();
+            setFile(event.target.files?.[0] ?? null);
+            event.target.value = "";
+          }}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="verify-checksum-expected">Expected checksum</Label>
+        <Input
+          id="verify-checksum-expected"
+          className="font-mono"
+          placeholder="Paste MD5, SHA-1, SHA-256, SHA-512 hash or sha256sum line"
+          value={expected}
+          onChange={(event) => {
+            resetResult();
+            setExpected(event.target.value);
+          }}
+        />
+      </div>
       <Button disabled={!file || !expected.trim() || checking} onClick={() => void verify()}>
         {checking ? "Verifying..." : "Verify checksum"}
       </Button>
-      <p role="status">{message}</p>
+      <p
+        role="status"
+        className={cn(
+          "text-sm font-medium min-h-5",
+          statusKind === "match" && "text-green-600 dark:text-green-400",
+          (statusKind === "mismatch" || statusKind === "error") && "text-destructive",
+        )}
+      >
+        {message}
+      </p>
     </div>
   );
 }
@@ -192,11 +273,13 @@ export default function FileHasherTab() {
     setProgress(0);
   };
 
+  const needsHashing = (file: HashedFile) =>
+    selectedAlgorithms.length > 0 &&
+    selectedAlgorithms.some((algo) => !file.hashes[algo]);
+
   const hashAllFiles = async () => {
     setIsProcessing(true);
-    const filesToHash = files.filter(
-      (f) => Object.keys(f.hashes).length === 0 && !f.isHashing
-    );
+    const filesToHash = files.filter((f) => needsHashing(f) && !f.isHashing);
 
     for (let i = 0; i < filesToHash.length; i++) {
       await hashFile(filesToHash[i].id);
@@ -337,7 +420,10 @@ export default function FileHasherTab() {
                       ref={fileInputRef}
                       type="file"
                       multiple
-                      onChange={(e) => handleFileSelect(e.target.files)}
+                      onChange={(e) => {
+                        void handleFileSelect(e.target.files);
+                        e.target.value = "";
+                      }}
                       className="hidden"
                     />
                   </div>
@@ -370,7 +456,7 @@ export default function FileHasherTab() {
                           <p className="text-2xl font-bold text-green-600">
                             {
                               files.filter(
-                                (f) => Object.keys(f.hashes).length > 0
+                                (f) => Object.keys(f.hashes).length > 0 && !needsHashing(f)
                               ).length
                             }
                           </p>
@@ -392,9 +478,7 @@ export default function FileHasherTab() {
                           <p className="text-2xl font-bold text-gray-600">
                             {
                               files.filter(
-                                (f) =>
-                                  Object.keys(f.hashes).length === 0 &&
-                                  !f.isHashing
+                                (f) => needsHashing(f) && !f.isHashing
                               ).length
                             }
                           </p>
@@ -456,17 +540,16 @@ export default function FileHasherTab() {
                             </div>
                           </div>
                           <div className="flex items-center space-x-2">
-                            {!file.isHashing &&
-                              Object.keys(file.hashes).length === 0 && (
-                                <Button
-                                  size="sm"
-                                  onClick={() => hashFile(file.id)}
-                                  disabled={selectedAlgorithms.length === 0}
-                                >
-                                  <Hash className="h-4 w-4 mr-1" />
-                                  Hash
-                                </Button>
-                              )}
+                            {!file.isHashing && needsHashing(file) && (
+                              <Button
+                                size="sm"
+                                onClick={() => hashFile(file.id)}
+                                disabled={selectedAlgorithms.length === 0}
+                              >
+                                <Hash className="h-4 w-4 mr-1" />
+                                {Object.keys(file.hashes).length > 0 ? "Re-hash" : "Hash"}
+                              </Button>
+                            )}
                             {Object.keys(file.hashes).length > 0 && (
                               <Tooltip>
                                 <TooltipTrigger asChild>

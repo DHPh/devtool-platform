@@ -14,10 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Shield, Clock, AlertCircle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
-import {
-  SCAN_PROFILES,
-  SUPPORTED_SCAN_PROFILES,
-} from "@/lib/utils/network/network-monitor";
+import { SUPPORTED_SCAN_PROFILES } from "@/lib/utils/network/network-monitor";
 import {
   serverPortScan,
   type ServerPortScanResult,
@@ -117,7 +114,7 @@ export function PortScanner() {
           {selectedProfile && (
             <div className="text-sm text-muted-foreground">
               {
-                Object.values(SCAN_PROFILES).find(
+                availableProfiles.find(
                   (p) => p.name === selectedProfile
                 )?.description
               }

@@ -176,10 +176,25 @@ export function SerializationTool({ tool }: { tool: SerializationToolId }) {
   const handleDirectionChange = (nextDirection: ConversionDirection) => {
     directionDrafts.current[direction] = input;
     const nextDraft = directionDrafts.current[nextDirection];
-    const convertedOutput = "ok" in result && result.ok && "output" in result
-      ? result.output
-      : undefined;
-    setInput(nextDraft ?? convertedOutput ?? input);
+    const trimmed = input.trim();
+    const looksLikeJsonForCsv =
+      tool === "csv-json-converter" &&
+      direction === "csv-to-json" &&
+      nextDirection === "json-to-csv" &&
+      (trimmed.startsWith("[") || trimmed.startsWith("{")) &&
+      (() => {
+        try {
+          JSON.parse(trimmed);
+          return true;
+        } catch {
+          return false;
+        }
+      })();
+    const convertedOutput =
+      "ok" in result && result.ok && "output" in result
+        ? result.output
+        : undefined;
+    setInput(nextDraft ?? (looksLikeJsonForCsv ? input : convertedOutput ?? input));
     setDirection(nextDirection);
   };
 

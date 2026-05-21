@@ -45,7 +45,7 @@ export function JsonFormatterTab({
   // Format options
   const [indentSize, setIndentSize] = useState(2);
   const [sortKeys, setSortKeys] = useState(false);
-  const [removeComments, setRemoveComments] = useState(false);
+  const [removeComments, setRemoveComments] = useState(true);
 
   const formatJson_handler = async () => {
     if (!input.trim()) {
@@ -173,7 +173,7 @@ export function JsonFormatterTab({
                   onCheckedChange={setRemoveComments}
                 />
                 <Label htmlFor="remove-comments" className="text-sm">
-                  Remove comments
+                  Allow / strip JSONC comments
                 </Label>
               </div>
             </div>

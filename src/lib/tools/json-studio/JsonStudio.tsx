@@ -25,12 +25,18 @@ function JsonStudioContent({
   const [input, setInput] = useState("");
   const validation = useMemo(() => {
     if (!input.trim()) {
-      return { isValid: false, error: null };
+      return { isValid: false, error: null, lineNumber: undefined, columnNumber: undefined, suggestion: undefined };
     }
     const result = validateJson(input, { allowComments: true });
-    return { isValid: result.isValid, error: result.error || null };
+    return {
+      isValid: result.isValid,
+      error: result.error || null,
+      lineNumber: result.lineNumber,
+      columnNumber: result.columnNumber,
+      suggestion: result.suggestion,
+    };
   }, [input]);
-  const { isValid, error } = validation;
+  const { isValid, error, lineNumber, columnNumber, suggestion } = validation;
 
   // Handle file upload
   const handleFileSelect = (content: string) => {
@@ -158,10 +164,21 @@ function JsonStudioContent({
                   <span>Valid JSON / JSONC</span>
                 </div>
               ) : (
-                <div className="flex items-center gap-1 text-red-600">
+                <div className="flex flex-wrap items-center gap-1 text-red-600">
                   <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                   <span>Invalid JSON</span>
+                  {lineNumber ? (
+                    <span className="text-xs font-mono">
+                      (line {lineNumber}
+                      {columnNumber ? `, col ${columnNumber}` : ""})
+                    </span>
+                  ) : null}
                   {error && <span className="text-xs">- {error}</span>}
+                  {suggestion && (
+                    <span className="text-xs text-muted-foreground">
+                      · {suggestion}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
