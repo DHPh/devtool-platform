@@ -14,14 +14,20 @@ import { Search } from "lucide-react";
 import { RegexPatternLibrary } from "../components";
 
 interface RegexLibraryTabProps {
-  onPatternSelect?: (pattern: string) => void;
+  onPatternSelect?: (
+    pattern: string,
+    meta?: { flags?: string; example?: string; targetTab?: "tester" | "replace" },
+  ) => void;
 }
 
 export function RegexLibraryTab({ onPatternSelect }: RegexLibraryTabProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
-  const handlePatternSelect = (pattern: string) => {
-    onPatternSelect?.(pattern);
+  const handlePatternSelect = (
+    pattern: string,
+    meta?: { flags?: string; example?: string; targetTab?: "tester" | "replace" },
+  ) => {
+    onPatternSelect?.(pattern, meta);
   };
 
   return (
@@ -58,6 +64,7 @@ export function RegexLibraryTab({ onPatternSelect }: RegexLibraryTabProps) {
           <RegexPatternLibrary
             onPatternSelect={handlePatternSelect}
             searchQuery={searchQuery}
+            showReplaceAction
           />
         </CardContent>
       </Card>

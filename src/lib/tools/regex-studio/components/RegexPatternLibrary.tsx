@@ -16,20 +16,32 @@ import { REGEX_PATTERNS } from "@/lib/utils/regex/regex-patterns";
 import { RegexPattern } from "@/lib/utils/regex/regex-tester";
 
 interface RegexPatternLibraryProps {
-  onPatternSelect: (pattern: string) => void;
+  onPatternSelect: (
+    pattern: string,
+    meta?: { flags?: string; example?: string; targetTab?: "tester" | "replace" },
+  ) => void;
   searchQuery?: string;
+  showReplaceAction?: boolean;
 }
 
 export function RegexPatternLibrary({
   onPatternSelect,
   searchQuery = "",
+  showReplaceAction = false,
 }: RegexPatternLibraryProps) {
   const handleCopyPattern = (pattern: string) => {
     void copyToClipboard(pattern, "Pattern copied to clipboard!");
   };
 
-  const handleSelectPattern = (pattern: string) => {
-    onPatternSelect(pattern);
+  const handleSelectPattern = (
+    pattern: RegexPattern,
+    targetTab: "tester" | "replace" = "tester",
+  ) => {
+    onPatternSelect(pattern.pattern, {
+      flags: pattern.flags,
+      example: pattern.example,
+      targetTab,
+    });
   };
 
   const filteredPatterns = React.useMemo(() => {
@@ -72,11 +84,21 @@ export function RegexPatternLibrary({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handleSelectPattern(pattern.pattern)}
+              onClick={() => handleSelectPattern(pattern, "tester")}
               className="h-8 px-2 text-xs"
             >
               Use
             </Button>
+            {showReplaceAction && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSelectPattern(pattern, "replace")}
+                className="h-8 px-2 text-xs"
+              >
+                Replace
+              </Button>
+            )}
           </div>
         </div>
         <CardDescription className="text-sm">

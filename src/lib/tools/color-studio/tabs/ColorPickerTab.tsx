@@ -4,9 +4,22 @@ import React, { useState } from "react";
 import { ColorDisplay, ColorPicker } from "../components";
 import { getColorInfo } from "@/lib/utils/color";
 
-export function ColorPickerTab() {
-  const [selectedColor, setSelectedColor] = useState("#ff0000");
+interface ColorPickerTabProps {
+  sharedColor?: string;
+  onSharedColorChange?: (color: string) => void;
+}
+
+export function ColorPickerTab({
+  sharedColor,
+  onSharedColorChange,
+}: ColorPickerTabProps = {}) {
+  const [selectedColor, setSelectedColor] = useState(sharedColor || "#ff0000");
   const colorInfo = getColorInfo(selectedColor);
+
+  const updateColor = (nextColor: string) => {
+    setSelectedColor(nextColor);
+    onSharedColorChange?.(nextColor);
+  };
 
   return (
     <div className="space-y-6">
@@ -23,7 +36,7 @@ export function ColorPickerTab() {
           <h3 className="text-lg font-semibold">Interactive Picker</h3>
           <ColorPicker
             value={selectedColor}
-            onChange={setSelectedColor}
+            onChange={updateColor}
             showPresets={true}
           />
         </div>
@@ -32,7 +45,7 @@ export function ColorPickerTab() {
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Color Preview</h3>
           {colorInfo && (
-            <ColorDisplay color={colorInfo} onChange={setSelectedColor} />
+            <ColorDisplay color={colorInfo} onChange={updateColor} />
           )}
         </div>
       </div>

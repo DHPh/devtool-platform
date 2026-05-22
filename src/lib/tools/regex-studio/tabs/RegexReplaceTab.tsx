@@ -18,6 +18,7 @@ import {
   testRegex,
   RegexFlags,
   flagsToString,
+  stringToFlags,
 } from "@/lib/utils/regex/regex-tester";
 import { regexReplace } from "@/lib/utils/regex/regex-replace";
 import { runRegexReplaceWithTimeout } from "@/lib/workers/compute-client";
@@ -33,6 +34,14 @@ interface RegexReplaceTabProps {
   initialText?: string;
   initialReplacement?: string;
   initialFlags?: RegexFlags;
+  pattern?: string;
+  onPatternChange?: (pattern: string) => void;
+  text?: string;
+  onTextChange?: (text: string) => void;
+  replacement?: string;
+  onReplacementChange?: (replacement: string) => void;
+  flags?: RegexFlags;
+  onFlagsChange?: (flags: RegexFlags) => void;
 }
 
 export function RegexReplaceTab({
@@ -40,11 +49,19 @@ export function RegexReplaceTab({
   initialText = "",
   initialReplacement = "",
   initialFlags,
+  pattern: controlledPattern,
+  onPatternChange,
+  text: controlledText,
+  onTextChange,
+  replacement: controlledReplacement,
+  onReplacementChange,
+  flags: controlledFlags,
+  onFlagsChange,
 }: RegexReplaceTabProps) {
-  const [pattern, setPattern] = useState(initialPattern);
-  const [inputText, setInputText] = useState(initialText);
-  const [replacement, setReplacement] = useState(initialReplacement);
-  const [flags, setFlags] = useState<RegexFlags>(
+  const [localPattern, setLocalPattern] = useState(initialPattern);
+  const [localText, setLocalText] = useState(initialText);
+  const [localReplacement, setLocalReplacement] = useState(initialReplacement);
+  const [localFlags, setLocalFlags] = useState<RegexFlags>(
     initialFlags || {
       global: true,
       ignoreCase: false,
@@ -54,6 +71,15 @@ export function RegexReplaceTab({
       sticky: false,
     }
   );
+  const pattern = controlledPattern ?? localPattern;
+  const setPattern = onPatternChange ?? setLocalPattern;
+  const inputText = controlledText ?? localText;
+  const setInputText = onTextChange ?? setLocalText;
+  const replacement = controlledReplacement ?? localReplacement;
+  const setReplacement = onReplacementChange ?? setLocalReplacement;
+  const flags = controlledFlags ?? localFlags;
+  const setFlags = onFlagsChange ?? setLocalFlags;
+
   const [showPatternLibrary, setShowPatternLibrary] = useState(false);
   const [patternSearch, setPatternSearch] = useState("");
   const [workerOutcome, setWorkerOutcome] = useState<{
@@ -62,7 +88,17 @@ export function RegexReplaceTab({
   } | null>(null);
 
   const flagString = flagsToString(flags);
-  const hasInputs = Boolean(pattern && inputText);
+  const patternSyntaxError = useMemo(() => {
+    if (!pattern) return null;
+    try {
+      new RegExp(pattern, flagString);
+      return null;
+    } catch (error) {
+      return error instanceof Error ? error.message : "Invalid regular expression";
+    }
+  }, [flagString, pattern]);
+
+  const hasInputs = Boolean(pattern && inputText && !patternSyntaxError);
   const workerAvailable = typeof Worker === "function";
   const requestKey = `${pattern}\0${inputText}\0${replacement}\0${flagString}`;
 
@@ -142,16 +178,32 @@ export function RegexReplaceTab({
     }
   }, [flagString, hasInputs, inputText, pattern, replacement, workerAvailable]);
 
-  const replaceResult: RegexReplaceOutcome = !hasInputs
-    ? { result: inputText, replacementCount: 0, isValid: true }
-    : workerAvailable
-      ? workerOutcome?.key === requestKey
-        ? workerOutcome.outcome
-        : { result: inputText, replacementCount: 0, isValid: true }
-      : syncReplaceResult;
+  const replaceResult: RegexReplaceOutcome = patternSyntaxError
+    ? {
+        result: inputText,
+        replacementCount: 0,
+        isValid: false,
+        error: patternSyntaxError,
+      }
+    : !hasInputs
+      ? { result: inputText, replacementCount: 0, isValid: true }
+      : workerAvailable
+        ? workerOutcome?.key === requestKey
+          ? workerOutcome.outcome
+          : { result: inputText, replacementCount: 0, isValid: true }
+        : syncReplaceResult;
 
-  const handlePatternSelect = (selectedPattern: string) => {
+  const handlePatternSelect = (
+    selectedPattern: string,
+    meta?: { flags?: string; example?: string },
+  ) => {
     setPattern(selectedPattern);
+    if (meta?.flags) {
+      setFlags(stringToFlags(meta.flags));
+    }
+    if (meta?.example && !inputText.trim()) {
+      setInputText(meta.example);
+    }
     setShowPatternLibrary(false);
   };
 

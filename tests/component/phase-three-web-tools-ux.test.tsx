@@ -2,7 +2,7 @@
 
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CssClampCalculatorTab as CssClampCalculatorTool } from "@/lib/tools/web-development-studio/tabs/CssClampCalculatorTab";
 import { CssUnitConverterTab as CssUnitConverterTool } from "@/lib/tools/web-development-studio/tabs/CssUnitConverterTab";
 import { JavaScriptFormatterTab as JavaScriptFormatterTool } from "@/lib/tools/web-development-studio/tabs/JavaScriptFormatterTab";
@@ -10,7 +10,21 @@ import { OpenGraphGeneratorTab as OpenGraphGeneratorTool } from "@/lib/tools/web
 import { SvgDataUriConverterTab as SvgDataUriConverterTool } from "@/lib/tools/web-development-studio/tabs/SvgDataUriConverterTab";
 import { WebManifestGeneratorTab as WebManifestGeneratorTool } from "@/lib/tools/web-development-studio/tabs/WebManifestGeneratorTab";
 
-afterEach(cleanup);
+beforeEach(() => {
+  vi.stubGlobal(
+    "ResizeObserver",
+    class ResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+});
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe("Phase 3 web-tool UX", () => {
   it("formats source and exposes its copy action", async () => {

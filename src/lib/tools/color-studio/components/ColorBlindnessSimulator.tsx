@@ -86,12 +86,27 @@ const SAMPLE_COLORS = [
 
 const initialColor = "#ff0000";
 
-export function ColorBlindnessSimulator() {
-  const [inputColor, setInputColor] = useState(initialColor);
-  const [pickedColor, setPickedColor] = useState(initialColor);
+interface ColorBlindnessSimulatorProps {
+  sharedColor?: string;
+  onSharedColorChange?: (color: string) => void;
+}
+
+export function ColorBlindnessSimulator({
+  sharedColor,
+  onSharedColorChange,
+}: ColorBlindnessSimulatorProps = {}) {
+  const seedColor = sharedColor || initialColor;
+  const [inputColor, setInputColor] = useState(seedColor);
+  const [pickedColor, setPickedColor] = useState(seedColor);
   const [selectedType, setSelectedType] =
     useState<ColorBlindnessType>("deuteranomaly");
   const [showColorPicker, setShowColorPicker] = useState(false);
+
+  const updateInputColor = (color: string) => {
+    setInputColor(color);
+    setPickedColor(color);
+    onSharedColorChange?.(color);
+  };
 
   const simulateColor = (color: string, type: ColorBlindnessType) => {
     try {
@@ -141,6 +156,7 @@ export function ColorBlindnessSimulator() {
                 onChange={(e) => {
                   if (getColorInfo(e.target.value)) {
                     setInputColor(e.target.value);
+                    onSharedColorChange?.(e.target.value);
                   }
                   setPickedColor(e.target.value);
                 }}
@@ -156,10 +172,7 @@ export function ColorBlindnessSimulator() {
           {showColorPicker && (
             <ColorPicker
               value={inputColor}
-              onChange={(value) => {
-                setInputColor(value);
-                setPickedColor(value);
-              }}
+              onChange={updateInputColor}
             />
           )}
         </CardContent>

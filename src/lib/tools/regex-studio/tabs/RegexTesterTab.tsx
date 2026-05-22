@@ -19,6 +19,7 @@ import {
   RegexMatch,
   RegexTestResult,
   flagsToString,
+  stringToFlags,
 } from "@/lib/utils/regex/regex-tester";
 import { runRegexTestWithTimeout } from "@/lib/workers/compute-client";
 import {
@@ -32,6 +33,12 @@ interface RegexTesterTabProps {
   initialPattern?: string;
   initialText?: string;
   initialFlags?: RegexFlags;
+  pattern?: string;
+  onPatternChange?: (pattern: string) => void;
+  text?: string;
+  onTextChange?: (text: string) => void;
+  flags?: RegexFlags;
+  onFlagsChange?: (flags: RegexFlags) => void;
 }
 
 const EMPTY_TEST_RESULT: RegexTestResult = {
@@ -45,11 +52,17 @@ export function RegexTesterTab({
   initialPattern = "",
   initialText = "",
   initialFlags,
+  pattern: controlledPattern,
+  onPatternChange,
+  text: controlledText,
+  onTextChange,
+  flags: controlledFlags,
+  onFlagsChange,
 }: RegexTesterTabProps) {
-  const [pattern, setPattern] = useState(initialPattern);
+  const [localPattern, setLocalPattern] = useState(initialPattern);
   const textInput = React.useRef<HTMLTextAreaElement>(null);
-  const [testText, setTestText] = useState(initialText);
-  const [flags, setFlags] = useState<RegexFlags>(
+  const [localText, setLocalText] = useState(initialText);
+  const [localFlags, setLocalFlags] = useState<RegexFlags>(
     initialFlags || {
       global: true,
       ignoreCase: false,
@@ -59,6 +72,14 @@ export function RegexTesterTab({
       sticky: false,
     }
   );
+  const pattern = controlledPattern ?? localPattern;
+  const setPattern = onPatternChange ?? setLocalPattern;
+  const testText = controlledText ?? localText;
+  const setTestText = onTextChange ?? setLocalText;
+  const flags = controlledFlags ?? localFlags;
+  const setFlags = onFlagsChange ?? setLocalFlags;
+
+  const [activeMatchIndex, setActiveMatchIndex] = useState<number | null>(null);
   const [showPatternLibrary, setShowPatternLibrary] = useState(false);
   const [patternSearch, setPatternSearch] = useState("");
   const [workerOutcome, setWorkerOutcome] = useState<{
@@ -67,7 +88,17 @@ export function RegexTesterTab({
   } | null>(null);
 
   const flagString = flagsToString(flags);
-  const hasInputs = Boolean(pattern && testText);
+  const patternSyntaxError = useMemo(() => {
+    if (!pattern) return null;
+    try {
+      new RegExp(pattern, flagString);
+      return null;
+    } catch (error) {
+      return error instanceof Error ? error.message : "Invalid regular expression";
+    }
+  }, [flagString, pattern]);
+
+  const hasInputs = Boolean(pattern && testText && !patternSyntaxError);
   const workerAvailable = typeof Worker === "function";
   const requestKey = `${pattern}\0${testText}\0${flagString}`;
 
@@ -117,20 +148,42 @@ export function RegexTesterTab({
     }
   }, [flagString, hasInputs, pattern, testText, workerAvailable]);
 
-  const testResult: RegexTestResult = !hasInputs
-    ? EMPTY_TEST_RESULT
-    : workerAvailable
-      ? workerOutcome?.key === requestKey
-        ? workerOutcome.result
-        : EMPTY_TEST_RESULT
-      : syncTestResult;
+  const testResult: RegexTestResult = patternSyntaxError
+    ? {
+        isValid: false,
+        matches: [],
+        totalMatches: 0,
+        executionTime: 0,
+        error: patternSyntaxError,
+      }
+    : !hasInputs
+      ? EMPTY_TEST_RESULT
+      : workerAvailable
+        ? workerOutcome?.key === requestKey
+          ? workerOutcome.result
+          : EMPTY_TEST_RESULT
+        : syncTestResult;
 
-  const handlePatternSelect = (selectedPattern: string) => {
+  const handlePatternSelect = (
+    selectedPattern: string,
+    meta?: { flags?: string; example?: string },
+  ) => {
     setPattern(selectedPattern);
+    if (meta?.flags) {
+      setFlags(stringToFlags(meta.flags));
+    }
+    if (meta?.example && !testText.trim()) {
+      setTestText(meta.example);
+    }
+    setActiveMatchIndex(null);
     setShowPatternLibrary(false);
   };
 
   const handleHighlightMatch = (match: RegexMatch) => {
+    const idx = testResult.matches.findIndex(
+      (item) => item.index === match.index && item.length === match.length,
+    );
+    setActiveMatchIndex(idx >= 0 ? idx : null);
     textInput.current?.focus();
     textInput.current?.setSelectionRange(match.index, match.index + match.length);
   };
@@ -244,6 +297,7 @@ export function RegexTesterTab({
                 <RegexMatchHighlighter
                   text={testText}
                   matches={testResult.matches}
+                  activeMatchIndex={activeMatchIndex}
                 />
               </div>
             ) : (

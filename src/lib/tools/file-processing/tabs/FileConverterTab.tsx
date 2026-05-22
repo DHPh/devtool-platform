@@ -120,7 +120,7 @@ export default function FileConverterTab() {
               <Upload className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
               <p className="text-lg font-medium">Upload Files</p>
               <p className="text-sm text-muted-foreground">JPEG, PNG, WebP, TXT, or JSON</p>
-              <input ref={fileInputRef} type="file" multiple accept="image/jpeg,image/png,image/webp,text/plain,application/json,.txt,.json" onChange={(event) => handleFileSelect(event.target.files)} className="hidden" />
+              <input ref={fileInputRef} type="file" multiple accept="image/jpeg,image/png,image/webp,text/plain,application/json,.txt,.json" onChange={(event) => { handleFileSelect(event.target.files); event.target.value = ""; }} className="hidden" />
             </div>
             {files.some((file) => file.status === "pending") && <Button onClick={convertAllFiles} disabled={isProcessing} className="w-full">{isProcessing ? "Converting..." : "Convert All Files"}</Button>}
           </CardContent>

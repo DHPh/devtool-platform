@@ -10,23 +10,20 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Settings, RefreshCw } from "lucide-react";
+import { Settings } from "lucide-react";
 import { PasswordOptions } from "@/lib/utils/password";
 
 interface PasswordGeneratorControlsProps {
   options: PasswordOptions;
   onOptionsChange: (options: PasswordOptions) => void;
-  onGenerate: () => void;
+  onGenerate?: () => void;
   isGenerating?: boolean;
 }
 
 export function PasswordGeneratorControls({
   options,
   onOptionsChange,
-  onGenerate,
-  isGenerating = false,
 }: PasswordGeneratorControlsProps) {
   const handleOptionChange = (
     key: keyof PasswordOptions,
@@ -41,21 +38,9 @@ export function PasswordGeneratorControls({
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            <CardTitle className="text-lg">Generator Settings</CardTitle>
-          </div>
-          <Button
-            onClick={onGenerate}
-            disabled={isGenerating}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw
-              className={`h-4 w-4 ${isGenerating ? "animate-spin" : ""}`}
-            />
-            Generate
-          </Button>
+        <div className="flex items-center gap-2">
+          <Settings className="h-5 w-5" />
+          <CardTitle className="text-lg">Generator Settings</CardTitle>
         </div>
         <CardDescription>
           Customize your password generation options

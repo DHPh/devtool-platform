@@ -38,6 +38,7 @@ export function SqlQueryBuilderTab() {
   const [operator, setOperator] = useState<SqlCondition["operator"]>("=");
   const [conditionValue, setConditionValue] = useState("true");
   const [orderBy, setOrderBy] = useState("name");
+  const [sortDirection, setSortDirection] = useState<"ASC" | "DESC">("ASC");
   const [limit, setLimit] = useState("25");
 
   const result = useMemo(
@@ -49,6 +50,7 @@ export function SqlQueryBuilderTab() {
           ? [{ column: conditionColumn, operator, value: conditionValue }]
           : [],
         orderBy: orderBy || undefined,
+        descending: sortDirection === "DESC",
         limit: limit ? Number(limit) : undefined,
       }),
     [
@@ -58,6 +60,7 @@ export function SqlQueryBuilderTab() {
       operator,
       conditionValue,
       orderBy,
+      sortDirection,
       limit,
     ],
   );
@@ -126,6 +129,21 @@ export function SqlQueryBuilderTab() {
           />
         </label>
         <label className="space-y-2">
+          <span className="text-sm font-medium">Sort direction</span>
+          <Select
+            value={sortDirection}
+            onValueChange={(value) => setSortDirection(value as "ASC" | "DESC")}
+          >
+            <SelectTrigger aria-label="Sort direction">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ASC">ASC (Ascending)</SelectItem>
+              <SelectItem value="DESC">DESC (Descending)</SelectItem>
+            </SelectContent>
+          </Select>
+        </label>
+        <label className="space-y-2">
           <span className="text-sm font-medium">Limit</span>
           <Input
             type="number"
@@ -141,6 +159,7 @@ export function SqlQueryBuilderTab() {
           value={result.value}
           label="SELECT query (escaped literals)"
           copyLabel="Copy SELECT query"
+          language="sql"
           rows={8}
         />
       ) : (

@@ -16,9 +16,42 @@ import {
 const SVG_OPTIMIZER_SAMPLE =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">\n  <!-- decorative circle -->\n  <circle cx="60" cy="60" r="48" fill="#6366f1" />\n</svg>';
 
-function CompressionStats({ result }: { result: CompressionResult }) {
+function CompressionStats({
+  originalSvg,
+  result,
+}: {
+  originalSvg: string;
+  result: CompressionResult;
+}) {
+  const originalPreview = `data:image/svg+xml,${encodeURIComponent(originalSvg)}`;
+  const optimizedPreview = `data:image/svg+xml,${encodeURIComponent(result.output)}`;
+
   return (
     <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="rounded-lg border p-3 space-y-2">
+          <span className="text-xs font-medium text-muted-foreground">Original preview</span>
+          <div className="flex h-36 items-center justify-center rounded border bg-muted/40 p-3">
+            {/* eslint-disable-next-line @next/next/no-img-element -- sandboxed SVG data URI preview */}
+            <img
+              src={originalPreview}
+              alt="Original SVG preview"
+              className="max-h-full max-w-full object-contain"
+            />
+          </div>
+        </div>
+        <div className="rounded-lg border p-3 space-y-2">
+          <span className="text-xs font-medium text-muted-foreground">Optimized preview</span>
+          <div className="flex h-36 items-center justify-center rounded border bg-muted/40 p-3">
+            {/* eslint-disable-next-line @next/next/no-img-element -- sandboxed SVG data URI preview */}
+            <img
+              src={optimizedPreview}
+              alt="Optimized SVG preview"
+              className="max-h-full max-w-full object-contain"
+            />
+          </div>
+        </div>
+      </div>
       <CopyableResult
         value={result.output}
         label="Optimized SVG"
@@ -113,7 +146,7 @@ export function SvgOptimizerTab() {
         />
       </div>
       {result?.ok ? (
-        <CompressionStats result={result.value} />
+        <CompressionStats originalSvg={input} result={result.value} />
       ) : result ? (
         <ErrorResult message={result.error} />
       ) : null}

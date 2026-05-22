@@ -19,8 +19,15 @@ import {
 } from "@/lib/utils/password";
 import { PasswordStrengthMeter, BreachCheckDisplay } from "../components";
 
-export function PasswordAnalysisTab() {
-  const [password, setPassword] = useState("");
+interface PasswordAnalysisTabProps {
+  sharedPassword?: string;
+}
+
+export function PasswordAnalysisTab({
+  sharedPassword = "",
+}: PasswordAnalysisTabProps = {}) {
+  const [password, setPassword] = useState(sharedPassword);
+  const [prevSharedPassword, setPrevSharedPassword] = useState(sharedPassword);
   const [showPassword, setShowPassword] = useState(false);
   const [breachResult, setBreachResult] = useState<BreachCheckResult | null>(
     null
@@ -28,6 +35,15 @@ export function PasswordAnalysisTab() {
   const [isCheckingBreach, setIsCheckingBreach] = useState(false);
 
   const checkVersion = useRef(0);
+
+  if (sharedPassword !== prevSharedPassword) {
+    setPrevSharedPassword(sharedPassword);
+    if (sharedPassword) {
+      setPassword(sharedPassword);
+      setIsCheckingBreach(false);
+      setBreachResult(null);
+    }
+  }
 
   // Analyze password strength in real-time
   const passwordStrength = useMemo(() => {

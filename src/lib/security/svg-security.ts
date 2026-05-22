@@ -32,13 +32,19 @@ const SAFE_ELEMENTS = new Set([
 const SAFE_ATTRIBUTES = new Set([
   "class",
   "clip-path",
+  "clip-rule",
+  "color",
   "cx",
   "cy",
   "d",
+  "display",
   "dominant-baseline",
+  "dx",
+  "dy",
   "fill",
   "fill-opacity",
   "fill-rule",
+  "focusable",
   "font-family",
   "font-size",
   "font-weight",
@@ -46,19 +52,25 @@ const SAFE_ATTRIBUTES = new Set([
   "gradientUnits",
   "height",
   "id",
+  "isolation",
+  "lengthAdjust",
   "letter-spacing",
   "marker-end",
   "marker-mid",
   "marker-start",
   "mask",
+  "mix-blend-mode",
   "offset",
   "opacity",
+  "overflow",
+  "paint-order",
   "patternContentUnits",
   "patternTransform",
   "patternUnits",
   "points",
   "preserveAspectRatio",
   "r",
+  "role",
   "rx",
   "ry",
   "shape-rendering",
@@ -74,10 +86,15 @@ const SAFE_ATTRIBUTES = new Set([
   "stroke-opacity",
   "stroke-width",
   "text-anchor",
+  "text-decoration",
+  "textLength",
   "transform",
   "vector-effect",
+  "version",
   "viewBox",
+  "visibility",
   "width",
+  "word-spacing",
   "x",
   "x1",
   "x2",
@@ -89,6 +106,7 @@ const SAFE_ATTRIBUTES = new Set([
 const LOCAL_REFERENCE_PATTERN = /^url\(\s*#[A-Za-z_][\w:.-]*\s*\)$/;
 const ACTIVE_VALUE_PATTERN =
   /(?:javascript|vbscript|data|https?|file|blob)\s*:|(?:^|[\s"'(])\/\//i;
+const SAFE_DATA_OR_ARIA_ATTR = /^(?:aria|data)-[a-z0-9-]+$/i;
 const parser = new XMLParser({
   ignoreAttributes: false,
   preserveOrder: true,
@@ -111,11 +129,23 @@ function validateAttributes(attributes: unknown): string | null {
       }
       continue;
     }
-    if (
-      name.includes(":") ||
-      /^on/i.test(name) ||
-      !SAFE_ATTRIBUTES.has(name)
-    ) {
+    if (name === "xmlns:xlink") {
+      if (value !== "http://www.w3.org/1999/xlink") {
+        return "SVG namespaces other than the standard XLink namespace are not allowed.";
+      }
+      continue;
+    }
+    if (name === "xml:space") {
+      if (value !== "preserve" && value !== "default") {
+        return `SVG attribute "${name}" has an invalid value.`;
+      }
+      continue;
+    }
+    const isAllowedName =
+      !name.includes(":") &&
+      !/^on/i.test(name) &&
+      (SAFE_ATTRIBUTES.has(name) || SAFE_DATA_OR_ARIA_ATTR.test(name));
+    if (!isAllowedName) {
       return `SVG attribute "${name}" is not allowed.`;
     }
     if (
@@ -153,12 +183,17 @@ function validateNodes(nodes: unknown): string | null {
 }
 
 export function validateSafeSvg(input: string): SvgValidationResult {
-  const normalized = input.trim();
+  const raw = input.trim();
+  if (/<!DOCTYPE|<!ENTITY|<\?xml-stylesheet/i.test(raw)) {
+    return reject("SVG document types, entities, and stylesheets are not allowed.");
+  }
+  const normalized = raw
+    .replace(/^<\?xml\s+[^?]*\?>\s*/i, "")
+    .replace(/^(?:<!--[\s\S]*?-->\s*)*/, "")
+    .replace(/(?:\s*<!--[\s\S]*?-->)*$/, "")
+    .trim();
   if (!/^<svg(?:\s|>)/.test(normalized) || !/<\/svg>\s*$/.test(normalized)) {
     return reject("Input must be a complete SVG document.");
-  }
-  if (/<!DOCTYPE|<!ENTITY|<\?xml-stylesheet/i.test(normalized)) {
-    return reject("SVG document types, entities, and stylesheets are not allowed.");
   }
 
   const validation = XMLValidator.validate(normalized);

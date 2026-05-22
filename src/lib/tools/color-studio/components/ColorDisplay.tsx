@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useId } from "react";
 import { copyToClipboard } from "@/hooks/use-clipboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +32,7 @@ const COLOR_4_FORMATS: Array<[string, CSSColorSpace]> = [
 ];
 
 export function ColorDisplay({ color, showDetails = true, onCopy, onChange }: ColorDisplayProps) {
+  const displayPickerId = useId();
   const cssColor = color.cssColor ?? parseCSSColor(color.hex)!;
   const mapped = mapCSSColorToGamut(cssColor, "srgb");
   const previewLabel = mapped.hex ?? color.hex;
@@ -78,7 +79,7 @@ export function ColorDisplay({ color, showDetails = true, onCopy, onChange }: Co
             </span>
           </div>
           {onChange && (
-            <input id="color-display-picker" aria-label="Choose display color" type="color" value={color.hex} onChange={event => onChange(event.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+            <input id={displayPickerId} aria-label="Choose display color" type="color" value={color.hex.slice(0, 7)} onChange={event => onChange(event.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
           )}
         </div>
 

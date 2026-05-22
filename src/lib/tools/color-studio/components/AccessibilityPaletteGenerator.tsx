@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { copyToClipboard } from "@/hooks/use-clipboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,8 +42,16 @@ interface CustomColor {
   color: string;
 }
 
-export function AccessibilityPaletteGenerator() {
-  const [baseColor, setBaseColor] = useState("#3b82f6");
+interface AccessibilityPaletteGeneratorProps {
+  sharedColor?: string;
+  onSharedColorChange?: (color: string) => void;
+}
+
+export function AccessibilityPaletteGenerator({
+  sharedColor,
+  onSharedColorChange,
+}: AccessibilityPaletteGeneratorProps = {}) {
+  const [baseColor, setBaseColor] = useState(sharedColor || "#3b82f6");
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [colorBlindnessType, setColorBlindnessType] =
     useState<ColorBlindnessType>("deuteranopia");
@@ -52,15 +60,6 @@ export function AccessibilityPaletteGenerator() {
   const [algorithm, setAlgorithm] = useState<
     "hue-shift" | "lightness-variation" | "saturation-variation" | "complement"
   >("hue-shift");
-  const [palette, setPalette] = useState<ColorBlindnessPalette | null>(() =>
-    generateColorBlindnessPalette({
-      colorBlindnessType: "deuteranopia",
-      baseColor: "#3b82f6",
-      colorCount: 5,
-      contrastLevel: "AA",
-      algorithm: "hue-shift",
-    })
-  );
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Custom palette management
@@ -74,38 +73,46 @@ export function AccessibilityPaletteGenerator() {
     string | null
   >(null);
 
+  const palette = useMemo<ColorBlindnessPalette | null>(() => {
+    try {
+      const options: PaletteGenerationOptions = useCustomPalette
+        ? {
+            colorBlindnessType,
+            baseColor: customColors[0]?.color || baseColor,
+            colorCount: customColors.length,
+            contrastLevel,
+            algorithm: "hue-shift",
+            customColors: customColors.map((c) => c.color),
+          }
+        : {
+            colorBlindnessType,
+            baseColor,
+            colorCount: colorCount[0],
+            contrastLevel,
+            algorithm,
+          };
+      return generateColorBlindnessPalette(options);
+    } catch {
+      return null;
+    }
+  }, [
+    useCustomPalette,
+    customColors,
+    colorBlindnessType,
+    baseColor,
+    colorCount,
+    contrastLevel,
+    algorithm,
+  ]);
+
   const generatePalette = () => {
     setIsGenerating(true);
     try {
-      let generatedPalette: ColorBlindnessPalette;
-
-      if (useCustomPalette) {
-        // Use custom colors for palette generation
-        const options: PaletteGenerationOptions = {
-          colorBlindnessType,
-          baseColor: customColors[0]?.color || baseColor,
-          colorCount: customColors.length,
-          contrastLevel,
-          algorithm: "hue-shift", // Use hue-shift as default for custom colors
-          customColors: customColors.map((c) => c.color),
-        };
-        generatedPalette = generateColorBlindnessPalette(options);
+      if (!palette) {
+        toast.error("Failed to generate palette");
       } else {
-        // Use automatic generation
-        const options: PaletteGenerationOptions = {
-          colorBlindnessType,
-          baseColor,
-          colorCount: colorCount[0],
-          contrastLevel,
-          algorithm,
-        };
-        generatedPalette = generateColorBlindnessPalette(options);
+        toast.success("Accessibility palette updated");
       }
-
-      setPalette(generatedPalette);
-    } catch (error) {
-      toast.error("Failed to generate palette");
-      console.error(error);
     } finally {
       setIsGenerating(false);
     }
@@ -158,7 +165,7 @@ export function AccessibilityPaletteGenerator() {
   const addCustomColor = () => {
     const newColor: CustomColor = {
       id: Date.now().toString(),
-      color: "#" + Math.floor(Math.random() * 16777215).toString(16),
+      color: "#" + Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, "0"),
     };
     setCustomColors([...customColors, newColor]);
   };
@@ -300,7 +307,13 @@ export function AccessibilityPaletteGenerator() {
                   </div>
                 </div>
                 {showColorPicker && (
-                  <ColorPicker value={baseColor} onChange={setBaseColor} />
+                  <ColorPicker
+                    value={baseColor}
+                    onChange={(nextColor) => {
+                      setBaseColor(nextColor);
+                      onSharedColorChange?.(nextColor);
+                    }}
+                  />
                 )}
               </div>
 

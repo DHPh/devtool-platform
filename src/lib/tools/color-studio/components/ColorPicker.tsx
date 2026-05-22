@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useId, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +57,9 @@ export function ColorPicker({
   onChange,
   showPresets = true,
 }: ColorPickerProps) {
+  const nativePickerId = useId();
+  const textInputId = useId();
+  const nativePickerRef = useRef<HTMLInputElement>(null);
   const [inputState, setInputState] = useState({ source: value, draft: value });
   const inputValue = inputState.source === value ? inputState.draft : value;
   const colorInfo = getColorInfo(value);
@@ -162,18 +165,17 @@ export function ColorPicker({
       <CardContent className="space-y-6">
         {/* Color Input */}
         <div className="space-y-2">
-          <Label htmlFor="colorInput">Color Value</Label>
+          <Label htmlFor={textInputId}>Color Value</Label>
           <div className="flex gap-2">
             <div className="relative">
               <div
                 className="w-12 h-10 rounded border-2 border-border flex-shrink-0 cursor-pointer hover:border-primary transition-colors"
                 style={{ backgroundColor: mapped?.css ?? colorInfo.hex }}
-                onClick={() =>
-                  document.getElementById("color-picker-native")?.click()
-                }
+                onClick={() => nativePickerRef.current?.click()}
               />
               <input
-                id="color-picker-native"
+                ref={nativePickerRef}
+                id={nativePickerId}
                 type="color"
                 value={colorInfo.hex.slice(0, 7)}
                 onChange={(e) => handleColorChange(preserveAlpha(e.target.value))}
@@ -181,7 +183,7 @@ export function ColorPicker({
               />
             </div>
             <Input
-              id="colorInput"
+              id={textInputId}
               value={inputValue}
               onChange={(e) => handleInputChange(e.target.value)}
               placeholder="oklch(62% 0.2 30 / 0.8)"

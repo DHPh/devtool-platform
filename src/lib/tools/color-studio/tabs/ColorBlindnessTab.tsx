@@ -3,7 +3,15 @@
 import React from "react";
 import { ColorBlindnessSimulator } from "../components";
 
-export function ColorBlindnessTab() {
+interface ColorBlindnessTabProps {
+  sharedColor?: string;
+  onSharedColorChange?: (color: string) => void;
+}
+
+export function ColorBlindnessTab({
+  sharedColor,
+  onSharedColorChange,
+}: ColorBlindnessTabProps = {}) {
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -14,7 +22,10 @@ export function ColorBlindnessTab() {
         </p>
       </div>
 
-      <ColorBlindnessSimulator />
+      <ColorBlindnessSimulator
+        sharedColor={sharedColor}
+        onSharedColorChange={onSharedColorChange}
+      />
     </div>
   );
 }

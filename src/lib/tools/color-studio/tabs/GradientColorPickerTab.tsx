@@ -22,6 +22,7 @@ import {
   type Gradient,
   type GradientStop,
 } from "@/lib/utils/color/gradient-generator";
+import { ColorPicker } from "../components/ColorPicker";
 import { GradientColorStops } from "../components/GradientColorStops";
 import { rgbToHex } from "@/lib/utils/color";
 import {
@@ -43,6 +44,7 @@ export function GradientColorPickerTab() {
   );
   const [selectedPosition, setSelectedPosition] = useState(50);
   const [pickedColors, setPickedColors] = useState<ColorPickerResult[]>([]);
+  const [editingStopIndex, setEditingStopIndex] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [interpolationSpace, setInterpolationSpace] =
     useState<ColorInterpolationSpace>("srgb");
@@ -354,6 +356,9 @@ export function GradientColorPickerTab() {
         <GradientColorStops
           stops={gradient.stops}
           onStopsChange={updateGradientStops}
+          onColorPick={(index) =>
+            setEditingStopIndex(editingStopIndex === index ? null : index)
+          }
           defaultColor="#000000"
         />
 
@@ -444,6 +449,35 @@ export function GradientColorPickerTab() {
           </CardContent>
         </Card>
       </div>
+
+      {editingStopIndex !== null && gradient.stops[editingStopIndex] && (
+        <Card className="border-primary">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Pick Color for Stop {editingStopIndex + 1}</CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setEditingStopIndex(null)}
+                aria-label="Close stop color picker"
+              >
+                ×
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ColorPicker
+              value={gradient.stops[editingStopIndex].color}
+              onChange={(color) => {
+                const newStops = gradient.stops.map((stop, i) =>
+                  i === editingStopIndex ? { ...stop, color } : stop,
+                );
+                updateGradientStops(newStops);
+              }}
+            />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

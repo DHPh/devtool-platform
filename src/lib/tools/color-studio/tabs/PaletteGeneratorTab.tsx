@@ -23,12 +23,27 @@ import { getColorInfo } from "@/lib/utils/color";
 const initialColor = "#3b82f6"; // Default blue color
 type PaletteSelection = PaletteType | "oklch";
 
-export function PaletteGeneratorTab() {
-  const [baseColor, setBaseColor] = useState(initialColor);
-  const [pickedColor, setPickedColor] = useState(initialColor);
+interface PaletteGeneratorTabProps {
+  sharedColor?: string;
+  onSharedColorChange?: (color: string) => void;
+}
+
+export function PaletteGeneratorTab({
+  sharedColor,
+  onSharedColorChange,
+}: PaletteGeneratorTabProps = {}) {
+  const seedColor = sharedColor || initialColor;
+  const [baseColor, setBaseColor] = useState(seedColor);
+  const [pickedColor, setPickedColor] = useState(seedColor);
   const [paletteType, setPaletteType] =
     useState<PaletteSelection>("analogous");
   const [showColorPicker, setShowColorPicker] = useState(false);
+
+  const updateBaseColor = (nextColor: string) => {
+    setBaseColor(nextColor);
+    setPickedColor(nextColor);
+    onSharedColorChange?.(nextColor);
+  };
 
   const palette =
     paletteType === "oklch"
@@ -49,7 +64,7 @@ export function PaletteGeneratorTab() {
     const randomType =
       PALETTE_TYPES[Math.floor(Math.random() * PALETTE_TYPES.length)];
 
-    setBaseColor(randomColor);
+    updateBaseColor(randomColor);
     setPaletteType(randomType.id);
   };
 
@@ -85,9 +100,10 @@ export function PaletteGeneratorTab() {
                     value={pickedColor}
                     onChange={(e) => {
                       if (getColorInfo(e.target.value)) {
-                        setBaseColor(e.target.value);
+                        updateBaseColor(e.target.value);
+                      } else {
+                        setPickedColor(e.target.value);
                       }
-                      setPickedColor(e.target.value);
                     }}
                     className="w-full px-3 py-2 border rounded-md"
                     placeholder="#3b82f6"
@@ -142,10 +158,7 @@ export function PaletteGeneratorTab() {
             <div className="mt-4">
               <ColorPicker
                 value={baseColor}
-                onChange={(value) => {
-                  setBaseColor(value);
-                  setPickedColor(value);
-                }}
+                onChange={updateBaseColor}
               />
             </div>
           )}
@@ -153,7 +166,7 @@ export function PaletteGeneratorTab() {
       </Card>
 
       {/* Generated Palette */}
-      <PaletteDisplay palette={palette} onColorSelect={setBaseColor} />
+      <PaletteDisplay palette={palette} onColorSelect={updateBaseColor} />
     </div>
   );
 }

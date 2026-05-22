@@ -28,6 +28,12 @@ describe("HTML and SVG injection hardening", () => {
       '<defs><linearGradient id="paint"><stop offset="0" stop-color="#fff"/></linearGradient></defs>' +
       '<rect width="10" height="10" fill="url(#paint)"/></svg>';
     expect(validateSafeSvg(svg)).toEqual({ ok: true, value: svg });
+
+    const figmaSvg =
+      '<?xml version="1.0" encoding="UTF-8"?>\n' +
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" data-icon="check">' +
+      '<path clip-rule="evenodd" fill-rule="evenodd" d="M2 12l5 5L22 4"/></svg>';
+    expect(validateSafeSvg(figmaSvg).ok).toBe(true);
   });
 
   it.each([

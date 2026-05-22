@@ -5,6 +5,8 @@
 
 "use client";
 
+import { useEffect, useRef } from "react";
+
 type HighlightMatch = {
   match: string;
   index: number;
@@ -14,14 +16,26 @@ type HighlightMatch = {
 interface RegexMatchHighlighterProps {
   text: string;
   matches: HighlightMatch[];
+  activeMatchIndex?: number | null;
   className?: string;
 }
 
 export function RegexMatchHighlighter({
   text,
   matches,
+  activeMatchIndex = null,
   className = "",
 }: RegexMatchHighlighterProps) {
+  const containerRef = useRef<HTMLPreElement>(null);
+
+  useEffect(() => {
+    if (activeMatchIndex === null || activeMatchIndex === undefined) return;
+    const target = containerRef.current?.querySelector<HTMLElement>(
+      `mark[data-match="${activeMatchIndex}"]`,
+    );
+    target?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+  }, [activeMatchIndex]);
+
   if (!matches.length) {
     return <pre className={`whitespace-pre-wrap ${className}`}>{text}</pre>;
   }
@@ -40,12 +54,19 @@ export function RegexMatchHighlighter({
       );
     }
 
+    const isActive = activeMatchIndex === i;
+
     // Add highlighted match
     elements.push(
       <mark
         key={`match-${i}`}
-        className="bg-yellow-200 dark:bg-yellow-800 px-1 rounded font-medium"
+        className={
+          isActive
+            ? "bg-amber-300 dark:bg-amber-600 ring-2 ring-primary px-1 rounded font-semibold"
+            : "bg-yellow-200 dark:bg-yellow-800 px-1 rounded font-medium"
+        }
         data-match={i}
+        data-active={isActive ? "true" : undefined}
         title={`Match ${i + 1}: "${match.match}" at position ${match.index}`}
       >
         {match.match}
@@ -60,5 +81,9 @@ export function RegexMatchHighlighter({
     elements.push(<span key="text-end">{text.substring(lastIndex)}</span>);
   }
 
-  return <pre className={`whitespace-pre-wrap ${className}`}>{elements}</pre>;
+  return (
+    <pre ref={containerRef} className={`whitespace-pre-wrap ${className}`}>
+      {elements}
+    </pre>
+  );
 }

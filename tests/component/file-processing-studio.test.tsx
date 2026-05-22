@@ -6,7 +6,7 @@ import userEvent from "@testing-library/user-event";
 import { PDFDocument } from "pdf-lib";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useObjectUrls } from "@/hooks/use-object-urls";
-import { mergePdfFiles, rotatePdfPages, splitPdfPages } from "@/lib/processors/pdf-core";
+import { extractPdfPageRanges, mergePdfFiles, rotatePdfPages, splitPdfPages } from "@/lib/processors/pdf-core";
 import FileHasherTab from "@/lib/tools/file-processing/tabs/FileHasherTab";
 import FileOrganizerTab from "@/lib/tools/file-processing/tabs/FileOrganizerTab";
 import PdfToolsTab from "@/lib/tools/file-processing/tabs/PdfToolsTab";
@@ -79,6 +79,20 @@ describe("file processing hooks, processors & studio tabs", () => {
     );
     const rotatedDoc = await PDFDocument.load(rotated);
     expect(rotatedDoc.getPages()[0].getRotation().angle).toBe(90);
+
+    const rotatedAgain = await rotatePdfPages(
+      { arrayBuffer: async () => rotated.slice().buffer },
+      90,
+    );
+    const rotatedAgainDoc = await PDFDocument.load(rotatedAgain);
+    expect(rotatedAgainDoc.getPages()[0].getRotation().angle).toBe(180);
+
+    const extracted = await extractPdfPageRanges(
+      { arrayBuffer: async () => merged.slice().buffer },
+      "2",
+    );
+    const extractedDoc = await PDFDocument.load(extracted);
+    expect(extractedDoc.getPageCount()).toBe(1);
   });
 
   it("hashes uploaded files inside FileHasherTab", async () => {

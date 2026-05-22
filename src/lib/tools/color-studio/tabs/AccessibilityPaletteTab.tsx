@@ -3,7 +3,15 @@
 import React from "react";
 import { AccessibilityPaletteGenerator } from "../components";
 
-export function AccessibilityPaletteTab() {
+interface AccessibilityPaletteTabProps {
+  sharedColor?: string;
+  onSharedColorChange?: (color: string) => void;
+}
+
+export function AccessibilityPaletteTab({
+  sharedColor,
+  onSharedColorChange,
+}: AccessibilityPaletteTabProps = {}) {
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -13,7 +21,10 @@ export function AccessibilityPaletteTab() {
         </p>
       </div>
 
-      <AccessibilityPaletteGenerator />
+      <AccessibilityPaletteGenerator
+        sharedColor={sharedColor}
+        onSharedColorChange={onSharedColorChange}
+      />
     </div>
   );
 }

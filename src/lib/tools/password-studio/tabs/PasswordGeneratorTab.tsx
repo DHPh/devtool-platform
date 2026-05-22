@@ -30,15 +30,24 @@ import {
 
 interface PasswordGeneratorTabProps {
   initialOptions?: PasswordOptions;
+  onAnalyzePassword?: (password: string) => void;
 }
 
 export function PasswordGeneratorTab({
   initialOptions,
+  onAnalyzePassword,
 }: PasswordGeneratorTabProps) {
+  const resolvedInitialOptions = initialOptions || getDefaultPasswordOptions();
   const [options, setOptions] = useState<PasswordOptions>(
-    initialOptions || getDefaultPasswordOptions()
+    resolvedInitialOptions
   );
-  const [currentPassword, setCurrentPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState(() => {
+    try {
+      return generatePassword(resolvedInitialOptions);
+    } catch {
+      return "";
+    }
+  });
   const [showPassword, setShowPassword] = useState(true);
   const [generatedPasswords, setGeneratedPasswords] = useState<
     PasswordGenerationResult[]
@@ -206,7 +215,7 @@ export function PasswordGeneratorTab({
             </div>
             <Button
               onClick={handleGeneratePassword}
-              disabled={isGenerating}
+              disabled={isGenerating || !hasSelectedCharacterType}
               className="flex items-center gap-2"
             >
               <RefreshCw
@@ -214,6 +223,15 @@ export function PasswordGeneratorTab({
               />
               Generate
             </Button>
+            {onAnalyzePassword && currentPassword && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onAnalyzePassword(currentPassword)}
+              >
+                Analyze in Security Tab
+              </Button>
+            )}
           </div>
           {!hasSelectedCharacterType && (
             <p role="alert" className="text-xs text-destructive">

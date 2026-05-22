@@ -27,7 +27,7 @@ export function RegexReplacePreview({
   onCopyResult,
   onDownloadResult,
 }: RegexReplacePreviewProps) {
-  const hasChanges = originalText !== replacedText;
+  const hasChanges = replacementCount > 0 || originalText !== replacedText;
 
   return (
     <Card>

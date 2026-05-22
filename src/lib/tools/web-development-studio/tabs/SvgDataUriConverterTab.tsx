@@ -82,18 +82,45 @@ export function SvgDataUriConverterTab() {
           />
         </label>
         {result.ok ? (
-          <CopyableResult
-            value={result.value}
-            label={direction === "encode" ? "Data URI" : "SVG markup"}
-            copyLabel={
-              direction === "encode" ? "Copy data URI" : "Copy SVG markup"
-            }
-            rows={15}
-          />
+          <div className="space-y-4">
+            <CopyableResult
+              value={result.value}
+              label={direction === "encode" ? "Data URI" : "SVG markup"}
+              copyLabel={
+                direction === "encode" ? "Copy data URI" : "Copy SVG markup"
+              }
+              rows={11}
+            />
+            {direction === "encode" && (
+              <CopyableResult
+                value={`background-image: url("${result.value}");`}
+                label="CSS background-image"
+                copyLabel="Copy CSS background-image"
+                rows={3}
+              />
+            )}
+          </div>
         ) : (
           <ErrorResult message={result.error} />
         )}
       </div>
+      {result.ok && (
+        <div className="rounded-lg border p-3 space-y-2">
+          <span className="text-xs font-medium text-muted-foreground">Visual Preview</span>
+          <div className="flex h-36 items-center justify-center rounded border bg-muted/40 p-3">
+            {/* eslint-disable-next-line @next/next/no-img-element -- sandboxed SVG data URI preview */}
+            <img
+              src={
+                direction === "encode"
+                  ? result.value
+                  : `data:image/svg+xml,${encodeURIComponent(result.value)}`
+              }
+              alt="SVG preview"
+              className="max-h-full max-w-full object-contain"
+            />
+          </div>
+        </div>
+      )}
     </section>
   );
 }

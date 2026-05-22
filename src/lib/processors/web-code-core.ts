@@ -115,15 +115,52 @@ export function convertCssUnit(
   } };
 }
 
-export interface ClampResult { css: string; slope: number; intercept: number }
+export interface ClampResult {
+  css: string;
+  slope: number;
+  intercept: number;
+}
 
-export function createCssClamp(minPx: number, maxPx: number, minViewportPx: number, maxViewportPx: number): ProcessorResult<ClampResult> {
-  if (![minPx, maxPx, minViewportPx, maxViewportPx].every(Number.isFinite)) return { ok: false, error: "All clamp values must be finite numbers." };
+export function createCssClamp(
+  minPx: number,
+  maxPx: number,
+  minViewportPx: number,
+  maxViewportPx: number,
+  options: { unit?: "px" | "rem"; rootFontPx?: number } = {},
+): ProcessorResult<ClampResult> {
+  const unit = options.unit ?? "px";
+  const rootFontPx = options.rootFontPx ?? 16;
+  if (![minPx, maxPx, minViewportPx, maxViewportPx, rootFontPx].every(Number.isFinite)) {
+    return { ok: false, error: "All clamp values must be finite numbers." };
+  }
+  if (rootFontPx <= 0) {
+    return { ok: false, error: "Root font size must be greater than zero." };
+  }
   if (minPx < 0 || maxPx <= minPx) return { ok: false, error: "Maximum size must be greater than minimum size." };
   if (minViewportPx <= 0 || maxViewportPx <= minViewportPx) return { ok: false, error: "Maximum viewport must be greater than minimum viewport." };
   const slope = (maxPx - minPx) / (maxViewportPx - minViewportPx) * 100;
-  const intercept = minPx - slope * minViewportPx / 100;
-  return { ok: true, value: { slope, intercept, css: `clamp(${minPx}px, ${Number(intercept.toFixed(4))}px + ${Number(slope.toFixed(4))}vw, ${maxPx}px)` } };
+  const interceptPx = minPx - slope * minViewportPx / 100;
+  if (unit === "rem") {
+    const minRem = minPx / rootFontPx;
+    const maxRem = maxPx / rootFontPx;
+    const interceptRem = interceptPx / rootFontPx;
+    return {
+      ok: true,
+      value: {
+        slope,
+        intercept: interceptRem,
+        css: `clamp(${Number(minRem.toFixed(4))}rem, ${Number(interceptRem.toFixed(4))}rem + ${Number(slope.toFixed(4))}vw, ${Number(maxRem.toFixed(4))}rem)`,
+      },
+    };
+  }
+  return {
+    ok: true,
+    value: {
+      slope,
+      intercept: interceptPx,
+      css: `clamp(${minPx}px, ${Number(interceptPx.toFixed(4))}px + ${Number(slope.toFixed(4))}vw, ${maxPx}px)`,
+    },
+  };
 }
 
 function escapeAttribute(value: string): string {

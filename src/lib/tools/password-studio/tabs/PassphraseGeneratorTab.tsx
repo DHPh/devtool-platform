@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { copyToClipboard } from "@/hooks/use-clipboard";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
-import { RefreshCw, Copy, Eye, EyeOff, Settings } from "lucide-react";
+import { RefreshCw, Copy, Eye, EyeOff, Settings, ShieldCheck } from "lucide-react";
 import {
   generatePassphrase,
   generateMultiplePassphrases,
@@ -25,10 +26,12 @@ import {
 
 interface PassphraseGeneratorTabProps {
   initialOptions?: PassphraseOptions;
+  onAnalyzePassword?: (password: string) => void;
 }
 
 export function PassphraseGeneratorTab({
   initialOptions,
+  onAnalyzePassword,
 }: PassphraseGeneratorTabProps) {
   const [options, setOptions] = useState<PassphraseOptions>(
     initialOptions || getDefaultPassphraseOptions()
@@ -40,6 +43,7 @@ export function PassphraseGeneratorTab({
   >([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateCount, setGenerateCount] = useState(1);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const separators = getAvailableSeparators();
 
@@ -47,6 +51,7 @@ export function PassphraseGeneratorTab({
     key: keyof PassphraseOptions,
     value: boolean | number | string
   ) => {
+    setErrorMessage("");
     setOptions((prev) => ({
       ...prev,
       [key]: value,
@@ -55,6 +60,7 @@ export function PassphraseGeneratorTab({
 
   const handleGeneratePassphrase = () => {
     setIsGenerating(true);
+    setErrorMessage("");
 
     try {
       if (generateCount === 1) {
@@ -70,7 +76,12 @@ export function PassphraseGeneratorTab({
         }
       }
     } catch (error) {
-      console.error("Passphrase generation failed:", error);
+      const msg =
+        error instanceof Error
+          ? error.message
+          : "Passphrase generation failed";
+      setErrorMessage(msg);
+      toast.error(msg);
     } finally {
       setIsGenerating(false);
     }
@@ -169,7 +180,23 @@ export function PassphraseGeneratorTab({
               />
               Generate
             </Button>
+            {onAnalyzePassword && currentPassphrase && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onAnalyzePassword(currentPassphrase)}
+                className="flex items-center gap-2"
+              >
+                <ShieldCheck className="h-4 w-4" />
+                Analyze
+              </Button>
+            )}
           </div>
+          {errorMessage && (
+            <p role="alert" className="text-xs text-destructive">
+              {errorMessage}
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -239,9 +266,17 @@ export function PassphraseGeneratorTab({
                 min={3}
                 max={10}
                 value={options.minWordLength}
-                onChange={(e) =>
-                  handleOptionChange("minWordLength", parseInt(e.target.value))
-                }
+                onChange={(e) => {
+                  const parsed = parseInt(e.target.value, 10);
+                  if (Number.isNaN(parsed)) return;
+                  const nextMin = Math.max(3, Math.min(10, parsed));
+                  setErrorMessage("");
+                  setOptions((prev) => ({
+                    ...prev,
+                    minWordLength: nextMin,
+                    maxWordLength: Math.max(nextMin, prev.maxWordLength),
+                  }));
+                }}
               />
             </div>
             <div className="space-y-2">
@@ -250,11 +285,19 @@ export function PassphraseGeneratorTab({
                 id="maxWordLength"
                 type="number"
                 min={3}
-                max={15}
+                max={10}
                 value={options.maxWordLength}
-                onChange={(e) =>
-                  handleOptionChange("maxWordLength", parseInt(e.target.value))
-                }
+                onChange={(e) => {
+                  const parsed = parseInt(e.target.value, 10);
+                  if (Number.isNaN(parsed)) return;
+                  const nextMax = Math.max(3, Math.min(10, parsed));
+                  setErrorMessage("");
+                  setOptions((prev) => ({
+                    ...prev,
+                    minWordLength: Math.min(prev.minWordLength, nextMax),
+                    maxWordLength: nextMax,
+                  }));
+                }}
               />
             </div>
           </div>

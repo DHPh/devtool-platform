@@ -26,15 +26,24 @@ import { getColorInfo } from "@/lib/utils/color";
 const initialForegroundColor = "#000000"; // Default black color
 const initialBackgroundColor = "#ffffff"; // Default white color
 
-export function ContrastChecker() {
+interface ContrastCheckerProps {
+  sharedColor?: string;
+  onSharedColorChange?: (color: string) => void;
+}
+
+export function ContrastChecker({
+  sharedColor,
+  onSharedColorChange,
+}: ContrastCheckerProps = {}) {
+  const seedForeground = sharedColor || initialForegroundColor;
   const [foregroundColor, setForegroundColor] = useState(
-    initialForegroundColor
+    seedForeground
   );
   const [backgroundColor, setBackgroundColor] = useState(
     initialBackgroundColor
   );
   const [pickedForegroundColor, setPickedForegroundColor] = useState(
-    initialForegroundColor
+    seedForeground
   );
   const [pickedBackgroundColor, setPickedBackgroundColor] = useState(
     initialBackgroundColor
@@ -185,6 +194,7 @@ Background: ${backgroundColor}
                   onChange={(e) => {
                     if (getColorInfo(e.target.value)) {
                       setForegroundColor(e.target.value);
+                      onSharedColorChange?.(e.target.value);
                     }
                     setPickedForegroundColor(e.target.value);
                   }}
@@ -207,6 +217,7 @@ Background: ${backgroundColor}
                 onChange={(value) => {
                   setForegroundColor(value);
                   setPickedForegroundColor(value);
+                  onSharedColorChange?.(value);
                 }}
               />
             )}

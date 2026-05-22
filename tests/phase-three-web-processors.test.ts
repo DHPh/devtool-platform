@@ -26,6 +26,7 @@ describe("Phase 3 web-code processors", () => {
 
   it("generates bounded CSS clamp expressions", () => {
     expect(createCssClamp(16, 32, 320, 1280)).toEqual({ ok: true, value: { slope: 1.6666666666666667, intercept: 10.666666666666666, css: "clamp(16px, 10.6667px + 1.6667vw, 32px)" } });
+    expect(createCssClamp(16, 32, 320, 1280, { unit: "rem", rootFontPx: 16 })).toMatchObject({ ok: true, value: { css: "clamp(1rem, 0.6667rem + 1.6667vw, 2rem)" } });
     expect(createCssClamp(32, 16, 320, 1280).ok).toBe(false);
   });
 

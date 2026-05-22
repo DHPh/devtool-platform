@@ -340,15 +340,96 @@ export default function ImageResizerTab() {
     });
   };
 
+  const selectImage = (image: ResizedImage) => {
+    setSelectedImage(image);
+    setWidth(image.newSize.width);
+    setHeight(image.newSize.height);
+    if (image.cropArea) {
+      setCropArea(image.cropArea);
+    } else {
+      const cw = Math.max(1, Math.floor(image.originalSize.width * 0.8));
+      const ch = Math.max(1, Math.floor(image.originalSize.height * 0.8));
+      setCropArea({
+        x: Math.floor((image.originalSize.width - cw) / 2),
+        y: Math.floor((image.originalSize.height - ch) / 2),
+        width: cw,
+        height: ch,
+      });
+    }
+  };
+
+  const handleResizeAll = async () => {
+    if (images.length === 0) return;
+    setIsProcessing(true);
+    try {
+      const updatedList: ResizedImage[] = [];
+      for (const image of images) {
+        const target = calculateConstrainedImageSize(
+          image.originalSize,
+          { width, height },
+          "width",
+          maintainAspectRatio,
+        );
+        const img = await loadImageFromFile(image.file);
+        const { blob, dataUrl } = await resizeImage(
+          img,
+          target.width,
+          target.height,
+          quality[0],
+          format,
+        );
+        updatedList.push({
+          ...image,
+          resizedUrl: dataUrl,
+          newSize: { width: target.width, height: target.height },
+          quality: quality[0],
+          format,
+          fileSize: blob.size,
+        });
+      }
+      setImages(updatedList);
+      if (selectedImage) {
+        const nextSelected = updatedList.find((item) => item.id === selectedImage.id);
+        if (nextSelected) setSelectedImage(nextSelected);
+      }
+      toast.success(`Resized ${updatedList.length} images.`);
+    } catch (error) {
+      console.error("Error batch resizing images:", error);
+      toast.error("Failed to resize one or more images.");
+    }
+    setIsProcessing(false);
+  };
+
+  const downloadAllZip = async () => {
+    const processed = images.filter((img) => img.resizedUrl !== img.originalUrl);
+    if (processed.length === 0) return;
+    const { default: JSZip } = await import("jszip");
+    const zip = new JSZip();
+    for (const image of processed) {
+      const ext = IMAGE_FORMATS.find((f) => f.value === image.format)?.value || "jpg";
+      const prefix = image.cropArea ? "cropped" : "resized";
+      const base = image.file.name.replace(/\.[^.]+$/, "");
+      const response = await fetch(image.resizedUrl);
+      zip.file(`${prefix}_${base}.${ext}`, await response.blob());
+    }
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(zipBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "processed-images.zip";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const downloadImage = (image: ResizedImage) => {
     const link = document.createElement("a");
     link.href = image.resizedUrl;
     const extension =
       IMAGE_FORMATS.find((f) => f.value === image.format)?.value || "jpg";
-    
-    // Determine prefix based on operation
+
     const prefix = image.cropArea ? "cropped" : "resized";
-    link.download = `${prefix}_${image.file.name.split(".")[0]}.${extension}`;
+    const baseName = image.file.name.replace(/\.[^.]+$/, "");
+    link.download = `${prefix}_${baseName}.${extension}`;
     link.click();
   };
 
@@ -358,7 +439,11 @@ export default function ImageResizerTab() {
     const remaining = images.filter((img) => img.id !== imageId);
     setImages(remaining);
     if (selectedImage?.id === imageId) {
-      setSelectedImage(remaining.length > 0 ? remaining[0] : null);
+      if (remaining.length > 0) {
+        selectImage(remaining[0]);
+      } else {
+        setSelectedImage(null);
+      }
     }
   };
 
@@ -411,7 +496,10 @@ export default function ImageResizerTab() {
                   type="file"
                   accept="image/*"
                   multiple
-                  onChange={(e) => handleFileSelect(e.target.files)}
+                  onChange={(e) => {
+                    void handleFileSelect(e.target.files);
+                    e.target.value = "";
+                  }}
                   className="hidden"
                 />
               </div>
@@ -492,13 +580,25 @@ export default function ImageResizerTab() {
                   </div>
 
                   {/* Resize Button */}
-                  <Button
-                    onClick={handleResize}
-                    disabled={!selectedImage || isProcessing}
-                    className="w-full"
-                  >
-                    {isProcessing ? "Processing..." : "Resize Image"}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleResize}
+                      disabled={!selectedImage || isProcessing}
+                      className="flex-1"
+                    >
+                      {isProcessing ? "Processing..." : "Resize Image"}
+                    </Button>
+                    {images.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => void handleResizeAll()}
+                        disabled={isProcessing}
+                      >
+                        Resize All ({images.length})
+                      </Button>
+                    )}
+                  </div>
                 </TabsContent>
 
                 {/* Crop Tab */}
@@ -531,9 +631,13 @@ export default function ImageResizerTab() {
                             id="cropX"
                             type="number"
                             value={cropArea.x}
-                            onChange={(e) => setCropArea({...cropArea, x: Number(e.target.value)})}
+                            onChange={(e) => {
+                              const nextX = Math.max(0, Math.min(selectedImage.originalSize.width - 1, Number(e.target.value) || 0));
+                              const nextW = Math.min(cropArea.width, selectedImage.originalSize.width - nextX);
+                              setCropArea({ ...cropArea, x: nextX, width: Math.max(1, nextW) });
+                            }}
                             min="0"
-                            max={selectedImage.originalSize.width - cropArea.width}
+                            max={selectedImage.originalSize.width - 1}
                           />
                         </div>
                         <div>
@@ -542,9 +646,13 @@ export default function ImageResizerTab() {
                             id="cropY"
                             type="number"
                             value={cropArea.y}
-                            onChange={(e) => setCropArea({...cropArea, y: Number(e.target.value)})}
+                            onChange={(e) => {
+                              const nextY = Math.max(0, Math.min(selectedImage.originalSize.height - 1, Number(e.target.value) || 0));
+                              const nextH = Math.min(cropArea.height, selectedImage.originalSize.height - nextY);
+                              setCropArea({ ...cropArea, y: nextY, height: Math.max(1, nextH) });
+                            }}
                             min="0"
-                            max={selectedImage.originalSize.height - cropArea.height}
+                            max={selectedImage.originalSize.height - 1}
                           />
                         </div>
                       </div>
@@ -555,7 +663,10 @@ export default function ImageResizerTab() {
                             id="cropWidth"
                             type="number"
                             value={cropArea.width}
-                            onChange={(e) => setCropArea({...cropArea, width: Number(e.target.value)})}
+                            onChange={(e) => {
+                              const nextW = Math.max(1, Math.min(selectedImage.originalSize.width - cropArea.x, Number(e.target.value) || 1));
+                              setCropArea({ ...cropArea, width: nextW });
+                            }}
                             min="1"
                             max={selectedImage.originalSize.width - cropArea.x}
                           />
@@ -566,7 +677,10 @@ export default function ImageResizerTab() {
                             id="cropHeight"
                             type="number"
                             value={cropArea.height}
-                            onChange={(e) => setCropArea({...cropArea, height: Number(e.target.value)})}
+                            onChange={(e) => {
+                              const nextH = Math.max(1, Math.min(selectedImage.originalSize.height - cropArea.y, Number(e.target.value) || 1));
+                              setCropArea({ ...cropArea, height: nextH });
+                            }}
                             min="1"
                             max={selectedImage.originalSize.height - cropArea.y}
                           />
@@ -591,7 +705,7 @@ export default function ImageResizerTab() {
                 {/* Quality */}
                 <div>
                   <Label className="text-sm font-medium">
-                    Quality: {quality[0]}%
+                    Quality: {format === "png" ? "Lossless (PNG)" : `${quality[0]}%`}
                   </Label>
                   <Slider
                     value={quality}
@@ -599,8 +713,14 @@ export default function ImageResizerTab() {
                     max={100}
                     min={1}
                     step={1}
+                    disabled={format === "png"}
                     className="mt-2"
                   />
+                  {format === "png" && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      PNG output is lossless; quality slider only applies to JPEG and WebP.
+                    </p>
+                  )}
                 </div>
 
                 {/* Format */}
@@ -635,17 +755,17 @@ export default function ImageResizerTab() {
               {selectedImage ? (
                 <div className="space-y-4">
                   {/* Image Preview */}
-                  <div className="aspect-video bg-muted rounded-lg overflow-hidden flex items-center justify-center relative">
-                    {/* eslint-disable-next-line @next/next/no-img-element -- local blob/data URLs cannot be optimized by next/image */}
-                    <img
-                      src={selectedImage.resizedUrl}
-                      alt="Preview"
-                      className="max-w-full max-h-full object-contain"
-                    />
-                    {mode === "crop" && selectedImage.resizedUrl === selectedImage.originalUrl && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div 
-                          className="border-2 border-blue-500 bg-blue-500/20 absolute"
+                  <div className="aspect-video bg-muted rounded-lg overflow-hidden flex items-center justify-center p-2">
+                    <div className="relative inline-block max-w-full max-h-full">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- local blob/data URLs cannot be optimized by next/image */}
+                      <img
+                        src={mode === "crop" ? selectedImage.originalUrl : selectedImage.resizedUrl}
+                        alt="Preview"
+                        className="block max-w-full max-h-64 object-contain"
+                      />
+                      {mode === "crop" && (
+                        <div
+                          className="border-2 border-blue-500 bg-blue-500/20 absolute pointer-events-none"
                           style={{
                             left: `${(cropArea.x / selectedImage.originalSize.width) * 100}%`,
                             top: `${(cropArea.y / selectedImage.originalSize.height) * 100}%`,
@@ -653,12 +773,12 @@ export default function ImageResizerTab() {
                             height: `${(cropArea.height / selectedImage.originalSize.height) * 100}%`,
                           }}
                         >
-                          <div className="absolute -top-6 left-0 text-xs text-blue-600 font-medium">
+                          <div className="bg-blue-600 text-white px-1.5 py-0.5 text-[10px] font-medium inline-block">
                             Crop Area
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
 
                   {/* Image Info */}
@@ -688,14 +808,29 @@ export default function ImageResizerTab() {
                     </div>
                   </div>
 
-                  {/* Download Button */}
-                  <Button
-                    onClick={() => downloadImage(selectedImage)}
-                    className="w-full"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download {selectedImage.cropArea ? "Cropped" : "Resized"} Image
-                  </Button>
+                  {/* Download Buttons */}
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      onClick={() => downloadImage(selectedImage)}
+                      disabled={selectedImage.resizedUrl === selectedImage.originalUrl}
+                      className="flex-1"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      {selectedImage.resizedUrl === selectedImage.originalUrl
+                        ? "Resize or crop image first"
+                        : `Download ${selectedImage.cropArea ? "Cropped" : "Resized"} Image`}
+                    </Button>
+                    {images.filter((img) => img.resizedUrl !== img.originalUrl).length >= 2 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => void downloadAllZip()}
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download All (.zip)
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
@@ -726,14 +861,14 @@ export default function ImageResizerTab() {
                         ? "border-primary bg-primary/5"
                         : "hover:border-primary/50"
                     )}
-                    onClick={() => setSelectedImage(image)}
+                    onClick={() => selectImage(image)}
                     role="button"
                     tabIndex={0}
                     aria-label={`Select ${image.file.name} for editing`}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" || event.key === " ") {
                         event.preventDefault();
-                        setSelectedImage(image);
+                        selectImage(image);
                       }
                     }}
                   >

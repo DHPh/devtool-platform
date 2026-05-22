@@ -14,6 +14,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  ArrowDown,
+  ArrowUp,
   Upload,
   Download,
   FileText,
@@ -23,10 +25,14 @@ import {
   Trash2,
   Eye,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { triggerBlobDownload, useObjectUrls } from "@/hooks/use-object-urls";
 import { formatFileSize } from "@/lib/processors/file-core";
 import {
+  extractPdfPageRanges,
+  getPdfPageCount,
   mergePdfFiles,
   rotatePdfPages,
   splitPdfPages,
@@ -44,6 +50,8 @@ interface PDFFile {
 export default function PdfToolsTab() {
   const [pdfFiles, setPdfFiles] = useState<PDFFile[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [splitRange, setSplitRange] = useState("");
+  const [rotationAngle, setRotationAngle] = useState<90 | 180 | 270>(90);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -57,13 +65,24 @@ export default function PdfToolsTab() {
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      if (file.type !== "application/pdf") continue;
+      const isPdf =
+        file.type === "application/pdf" ||
+        file.name.toLowerCase().endsWith(".pdf");
+      if (!isPdf) continue;
+
+      let pageCount: number | undefined;
+      try {
+        pageCount = await getPdfPageCount(file);
+      } catch {
+        pageCount = undefined;
+      }
 
       const pdfFile: PDFFile = {
         id: crypto.randomUUID(),
         file,
         name: file.name,
         size: file.size,
+        pageCount,
         url: createObjectUrl(file),
       };
 
@@ -72,6 +91,16 @@ export default function PdfToolsTab() {
 
     setPdfFiles((prev) => [...prev, ...newFiles]);
     setIsProcessing(false);
+  };
+
+  const moveFile = (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= pdfFiles.length) return;
+    setPdfFiles((prev) => {
+      const next = [...prev];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
   };
 
   const toggleFileSelection = (fileId: string) => {
@@ -129,28 +158,44 @@ export default function PdfToolsTab() {
 
     setIsProcessing(true);
     try {
-      const pages = await splitPdfPages(file.file);
-      const baseName = file.name.replace(".pdf", "");
-
-      for (let i = 0; i < pages.length; i++) {
-        const blob = new Blob([new Uint8Array(pages[i])], {
+      const baseName = file.name.replace(/\.pdf$/i, "");
+      if (splitRange.trim()) {
+        const extracted = await extractPdfPageRanges(file.file, splitRange.trim());
+        const blob = new Blob([new Uint8Array(extracted)], {
           type: "application/pdf",
         });
-        triggerBlobDownload(blob, `${baseName}_page_${i + 1}.pdf`);
-
-        // Small delay to prevent browser blocking multiple downloads
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        triggerBlobDownload(blob, `${baseName}_pages.pdf`);
+        toast.success("Extracted selected pages into a PDF.");
+      } else {
+        const pages = await splitPdfPages(file.file);
+        if (pages.length === 1) {
+          const blob = new Blob([new Uint8Array(pages[0])], {
+            type: "application/pdf",
+          });
+          triggerBlobDownload(blob, `${baseName}_page_1.pdf`);
+        } else {
+          const { default: JSZip } = await import("jszip");
+          const zip = new JSZip();
+          pages.forEach((pageBytes, index) => {
+            zip.file(`${baseName}_page_${index + 1}.pdf`, pageBytes);
+          });
+          const zipBlob = await zip.generateAsync({ type: "blob" });
+          triggerBlobDownload(zipBlob, `${baseName}_pages.zip`);
+        }
+        toast.success(`Successfully split PDF (${pages.length} pages).`);
       }
-
-      toast.success(`Successfully split PDF into ${pages.length} separate files.`);
     } catch (error) {
       console.error("Error splitting PDF:", error);
-      toast.error("Error splitting PDF. Please make sure it's a valid PDF document.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Error splitting PDF. Please make sure it's a valid PDF document.",
+      );
     }
     setIsProcessing(false);
   };
 
-  const rotatePDF = async (fileId: string, rotation: number) => {
+  const rotatePDF = async (fileId: string, rotation: number = rotationAngle) => {
     const file = pdfFiles.find((f) => f.id === fileId);
     if (!file) return;
 
@@ -162,9 +207,9 @@ export default function PdfToolsTab() {
       });
       triggerBlobDownload(
         blob,
-        `${file.name.replace(".pdf", "")}_rotated_${rotation}deg.pdf`,
+        `${file.name.replace(/\.pdf$/i, "")}_rotated_${rotation}deg.pdf`,
       );
-      toast.success("Rotated PDF downloaded successfully.");
+      toast.success(`Rotated PDF by ${rotation}° downloaded successfully.`);
     } catch (error) {
       console.error("Error rotating PDF:", error);
       toast.error("Error rotating PDF. Please make sure it's a valid PDF document.");
@@ -204,7 +249,7 @@ export default function PdfToolsTab() {
                   "hover:border-primary/50 hover:bg-primary/5"
                 )}
                 onDragOver={(event) => event.preventDefault()}
-                onDrop={(event) => handleFileSelect(readDroppedFiles(event))}
+                onDrop={(event) => void handleFileSelect(readDroppedFiles(event))}
                 onClick={() => fileInputRef.current?.click()}
                 role="button"
                 tabIndex={0}
@@ -226,7 +271,10 @@ export default function PdfToolsTab() {
                   type="file"
                   accept=".pdf,application/pdf"
                   multiple
-                  onChange={(e) => handleFileSelect(e.target.files)}
+                  onChange={(e) => {
+                    void handleFileSelect(e.target.files);
+                    e.target.value = "";
+                  }}
                   className="hidden"
                 />
               </div>
@@ -239,7 +287,7 @@ export default function PdfToolsTab() {
             <CardHeader>
               <CardTitle>Merge PDFs</CardTitle>
               <CardDescription>
-                Select multiple PDFs to merge into a single document
+                Select multiple PDFs and use the ↑ / ↓ buttons below to arrange merge order
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -271,13 +319,22 @@ export default function PdfToolsTab() {
             <CardHeader>
               <CardTitle>Split PDFs</CardTitle>
               <CardDescription>
-                Split PDF documents into separate pages or ranges
+                Extract specific page ranges or package every page into a single ZIP archive
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                Click the split button on any PDF below to split it into
-                individual pages
+            <CardContent className="space-y-3">
+              <div className="space-y-2 max-w-md">
+                <Label htmlFor="pdf-split-range">Page range (optional)</Label>
+                <Input
+                  id="pdf-split-range"
+                  value={splitRange}
+                  onChange={(e) => setSplitRange(e.target.value)}
+                  placeholder="e.g. 1-3, 5 (blank = ZIP all pages)"
+                  className="font-mono"
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Click the split button on any PDF below to run with this setting.
               </p>
             </CardContent>
           </Card>
@@ -288,13 +345,23 @@ export default function PdfToolsTab() {
             <CardHeader>
               <CardTitle>Rotate PDFs</CardTitle>
               <CardDescription>
-                Rotate PDF pages by 90, 180, or 270 degrees
+                Choose a clockwise rotation angle, then click Rotate on any PDF below
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                Use the rotation buttons on any PDF below to rotate all pages
-              </p>
+              <div className="flex flex-wrap gap-2">
+                {([90, 180, 270] as const).map((angle) => (
+                  <Button
+                    key={angle}
+                    type="button"
+                    variant={rotationAngle === angle ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setRotationAngle(angle)}
+                  >
+                    Rotate +{angle}°
+                  </Button>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -308,7 +375,7 @@ export default function PdfToolsTab() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {pdfFiles.map((file) => (
+              {pdfFiles.map((file, index) => (
                 <div
                   key={file.id}
                   className={cn(
@@ -318,7 +385,7 @@ export default function PdfToolsTab() {
                       : "hover:border-primary/50"
                   )}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center space-x-4">
                       <label
                         className="flex items-center space-x-2 cursor-pointer"
@@ -335,14 +402,32 @@ export default function PdfToolsTab() {
                         <p className="font-medium">{file.name}</p>
                         <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                           <span>{formatFileSize(file.size)}</span>
-                          {file.pageCount && (
-                            <span>{file.pageCount} pages</span>
+                          {file.pageCount !== undefined && (
+                            <span>{file.pageCount} {file.pageCount === 1 ? "page" : "pages"}</span>
                           )}
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center flex-wrap gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={index === 0}
+                        onClick={() => moveFile(index, -1)}
+                        aria-label={`Move ${file.name} up`}
+                      >
+                        <ArrowUp className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={index === pdfFiles.length - 1}
+                        onClick={() => moveFile(index, 1)}
+                        aria-label={`Move ${file.name} down`}
+                      >
+                        <ArrowDown className="h-4 w-4" />
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
@@ -363,9 +448,10 @@ export default function PdfToolsTab() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => rotatePDF(file.id, 90)}
+                        onClick={() => rotatePDF(file.id, rotationAngle)}
                         disabled={isProcessing}
                         aria-label={`Rotate ${file.name} clockwise`}
+                        title={`Rotate +${rotationAngle}°`}
                       >
                         <RotateCw className="h-4 w-4" />
                       </Button>

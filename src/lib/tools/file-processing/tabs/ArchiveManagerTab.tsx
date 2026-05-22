@@ -320,7 +320,10 @@ export default function ArchiveManagerTab() {
                     type="file"
                     accept=".zip,application/zip"
                     multiple
-                    onChange={(e) => handleArchiveUpload(e.target.files)}
+                    onChange={(e) => {
+                      handleArchiveUpload(e.target.files);
+                      e.target.value = "";
+                    }}
                     className="hidden"
                   />
                 </div>
@@ -490,9 +493,10 @@ export default function ArchiveManagerTab() {
                       ref={filesInputRef}
                       type="file"
                       multiple
-                      onChange={(e) =>
-                        handleFilesToCompressUpload(e.target.files)
-                      }
+                      onChange={(e) => {
+                        handleFilesToCompressUpload(e.target.files);
+                        e.target.value = "";
+                      }}
                       className="hidden"
                     />
                   </div>

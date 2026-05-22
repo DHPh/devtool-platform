@@ -344,7 +344,10 @@ export default function FileOrganizerTab() {
                     ref={fileInputRef}
                     type="file"
                     multiple
-                    onChange={(e) => handleFileSelect(e.target.files)}
+                    onChange={(e) => {
+                      handleFileSelect(e.target.files);
+                      e.target.value = "";
+                    }}
                     className="hidden"
                   />
                 </div>

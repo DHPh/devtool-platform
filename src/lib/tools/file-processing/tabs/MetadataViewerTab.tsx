@@ -99,7 +99,7 @@ export default function MetadataViewerTab() {
       <div className={cn("border-2 border-dashed rounded-lg p-6 cursor-pointer transition-colors", "hover:border-primary/50")} onDragOver={(event) => event.preventDefault()}
       onDrop={(event) => handleFileSelect(readDroppedFiles(event))}
       onClick={() => fileInputRef.current?.click()} role="button" tabIndex={0} aria-label="Choose files to inspect metadata" onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); fileInputRef.current?.click(); } }}>
-        <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(event) => handleFileSelect(event.target.files)} />
+        <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(event) => { handleFileSelect(event.target.files); event.target.value = ""; }} />
         <div className="text-center"><Upload className="h-10 w-10 mx-auto text-muted-foreground mb-4" /><p className="text-sm">Click to select files</p><p className="text-xs text-muted-foreground mt-1">Maximum 100 MB per file. Image dimensions and browser-readable audio/video properties are extracted locally.</p><p className="text-xs text-muted-foreground">EXIF, embedded tags, and document page counts are not parsed.</p></div>
       </div>
     </CardContent></Card>

@@ -3,7 +3,15 @@
 import React from "react";
 import { ContrastChecker } from "../components";
 
-export function ContrastCheckerTab() {
+interface ContrastCheckerTabProps {
+  sharedColor?: string;
+  onSharedColorChange?: (color: string) => void;
+}
+
+export function ContrastCheckerTab({
+  sharedColor,
+  onSharedColorChange,
+}: ContrastCheckerTabProps = {}) {
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -13,7 +21,10 @@ export function ContrastCheckerTab() {
         </p>
       </div>
 
-      <ContrastChecker />
+      <ContrastChecker
+        sharedColor={sharedColor}
+        onSharedColorChange={onSharedColorChange}
+      />
     </div>
   );
 }

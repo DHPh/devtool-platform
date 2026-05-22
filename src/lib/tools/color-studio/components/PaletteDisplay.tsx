@@ -114,8 +114,9 @@ export function PaletteDisplay({
                   type="button"
                   className="w-full h-16 rounded-lg border-2 border-border hover:border-primary transition-colors relative group"
                   style={{ backgroundColor: color.hex }}
-                  onClick={() => onColorSelect?.(color.hex)}
-                  title={`${color.name}: ${color.hex}`}
+                  onClick={() => handleCopyColor(color.hex)}
+                  aria-label={`Copy ${color.name} (${color.hex})`}
+                  title={`Click to copy ${color.name}: ${color.hex}`}
                 >
                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg flex items-center justify-center">
                     <Copy className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
