@@ -2,6 +2,17 @@
 
 DevTool Platform is a Next.js application that presents standalone developer tools and grouped studio sub-tools through one validated registry. Most transformations run in the browser; tools marked `server` or `hybrid` use server routes and may contact user-selected or documented third-party services.
 
+**Live:** [devtool.dhpham.dev](https://devtool.dhpham.dev)
+
+## Highlights
+
+- **Typed Registry & Lazy Loading:** Single validated tool registry covering standalone tools and grouped studio workspaces with typed lazy-loaded views.
+- **Rich In-Browser Editing:** CodeMirror 6 editors and browser-native file, diff, encoding, PDF, and image workflows.
+- **Responsive Execution & Security:** Web Worker offloading with timeouts for heavy regex, hashing, and diff tasks; SSRF protections on server/hybrid network routes.
+- **Automated Quality Gates:** CI runs dependency audit, ESLint, TypeScript checks, Vitest unit/registry suites, Playwright smoke tests, and production builds.
+
+**Tech Stack:** Next.js 16 · React 19 · TypeScript · Tailwind CSS · Zustand · CodeMirror 6 · Radix UI · Vitest · Playwright
+
 ## Requirements
 
 - Node.js 20.9 or newer
