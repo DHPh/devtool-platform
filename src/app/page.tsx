@@ -1,20 +1,14 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Zap, Shield, Globe, ArrowRight } from "lucide-react";
-import { TOOL_COUNT, TOOL_REGISTRY } from "@/lib/tool-registry";
-import { getAbsoluteUrl, siteConfig } from "@/config/site";
+import { ToolMonogram } from "@/components/ui/tool-badge";
 import { ToolClassificationView } from "@/components/tool-classification-view";
+import { getAbsoluteUrl, siteConfig } from "@/config/site";
 import { serializeJsonForHtml } from "@/lib/security/safe-json";
+import { TOOL_COUNT } from "@/lib/tool-registry";
+import { getAllStudiosWithSubTools } from "@/lib/tool-visuals";
 
-// Enhanced SEO metadata
 export const metadata: Metadata = {
   title: `${siteConfig.name} - ${TOOL_COUNT} Free Online Developer Tools`,
   description:
@@ -93,10 +87,7 @@ export const metadata: Metadata = {
 };
 
 export default function HomePage() {
-  // Get featured tools from new registry
-  const featuredTools = TOOL_REGISTRY.filter(
-    (tool) => tool.featured === true
-  ).slice(0, 8);
+  const studios = getAllStudiosWithSubTools();
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -155,259 +146,118 @@ export default function HomePage() {
           __html: serializeJsonForHtml(structuredData),
         }}
       />
-      <div className="space-y-16">
-        {/* Hero Section - SSR for SEO */}
-        <section className="text-center space-y-6 py-8 sm:py-16 px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent leading-tight">
-            {TOOL_COUNT} Free Developer Tools
-          </h1>
-          <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed px-4 sm:px-6">
-            The ultimate collection of online developer tools. JSON formatter,
-            Base64 encoder, regex tester, UUID generator, and many more. All
-            tools work in your browser with{" "}
-            <strong>no registration required</strong>.
-          </p>
-          <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-4 pt-4 px-4 sm:px-6">
+      <div className="max-w-[var(--workspace-max-w)] mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8">
+        {/* Compact Workbench Header */}
+        <section className="pb-6 border-b border-border flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5">
+          <div className="space-y-2 max-w-3xl">
+            <div className="flex items-center gap-2 font-mono text-xs text-primary">
+              <span>LOCAL-FIRST DEVELOPER WORKBENCH</span>
+              <span className="text-muted-foreground">·</span>
+              <span className="text-muted-foreground tabular-nums">
+                {studios.length} STUDIOS · {TOOL_COUNT} UTILITIES
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
+              {TOOL_COUNT} Free Developer Tools
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+              Formatters, encoders, validators, and network diagnostics in one
+              keyboard-driven workspace. Most tools run locally in your browser;
+              network tools contact servers or external services when required.
+              No registration needed.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             <Link
               href="/tools"
-              className="inline-flex items-center px-4 sm:px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors min-h-[44px] w-full sm:w-auto justify-center"
+              className="inline-flex items-center justify-center gap-2 rounded-sm bg-primary px-4 py-2 text-xs sm:text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors min-h-[38px]"
             >
               Browse All Tools
-              <ArrowRight className="ml-2 h-4 w-4" />
+              <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
-              href="/tools/regex-studio"
-              className="inline-flex items-center px-4 sm:px-6 py-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-lg transition-colors min-h-[44px] w-full sm:w-auto justify-center"
+              href="/tools/json-studio"
+              className="inline-flex items-center justify-center rounded-sm border border-border bg-card px-4 py-2 text-xs sm:text-sm font-medium text-foreground hover:bg-surface-elevated transition-colors min-h-[38px]"
             >
-              Try Regex Studio
+              Open JSON Studio
             </Link>
           </div>
         </section>
 
-        {/* Features Section - SSR for SEO */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8">
-          <div className="container mx-auto max-w-7xl">
-            <h2 className="text-3xl font-bold text-center mb-12">
-              Why Developers Choose DevTool Platform
+        {/* 12 Studios Directory */}
+        <section className="space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Studios ({studios.length})
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="text-center space-y-4">
-                <div className="mx-auto w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                  <Zap className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-                </div>
-                <h3 className="text-xl font-semibold">Lightning Fast</h3>
-                <p className="text-muted-foreground">
-                  Most tools process data instantly in your browser. Network
-                  tools contact servers or external services when needed.
-                </p>
-              </div>
-
-              <div className="text-center space-y-4">
-                <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-                  <Shield className="h-8 w-8 text-green-600 dark:text-green-400" />
-                </div>
-                <h3 className="text-xl font-semibold">Privacy Aware</h3>
-                <p className="text-muted-foreground">
-                  Local tools keep input on your device. Network and breach
-                  checks send the required request data to servers or external
-                  services so they can return results.
-                </p>
-              </div>
-
-              <div className="text-center space-y-4">
-                <div className="mx-auto w-16 h-16 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
-                  <Globe className="h-8 w-8 text-purple-600 dark:text-purple-400" />
-                </div>
-                <h3 className="text-xl font-semibold">Always Available</h3>
-                <p className="text-muted-foreground">
-                  Access all tools from any device with a modern web browser. No
-                  downloads, installations, or account creation required.
-                </p>
-              </div>
-            </div>
+            <Link
+              href="/tools"
+              className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Full catalog →
+            </Link>
           </div>
-        </section>
 
-        {/* Featured Tools Section - SSR for SEO */}
-        <section className="py-16 bg-muted/30 px-4 sm:px-6 lg:px-8">
-          <div className="container mx-auto max-w-7xl">
-            <h2 className="text-3xl font-bold text-center mb-12">
-              Most Popular Developer Tools
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredTools.map((tool) => (
-                <Link key={tool.id} href={tool.path}>
-                  <Card className="h-full hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col">
-                    <CardHeader className="flex-shrink-0">
-                      <div className="flex items-start gap-3">
-                        <span className="text-2xl flex-shrink-0">
-                          {tool.icon}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <CardTitle className="text-lg">{tool.name}</CardTitle>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="flex-1 flex flex-col">
-                      <CardDescription className="mb-3 flex-1">
-                        {tool.description}
-                      </CardDescription>
-                      <div className="flex flex-wrap gap-1 mt-auto">
-                        {tool.tags.slice(0, 2).map((tag) => (
-                          <Badge
-                            key={tag}
-                            variant="secondary"
-                            className="text-xs"
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
-                        {tool.tags.length > 2 && (
-                          <Badge variant="secondary" className="text-xs">
-                            +{tool.tags.length - 2}
-                          </Badge>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-            <div className="text-center mt-8">
-              <Link
-                href="/tools"
-                className="inline-flex items-center px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {studios.map(({ studio, shortCode, subTools }) => (
+              <div
+                key={studio.id}
+                className="flex flex-col justify-between rounded-md border border-border bg-card p-3.5 transition-colors hover:border-border-strong"
               >
-                View All {TOOL_COUNT} Tools
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </div>
+                <div className="space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <Link
+                      href={studio.path}
+                      className="flex items-center gap-2.5 min-w-0 group"
+                    >
+                      <ToolMonogram code={shortCode} size="sm" />
+                      <span className="text-sm font-semibold truncate group-hover:text-primary transition-colors">
+                        {studio.name}
+                      </span>
+                    </Link>
+                    <Badge
+                      variant="secondary"
+                      className="font-mono text-[11px] tabular-nums shrink-0"
+                    >
+                      {subTools.length}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    {studio.description}
+                  </p>
+                </div>
+
+                <div className="mt-3 pt-2.5 border-t border-border flex flex-wrap gap-1.5">
+                  {subTools.slice(0, 3).map((sub) => (
+                    <Link
+                      key={sub.id}
+                      href={sub.path}
+                      className="rounded-sm border border-border bg-surface-sunken px-1.5 py-0.5 text-[11px] text-muted-foreground hover:border-border-strong hover:text-foreground transition-colors truncate max-w-[130px]"
+                    >
+                      {sub.name}
+                    </Link>
+                  ))}
+                  {subTools.length > 3 && (
+                    <Link
+                      href={studio.path}
+                      className="px-1 py-0.5 text-[11px] font-mono text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      +{subTools.length - 3}
+                    </Link>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 
-        {/* Enhanced Tools Section - Client-side for interactivity */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8">
-          <div className="container mx-auto max-w-7xl">
-            <h2 className="text-3xl font-bold text-center mb-12">
-              Explore All Tools
-            </h2>
-            <ToolClassificationView defaultView="categories" />
-          </div>
-        </section>
-
-        {/* SEO Content Section */}
-        <section className="py-16 bg-muted/30 px-4 sm:px-6 lg:px-8">
-          <div className="container mx-auto max-w-7xl">
-            <div className="max-w-4xl mx-auto space-y-12">
-              <div className="text-center space-y-4">
-                <h2 className="text-3xl font-bold">
-                  The Ultimate Developer Tools Collection
-                </h2>
-                <p className="text-xl text-muted-foreground leading-relaxed">
-                  DevTool Platform brings together {TOOL_COUNT} developer tools
-                  and studio utilities in one fast, easy-to-use platform. Most
-                  processing is local; network tools make remote requests when
-                  their function requires it. No registration is required.
-                </p>
-              </div>
-
-              <div className="bg-background border rounded-lg p-8">
-                <h3 className="text-2xl font-bold mb-6">
-                  Popular Developer Tools
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <h4 className="font-semibold text-lg">
-                      Text & Data Processing
-                    </h4>
-                    <ul className="space-y-2 text-muted-foreground">
-                      <li>
-                        <strong>JSON Formatter:</strong> Pretty print and
-                        validate JSON data with syntax highlighting
-                      </li>
-                      <li>
-                        <strong>Base64 Encoder:</strong> Encode and decode
-                        Base64 strings for data transmission
-                      </li>
-                      <li>
-                        <strong>URL Encoder:</strong> Safely encode URLs and
-                        decode URL-encoded strings
-                      </li>
-                      <li>
-                        <strong>HTML Entities:</strong> Convert HTML entities
-                        and special characters
-                      </li>
-                      <li>
-                        <strong>Case Converter:</strong> Transform text between
-                        different case formats
-                      </li>
-                    </ul>
-                  </div>
-                  <div className="space-y-4">
-                    <h4 className="font-semibold text-lg">Development Tools</h4>
-                    <ul className="space-y-2 text-muted-foreground">
-                      <li>
-                        <strong>Regex Tester:</strong> Test and debug regular
-                        expressions with real-time matching
-                      </li>
-                      <li>
-                        <strong>UUID Generator:</strong> Generate unique
-                        identifiers for your applications
-                      </li>
-                      <li>
-                        <strong>Hash Generator:</strong> Create MD5, SHA1,
-                        SHA256 hashes for data integrity
-                      </li>
-                      <li>
-                        <strong>Password Generator:</strong> Create secure
-                        passwords with custom rules
-                      </li>
-                      <li>
-                        <strong>Color Converter:</strong> Convert between HEX,
-                        RGB, HSL color formats
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              <div className="text-center space-y-4">
-                <h3 className="text-2xl font-bold">
-                  Why Choose DevTool Platform?
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
-                  <div className="space-y-2">
-                    <h4 className="font-semibold">Free Forever</h4>
-                    <p className="text-sm text-muted-foreground">
-                      All tools are completely free with no hidden costs or
-                      premium features
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="font-semibold">No Registration</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Start using tools immediately without creating accounts or
-                      providing emails
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="font-semibold">Mobile Friendly</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Responsive design works perfectly on phones, tablets, and
-                      desktop computers
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="font-semibold">Regular Updates</h4>
-                    <p className="text-sm text-muted-foreground">
-                      New tools added regularly based on developer community
-                      feedback
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* Interactive Explorer */}
+        <section className="space-y-3 pt-2 border-t border-border">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Explore All Tools
+          </h2>
+          <ToolClassificationView defaultView="categories" />
         </section>
       </div>
     </>

@@ -11,7 +11,7 @@ test("navigates from the homepage through the catalog to a standalone tool", asy
 
   await expect(page).toHaveURL(/\/tools$/);
   await expect(
-    page.getByRole("heading", { name: "Complete Developer Tools Collection" })
+    page.getByRole("heading", { name: "Developer Tools Catalog" })
   ).toBeVisible();
 
   await page.locator('a[href="/tools/json-formatter"]').first().click();

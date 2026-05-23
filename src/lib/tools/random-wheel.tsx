@@ -29,6 +29,9 @@ import {
   PartyPopper,
   X,
 } from "lucide-react";
+import { GearSixIcon as GearSix } from "@phosphor-icons/react/GearSix";
+import { LightbulbIcon as Lightbulb } from "@phosphor-icons/react/Lightbulb";
+import { TargetIcon as Target } from "@phosphor-icons/react/Target";
 import { toast } from "sonner";
 import {
   ResponsiveTextArea,
@@ -283,7 +286,7 @@ export default function RandomWheel() {
           if (showResultPopup) {
             setShowResultDialog(true);
           } else {
-            toast.success(`🎉 Winner: ${winner.item.text}!`);
+            toast.success(`Winner: ${winner.item.text}`);
           }
 
           // Remove winner from wheel if enabled
@@ -594,8 +597,9 @@ export default function RandomWheel() {
             <div className="flex flex-col items-center space-y-2 w-full">
               <div className="flex justify-center w-full">{renderWheel()}</div>
               {!isSpinning && items.length > 0 && isClient && (
-                <p className="text-xs text-muted-foreground text-center">
-                  💡 Tip: Click the wheel or use the button below to spin
+                <p className="inline-flex items-center justify-center gap-1.5 text-xs text-muted-foreground text-center">
+                  <Lightbulb aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+                  <span>Tip: Click the wheel or use the button below to spin</span>
                 </p>
               )}
             </div>
@@ -808,16 +812,22 @@ export default function RandomWheel() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
             <div className="space-y-3">
-              <h4 className="font-semibold text-blue-600">🎯 Quick Start</h4>
+              <h4 className="flex items-center gap-1.5 font-semibold text-blue-600">
+                <Target aria-hidden="true" className="h-4 w-4" />
+                Quick Start
+              </h4>
               <ul className="space-y-1 text-muted-foreground">
                 <li>• Enter options (one per line)</li>
                 <li>• Click &quot;Update Options&quot;</li>
                 <li>• Hit &quot;Spin Wheel&quot; to select</li>
-                <li>• Enjoy the results! 🎉</li>
+                <li>• Enjoy the results</li>
               </ul>
             </div>
             <div className="space-y-3">
-              <h4 className="font-semibold text-green-600">⚙️ Features</h4>
+              <h4 className="flex items-center gap-1.5 font-semibold text-green-600">
+                <GearSix aria-hidden="true" className="h-4 w-4" />
+                Features
+              </h4>
               <ul className="space-y-1 text-muted-foreground">
                 <li>• Adjustable spin duration</li>
                 <li>• Optional result popup</li>

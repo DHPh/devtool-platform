@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Copy, Download, AlertTriangle, CheckCircle } from "lucide-react";
+import { WarningIcon as Warning } from "@phosphor-icons/react/Warning";
 import { toast } from "sonner";
 
 interface ResultCardProps {
@@ -118,10 +119,14 @@ export function ResultCard({
             {warnings.map((warning, index) => (
               <div
                 key={index}
-                className="p-3 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-md"
+                className="flex items-start gap-2 p-3 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-md"
               >
+                <Warning
+                  aria-hidden="true"
+                  className="h-4 w-4 shrink-0 mt-0.5 text-orange-700 dark:text-orange-400"
+                />
                 <p className="text-orange-700 dark:text-orange-400 text-sm">
-                  ⚠️ {warning}
+                  {warning}
                 </p>
               </div>
             ))}

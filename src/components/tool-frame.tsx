@@ -2,12 +2,6 @@
 
 import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { writeClipboardText } from "@/hooks/use-clipboard";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Copy, Share2, Star, StarOff } from "lucide-react";
 import { useBookmarks } from "@/store/bookmarks";
@@ -23,6 +17,8 @@ import {
   ActiveToolProvider,
   useActiveTool,
 } from "@/components/active-tool-context";
+import { ToolMonogram } from "@/components/ui/tool-badge";
+import { getToolMonogram } from "@/lib/tool-visuals";
 
 interface ToolFrameProps {
   tool: ToolMetadata;
@@ -51,6 +47,7 @@ function ToolFrameInner({ tool, children }: ToolFrameProps) {
   const targetTool = activeSubTool ?? tool;
   const bookmarked = hasHydrated && isBookmarked(targetTool.id);
   const processing = getProcessingInfo(targetTool.processing);
+  const isLocalProcessing = targetTool.processing === "client";
 
   useEffect(() => {
     recordRecentTool(targetTool.id);
@@ -105,98 +102,94 @@ function ToolFrameInner({ tool, children }: ToolFrameProps) {
   };
 
   return (
-    <div className="w-full px-0 sm:container sm:mx-auto sm:px-4 py-4 sm:py-6 space-y-3 sm:space-y-4">
-      <div className="px-4 sm:px-0">
+    <div className="w-full max-w-[var(--workspace-max-w)] mx-auto px-4 sm:px-6 py-4 sm:py-5">
+      {/* Keep structured Breadcrumbs JSON-LD for SEO while avoiding duplicate visual header chrome */}
+      <div className="sr-only">
         <Breadcrumbs items={breadcrumbItems} />
       </div>
-      <Card className="border-0 sm:border shadow-none sm:shadow-sm mx-0 sm:mx-auto">
-        <CardHeader className="p-4 sm:p-6 pb-3 sm:pb-4">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
-            <div className="space-y-2 flex-1 min-w-0">
-              <div className="flex items-start gap-3">
+
+      {/* Compact Flat Workspace Header */}
+      <header className="pb-4 mb-5 border-b border-border flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div className="flex items-start gap-3 min-w-0 flex-1">
+          <ToolMonogram
+            code={getToolMonogram(targetTool)}
+            size="md"
+            active
+            className="mt-0.5"
+          />
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-lg sm:text-xl font-semibold leading-tight tracking-tight">
+                {tool.name}
+              </h1>
+              <span
+                className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-surface-sunken px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
+                title={processing.description}
+              >
                 <span
-                  className="text-2xl sm:text-3xl flex-shrink-0 leading-none mt-0.5"
                   aria-hidden="true"
-                >
-                  {tool.icon}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <h1 className="text-xl sm:text-2xl font-bold leading-tight tracking-tight">
-                    {tool.name}
-                  </h1>
-                  <CardDescription className="text-sm sm:text-base mt-1">
-                    {tool.description}
-                  </CardDescription>
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                <span
-                  className="px-2 py-0.5 text-xs border rounded-md bg-muted/40 font-medium"
-                  title={processing.description}
-                >
-                  {processing.label}
-                </span>
-                {tool.tags.slice(0, 5).map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-2 py-0.5 text-xs bg-secondary text-secondary-foreground rounded-md"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    isLocalProcessing ? "bg-status-ok" : "bg-status-warn"
+                  }`}
+                />
+                {processing.label}
+              </span>
             </div>
-
-            <div className="flex flex-wrap items-center gap-2 lg:flex-shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleBookmark}
-                className="gap-1.5"
-              >
-                {bookmarked ? (
-                  <Star className="h-4 w-4 fill-current text-amber-500" />
-                ) : (
-                  <StarOff className="h-4 w-4" />
-                )}
-                {bookmarked ? "Bookmarked" : "Bookmark"}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCopyUrl}
-                className="gap-1.5"
-              >
-                <Copy className="h-4 w-4" />
-                Copy URL
-              </Button>
-              {canNativeShare && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleNativeShare}
-                  aria-label="Share tool"
-                  className="h-9 w-9"
-                >
-                  <Share2 className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              {tool.description}
+            </p>
           </div>
-        </CardHeader>
+        </div>
 
-        <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-          {!isStudioTool(tool) && (
-            <ToolIoGuide
-              inputDescription={tool.inputDescription}
-              outputDescription={tool.outputDescription}
-              example={tool.example}
-            />
+        <div className="flex flex-wrap items-center gap-1.5 lg:shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleBookmark}
+            className="h-8 gap-1.5 text-xs bg-surface-sunken"
+          >
+            {bookmarked ? (
+              <Star className="h-3.5 w-3.5 fill-current text-primary" />
+            ) : (
+              <StarOff className="h-3.5 w-3.5" />
+            )}
+            {bookmarked ? "Bookmarked" : "Bookmark"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCopyUrl}
+            className="h-8 gap-1.5 text-xs bg-surface-sunken"
+          >
+            <Copy className="h-3.5 w-3.5" />
+            Copy URL
+          </Button>
+          {canNativeShare && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleNativeShare}
+              aria-label="Share tool"
+              className="h-8 w-8 bg-surface-sunken"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+            </Button>
           )}
-          {children}
-          <ToolGlossary toolId={glossaryToolId} />
-        </CardContent>
-      </Card>
+        </div>
+      </header>
+
+      {/* Main Tool Surface */}
+      <div>
+        {!isStudioTool(tool) && (
+          <ToolIoGuide
+            inputDescription={tool.inputDescription}
+            outputDescription={tool.outputDescription}
+            example={tool.example}
+          />
+        )}
+        {children}
+        <ToolGlossary toolId={glossaryToolId} />
+      </div>
     </div>
   );
 }

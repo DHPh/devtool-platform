@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Copy, RefreshCw, Trash2 } from "lucide-react";
+import { PaletteIcon as PhosphorPalette } from "@phosphor-icons/react/Palette";
 import { toast } from "sonner";
 import {
   generateInterpolatedGradientCSS,
@@ -378,7 +379,11 @@ export function GradientColorPickerTab() {
           <CardContent>
             {pickedColors.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
-                <div className="w-16 h-16 mx-auto mb-4 opacity-50">🎨</div>
+                <PhosphorPalette
+                  aria-hidden="true"
+                  weight="duotone"
+                  className="mx-auto mb-3 h-10 w-10 text-muted-foreground/60"
+                />
                 <p>Click on the gradient to pick colors</p>
               </div>
             ) : (

@@ -104,7 +104,7 @@ export const validateConfig = () => {
   }
 
   if (warnings.length > 0 && isDevelopment) {
-    console.warn("⚠️  Configuration warnings:");
+    console.warn("Configuration warnings:");
     warnings.forEach((warning) => console.warn(`   - ${warning}`));
     console.warn("   Update .env.local with production values");
   }

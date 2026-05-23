@@ -2,22 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { ToolMonogram } from "@/components/ui/tool-badge";
 import {
   TOOL_REGISTRY,
   getToolsByCategory,
   getToolsByType,
   getFeaturedTools,
   getAllToolTypes,
+  isStudioTool,
   ToolMetadata,
 } from "@/lib/tool-registry";
 import {
@@ -25,6 +20,7 @@ import {
   getAllCategories,
   ToolType,
 } from "@/lib/tool-classification";
+import { getCategoryIcon, getToolMonogram } from "@/lib/tool-visuals";
 
 interface ToolClassificationViewProps {
   defaultView?: "categories" | "types" | "featured";
@@ -38,7 +34,7 @@ export function ToolClassificationView({
   const [selectedType, setSelectedType] = useState<ToolType | "all">("all");
 
   const categories = getAllCategories().filter(
-    (category) => getToolsByCategory(category.id).length > 0
+    (category) => getToolsByCategory(category.id).length > 0,
   );
   const toolTypes = getAllToolTypes();
   const featuredTools = getFeaturedTools();
@@ -64,75 +60,101 @@ export function ToolClassificationView({
   };
 
   return (
-    <div className="space-y-6">
-      {/* View Selection */}
+    <div className="space-y-5">
       <Tabs
         value={activeView}
         onValueChange={(value) =>
           setActiveView(value as "categories" | "types" | "featured")
         }
       >
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="categories">By Categories</TabsTrigger>
-          <TabsTrigger value="types">By Types</TabsTrigger>
-          <TabsTrigger value="featured">Featured</TabsTrigger>
-        </TabsList>
+        <div className="border-b border-border">
+          <TabsList className="inline-flex h-auto rounded-none bg-transparent p-0 gap-1">
+            <TabsTrigger
+              value="categories"
+              className="rounded-none border-b-2 border-transparent px-3 py-2 text-xs sm:text-sm font-medium text-muted-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
+            >
+              By Categories
+            </TabsTrigger>
+            <TabsTrigger
+              value="types"
+              className="rounded-none border-b-2 border-transparent px-3 py-2 text-xs sm:text-sm font-medium text-muted-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
+            >
+              By Types
+            </TabsTrigger>
+            <TabsTrigger
+              value="featured"
+              className="rounded-none border-b-2 border-transparent px-3 py-2 text-xs sm:text-sm font-medium text-muted-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
+            >
+              Featured
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Categories View */}
-        <TabsContent value="categories" className="space-y-6">
-          <div className="flex flex-wrap gap-2">
+        <TabsContent value="categories" className="space-y-4 mt-4">
+          <div className="flex flex-wrap gap-1.5">
             <Button
               variant={selectedCategory === "all" ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedCategory("all")}
+              className="h-7 text-xs px-2.5"
             >
               All Categories
             </Button>
-            {categories.map((category) => (
-              <Button
-                key={category.id}
-                variant={
-                  selectedCategory === category.id ? "default" : "outline"
-                }
-                size="sm"
-                onClick={() => setSelectedCategory(category.id)}
-                className="flex items-center gap-2"
-              >
-                <span>{category.icon}</span>
-                {category.name}
-              </Button>
-            ))}
+            {categories.map((category) => {
+              const Icon = getCategoryIcon(category.id);
+              return (
+                <Button
+                  key={category.id}
+                  variant={
+                    selectedCategory === category.id ? "default" : "outline"
+                  }
+                  size="sm"
+                  onClick={() => setSelectedCategory(category.id)}
+                  className="h-7 text-xs px-2.5 gap-1.5"
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  {category.name}
+                </Button>
+              );
+            })}
           </div>
 
           {selectedCategory !== "all" && (
-            <div className="bg-muted/50 p-4 rounded-lg">
+            <div className="rounded-md border border-border bg-surface-sunken px-3.5 py-2.5">
               {(() => {
                 const category = categories.find(
-                  (c) => c.id === selectedCategory
+                  (c) => c.id === selectedCategory,
                 );
-                return category ? (
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{category.icon}</span>
+                if (!category) return null;
+                const Icon = getCategoryIcon(category.id);
+                return (
+                  <div className="flex items-center gap-2.5">
+                    <Icon
+                      className="h-4 w-4 text-primary shrink-0"
+                      aria-hidden="true"
+                    />
                     <div>
-                      <h3 className="font-semibold">{category.name}</h3>
-                      <p className="text-sm text-muted-foreground">
+                      <h3 className="text-xs font-semibold">{category.name}</h3>
+                      <p className="text-xs text-muted-foreground">
                         {category.description}
                       </p>
                     </div>
                   </div>
-                ) : null;
+                );
               })()}
             </div>
           )}
         </TabsContent>
 
         {/* Types View */}
-        <TabsContent value="types" className="space-y-6">
-          <div className="flex flex-wrap gap-2">
+        <TabsContent value="types" className="space-y-4 mt-4">
+          <div className="flex flex-wrap gap-1.5">
             <Button
               variant={selectedType === "all" ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedType("all")}
+              className="h-7 text-xs px-2.5"
             >
               All Types
             </Button>
@@ -142,7 +164,7 @@ export function ToolClassificationView({
                 variant={selectedType === type ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedType(type)}
-                className="capitalize"
+                className="h-7 text-xs px-2.5 capitalize"
               >
                 {type.replace("-", " ")}
               </Button>
@@ -150,28 +172,23 @@ export function ToolClassificationView({
           </div>
 
           {selectedType !== "all" && (
-            <div className="bg-muted/50 p-4 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div>
-                  <h3 className="font-semibold capitalize">
-                    {selectedType.replace("-", " ")} Tools
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Tools that {getTypeDescription(selectedType)}
-                  </p>
-                </div>
-              </div>
+            <div className="rounded-md border border-border bg-surface-sunken px-3.5 py-2.5">
+              <h3 className="text-xs font-semibold capitalize">
+                {selectedType.replace("-", " ")} Tools
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Tools that {getTypeDescription(selectedType)}
+              </p>
             </div>
           )}
         </TabsContent>
 
         {/* Featured View */}
-        <TabsContent value="featured" className="space-y-6">
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/50 dark:to-purple-950/50 p-6 rounded-lg">
-            <h3 className="text-xl font-bold mb-2">⭐ Featured Tools</h3>
-            <p className="text-muted-foreground">
-              Our most popular and frequently used developer tools, handpicked
-              for their utility and ease of use.
+        <TabsContent value="featured" className="mt-4">
+          <div className="rounded-md border border-border bg-surface-sunken px-3.5 py-2.5">
+            <h3 className="text-xs font-semibold">Featured Utilities</h3>
+            <p className="text-xs text-muted-foreground">
+              Frequently used developer studios and standalone tools.
             </p>
           </div>
         </TabsContent>
@@ -186,82 +203,53 @@ export function ToolClassificationView({
 function ToolGrid({ tools }: { tools: ToolMetadata[] }) {
   if (tools.length === 0) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">No tools found.</p>
+      <div className="py-10 text-center text-xs text-muted-foreground">
+        No tools found.
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      {tools.map((tool) => (
-        <Link key={tool.id} href={tool.path}>
-          <Card className="h-full hover:shadow-md transition-shadow cursor-pointer flex flex-col">
-            <CardHeader className="flex-shrink-0">
-              <div className="flex items-start gap-3">
-                <span className="text-2xl flex-shrink-0">{tool.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    {tool.name}
-                    {tool.featured && (
-                      <span className="text-yellow-500">⭐</span>
-                    )}
-                  </CardTitle>
-                  <CardDescription className="text-sm">
-                    {tool.description}
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col">
-              <div className="space-y-2 mt-auto">
-                {/* Tool Type */}
-                <div className="flex flex-wrap gap-1">
-                  <Badge variant="default" className="text-xs capitalize">
-                    {tool.type.replace("-", " ")}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5">
+      {tools.map((tool) => {
+        const badgeLabel = isStudioTool(tool)
+          ? "Studio"
+          : tool.processing !== "client"
+            ? "Network"
+            : null;
+
+        return (
+          <Link
+            key={tool.id}
+            href={tool.path}
+            className="group flex items-start gap-3 rounded-md border border-border bg-card p-3.5 transition-colors hover:border-border-strong hover:bg-surface-sunken/60"
+          >
+            <ToolMonogram
+              code={getToolMonogram(tool)}
+              size="sm"
+              className="mt-0.5"
+            />
+            <div className="min-w-0 flex-1 space-y-1">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold truncate group-hover:text-primary transition-colors">
+                  {tool.name}
+                </span>
+                {badgeLabel && (
+                  <Badge
+                    variant="outline"
+                    className="text-[11px] px-1.5 py-0 shrink-0 text-muted-foreground"
+                  >
+                    {badgeLabel}
                   </Badge>
-                  {tool.types &&
-                    tool.types.slice(0, 2).map((type) => (
-                      <Badge
-                        key={type}
-                        variant="secondary"
-                        className="text-xs capitalize"
-                      >
-                        {type.replace("-", " ")}
-                      </Badge>
-                    ))}
-                </div>
-
-                {/* Tags */}
-                <div className="flex flex-wrap gap-1">
-                  {tool.tags.slice(0, 3).map((tag) => (
-                    <Badge key={tag} variant="outline" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                  {tool.tags.length > 3 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{tool.tags.length - 3}
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Complexity */}
-                {tool.complexity && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">
-                      {getComplexityIndicator(tool.complexity)}
-                    </span>
-                    <span className="text-xs text-muted-foreground capitalize">
-                      {tool.complexity}
-                    </span>
-                  </div>
                 )}
               </div>
-            </CardContent>
-          </Card>
-        </Link>
-      ))}
+              <p className="text-xs text-muted-foreground line-clamp-2">
+                {tool.description}
+              </p>
+            </div>
+          </Link>
+        );
+      })}
     </div>
   );
 }
@@ -285,19 +273,4 @@ function getTypeDescription(type: ToolType): string {
   };
 
   return descriptions[type] || "provide specialized functionality";
-}
-
-function getComplexityIndicator(
-  complexity: "simple" | "intermediate" | "advanced"
-): string {
-  switch (complexity) {
-    case "simple":
-      return "●○○";
-    case "intermediate":
-      return "●●○";
-    case "advanced":
-      return "●●●";
-    default:
-      return "○○○";
-  }
 }

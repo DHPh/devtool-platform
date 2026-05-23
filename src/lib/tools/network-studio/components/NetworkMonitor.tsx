@@ -46,16 +46,16 @@ export function NetworkMonitor() {
       setPingResult(result);
 
       if (result.alive) {
-        addLog(`✅ Host is reachable via ${result.method}`);
+        addLog(`[OK] Host is reachable via ${result.method}`);
         addLog(`Response time: ${result.responseTime}ms`);
       } else {
-        addLog(`❌ Host unreachable: ${result.error}`);
+        addLog(`[ERR] Host unreachable: ${result.error}`);
       }
 
       addLog(`Total test duration: ${Math.round(endTime - startTime)}ms`);
     } catch (error) {
       addLog(
-        `❌ Ping test failed: ${
+        `[ERR] Ping test failed: ${
           error instanceof Error ? error.message : "Unknown error"
         }`
       );
@@ -80,13 +80,13 @@ export function NetworkMonitor() {
       if (result.error || result.completed !== true) {
         const message = result.error || "Speed test did not complete.";
         setSpeedTestError(message);
-        addLog(`❌ Speed test failed: ${message}`);
+        addLog(`[ERR] Speed test failed: ${message}`);
         toast.error("Speed test failed");
         return;
       }
       setSpeedTest(result);
 
-      addLog(`✅ Speed test completed`);
+      addLog("[OK] Speed test completed");
       if (result.speedMbps) {
         addLog(`Download speed: ${result.speedMbps} Mbps`);
       }
@@ -96,7 +96,7 @@ export function NetworkMonitor() {
       const message = error instanceof Error ? error.message : "Unknown error";
       setSpeedTestError(message);
       addLog(
-        `❌ Speed test failed: ${message}`
+        `[ERR] Speed test failed: ${message}`
       );
       toast.error("Speed test failed");
       console.error("Speed test error:", error);

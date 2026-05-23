@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Copy, Eye } from "lucide-react";
+import { MagnifyingGlassIcon as MagnifyingGlass } from "@phosphor-icons/react/MagnifyingGlass";
 import { RegexMatch } from "@/lib/utils/regex/regex-tester";
 
 interface RegexMatchesListProps {
@@ -44,7 +45,11 @@ export function RegexMatchesList({
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
-            <div className="text-4xl mb-2">🔍</div>
+            <MagnifyingGlass
+              aria-hidden="true"
+              weight="duotone"
+              className="mx-auto mb-2.5 h-9 w-9 text-muted-foreground/60"
+            />
             <p>Try adjusting your regex pattern or input text</p>
           </div>
         </CardContent>

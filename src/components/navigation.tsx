@@ -3,12 +3,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { Search, Star, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BreadcrumbSwitcher } from "@/components/breadcrumb-switcher";
 import { CommandPalette } from "@/components/command-palette";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Home, LayoutGrid, Menu, Search, Star, Trash2, X } from "lucide-react";
-import { TOOL_REGISTRY } from "@/lib/tool-registry";
-import { useBookmarks } from "@/store/bookmarks";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ToolMonogram } from "@/components/ui/tool-badge";
+import { TOOL_REGISTRY } from "@/lib/tool-registry";
+import { getToolMonogram } from "@/lib/tool-visuals";
+import { useBookmarks } from "@/store/bookmarks";
 
 const emptySubscribe = () => () => {};
 
@@ -33,7 +37,6 @@ function isEditableElement(target: EventTarget | null): boolean {
 export function Navigation() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isBookmarksOpen, setIsBookmarksOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { bookmarks, removeBookmark } = useBookmarks();
 
   const hasHydrated = useSyncExternalStore(
@@ -54,7 +57,6 @@ export function Navigation() {
         event.key.toLowerCase() === "k"
       ) {
         event.preventDefault();
-        setIsMobileMenuOpen(false);
         setIsSearchOpen((prev) => !prev);
         return;
       }
@@ -67,7 +69,6 @@ export function Navigation() {
         !isEditableElement(event.target)
       ) {
         event.preventDefault();
-        setIsMobileMenuOpen(false);
         setIsSearchOpen(true);
       }
     };
@@ -76,208 +77,125 @@ export function Navigation() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const handleSearchOpen = () => {
-    setIsMobileMenuOpen(false);
-    setIsSearchOpen(true);
-  };
-
-  const handleBookmarksOpen = () => {
-    setIsMobileMenuOpen(false);
-    setIsBookmarksOpen(true);
-  };
-
   return (
     <>
-      <nav className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto px-4 sm:container">
-          <div className="flex h-16 items-center justify-between gap-4">
-            {/* Logo */}
+      <header className="sticky top-0 z-40 h-12 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/85">
+        <div className="mx-auto flex h-full max-w-[var(--workspace-max-w)] items-center justify-between gap-2 px-3 sm:px-6">
+          {/* Left: Brand Mark + Breadcrumb Switcher */}
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <Link
               href="/"
-              className="flex items-center gap-2 min-w-0 flex-shrink-0"
+              className="flex items-center gap-2 shrink-0 hover:opacity-90 transition-opacity"
+              aria-label="DevTool Platform Home"
             >
               <Image
                 src="/logo-icon.png"
                 alt="DevTool Platform"
                 width={128}
                 height={128}
-                sizes="32px"
-                className="h-8 w-8 flex-shrink-0"
+                sizes="28px"
+                className="h-7 w-7 shrink-0"
                 priority
               />
-              <Image
-                src="/logo-text.png"
-                alt="DevTool Platform"
-                width={560}
-                height={74}
-                sizes="(max-width: 640px) 180px, 240px"
-                className="h-6 sm:h-7 w-auto max-w-[180px] sm:max-w-[240px] dark:hidden"
-                priority
-              />
-              <Image
-                src="/logo-text-darkmode.png"
-                alt="DevTool Platform"
-                width={560}
-                height={74}
-                sizes="(max-width: 640px) 180px, 240px"
-                className="hidden h-6 sm:h-7 w-auto max-w-[180px] sm:max-w-[240px] dark:block"
-                priority
-              />
+              <span className="hidden sm:inline-flex items-center">
+                <Image
+                  src="/logo-text.png"
+                  alt="DevTool Platform"
+                  width={560}
+                  height={74}
+                  sizes="160px"
+                  className="h-5 w-auto max-w-[160px] dark:hidden"
+                  priority
+                />
+                <Image
+                  src="/logo-text-darkmode.png"
+                  alt="DevTool Platform"
+                  width={560}
+                  height={74}
+                  sizes="160px"
+                  className="hidden h-5 w-auto max-w-[160px] dark:block"
+                  priority
+                />
+              </span>
             </Link>
 
-            {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center gap-2">
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/">
-                  <Home className="h-4 w-4 mr-1.5" />
-                  Home
-                </Link>
-              </Button>
+            <BreadcrumbSwitcher />
+          </div>
 
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/tools">
-                  <LayoutGrid className="h-4 w-4 mr-1.5" />
-                  Tools
-                </Link>
-              </Button>
+          {/* Right: Command Palette, Bookmarks, Theme Palette & Mode */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsSearchOpen(true)}
+              className="hidden md:inline-flex h-8 w-48 lg:w-56 justify-between bg-surface-sunken text-muted-foreground font-normal px-2.5"
+            >
+              <span className="flex items-center gap-1.5 text-xs">
+                <Search className="h-3.5 w-3.5" />
+                <span>Search tools...</span>
+              </span>
+              <kbd className="pointer-events-none inline-flex h-5 select-none items-center rounded-sm border border-border bg-card px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                ⌘K
+              </kbd>
+            </Button>
 
-              {/* Command Palette Trigger */}
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-64 justify-between text-muted-foreground font-normal"
-                onClick={handleSearchOpen}
-              >
-                <span className="flex items-center">
-                  <Search className="h-4 w-4 mr-2" />
-                  Search tools...
-                </span>
-                <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-                  ⌘K
-                </kbd>
-              </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => setIsSearchOpen(true)}
+              aria-label="Open tool search"
+              className="md:hidden h-8 w-8 bg-surface-sunken"
+            >
+              <Search className="h-4 w-4" />
+            </Button>
 
-              {/* Bookmarks Trigger */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleBookmarksOpen}
-              >
-                <Star className="h-4 w-4 mr-1.5" />
-                Bookmarks ({bookmarkCount})
-              </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsBookmarksOpen(true)}
+              aria-label={`Open bookmarked tools (${bookmarkCount})`}
+              className="h-8 gap-1.5 px-2.5 bg-surface-sunken"
+            >
+              <Star className="h-3.5 w-3.5" />
+              <span className="hidden lg:inline text-xs">Bookmarks</span>
+              <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
+                {bookmarkCount}
+              </span>
+            </Button>
 
-              <ThemeToggle />
-            </div>
-
-            {/* Mobile/Tablet controls */}
-            <div className="lg:hidden flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleSearchOpen}
-                aria-label="Open tool search"
-              >
-                <Search className="h-4 w-4" />
-              </Button>
-
-              <ThemeToggle />
-
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="flex-shrink-0"
-                aria-label={
-                  isMobileMenuOpen
-                    ? "Close navigation menu"
-                    : "Open navigation menu"
-                }
-                aria-expanded={isMobileMenuOpen}
-              >
-                {isMobileMenuOpen ? (
-                  <X className="h-4 w-4" />
-                ) : (
-                  <Menu className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
+            <ThemeSwitcher />
+            <ThemeToggle />
           </div>
         </div>
+      </header>
 
-        {/* Mobile/Tablet dropdown menu */}
-        {isMobileMenuOpen && (
-          <div className="lg:hidden px-4 py-3 space-y-1 border-t bg-background">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start"
-              asChild
-            >
-              <Link href="/" onClick={() => setIsMobileMenuOpen(false)}>
-                <Home className="h-4 w-4 mr-2" />
-                Home
-              </Link>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start"
-              asChild
-            >
-              <Link href="/tools" onClick={() => setIsMobileMenuOpen(false)}>
-                <LayoutGrid className="h-4 w-4 mr-2" />
-                All Tools
-              </Link>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start"
-              onClick={handleSearchOpen}
-            >
-              <Search className="h-4 w-4 mr-2" />
-              Search tools...
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start"
-              onClick={handleBookmarksOpen}
-            >
-              <Star className="h-4 w-4 mr-2" />
-              Bookmarks ({bookmarkCount})
-            </Button>
-          </div>
-        )}
-      </nav>
-
-      {/* Shared Bookmarks Dialog */}
+      {/* Bookmarks Dialog */}
       <Dialog open={isBookmarksOpen} onOpenChange={setIsBookmarksOpen}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>Bookmarked Tools</DialogTitle>
             <DialogDescription>
-              Quickly jump back to your saved developer tools.
+              Quickly jump back to your saved developer utilities.
             </DialogDescription>
           </DialogHeader>
-          <div className="max-h-96 overflow-y-auto space-y-2">
+          <div className="max-h-96 overflow-y-auto space-y-1.5">
             {bookmarkedTools.length > 0 ? (
               bookmarkedTools.map((tool) => (
                 <div
                   key={tool.id}
-                  className="flex items-center justify-between gap-2 rounded-lg border bg-card p-3 hover:bg-accent/50 transition-colors"
+                  className="flex items-center justify-between gap-2 rounded-sm border border-border bg-surface-sunken p-2.5 hover:bg-surface-elevated transition-colors"
                 >
                   <Link
                     href={tool.path}
                     onClick={() => setIsBookmarksOpen(false)}
                     className="flex items-center gap-3 min-w-0 flex-1"
                   >
-                    <span className="text-xl flex-shrink-0">{tool.icon}</span>
+                    <ToolMonogram code={getToolMonogram(tool)} size="sm" />
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-sm truncate">
-                        {tool.name}
-                      </p>
+                      <p className="font-medium text-sm truncate">{tool.name}</p>
                       <p className="text-xs text-muted-foreground line-clamp-1">
                         {tool.description}
                       </p>
@@ -295,7 +213,7 @@ export function Navigation() {
                 </div>
               ))
             ) : (
-              <div className="text-center py-8 space-y-2">
+              <div className="text-center py-8 space-y-1.5">
                 <p className="text-sm text-muted-foreground">
                   No bookmarked tools yet.
                 </p>

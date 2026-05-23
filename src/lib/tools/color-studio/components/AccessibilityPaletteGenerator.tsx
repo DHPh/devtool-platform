@@ -25,6 +25,8 @@ import {
   Plus,
   X,
 } from "lucide-react";
+import { CheckCircleIcon as PhosphorCheckCircle } from "@phosphor-icons/react/CheckCircle";
+import { WarningIcon as Warning } from "@phosphor-icons/react/Warning";
 import { toast } from "sonner";
 import { ColorPicker } from "./ColorPicker";
 import {
@@ -535,8 +537,24 @@ export function AccessibilityPaletteGenerator({
                     />
                     <div className="text-center">
                       <div className="text-xs font-mono">{color.simulated}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {color.isDistinguishable ? "✓ Clear" : "⚠ Similar"}
+                      <div className="text-xs text-muted-foreground inline-flex items-center justify-center gap-1">
+                        {color.isDistinguishable ? (
+                          <>
+                            <PhosphorCheckCircle
+                              aria-hidden="true"
+                              className="h-3.5 w-3.5 text-status-ok"
+                            />
+                            <span>Clear</span>
+                          </>
+                        ) : (
+                          <>
+                            <Warning
+                              aria-hidden="true"
+                              className="h-3.5 w-3.5 text-status-warn"
+                            />
+                            <span>Similar</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>

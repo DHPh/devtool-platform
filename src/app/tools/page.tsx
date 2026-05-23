@@ -1,26 +1,20 @@
 import Link from "next/link";
 import { Metadata } from "next";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Zap, Shield, Globe } from "lucide-react";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { ToolMonogram } from "@/components/ui/tool-badge";
+import { ToolsCatalog } from "@/components/tools-catalog";
 import { serializeJsonForHtml } from "@/lib/security/safe-json";
 import {
   TOOL_REGISTRY,
   TOOL_COUNT,
   getToolsByCategory,
+  isStudioTool,
 } from "@/lib/tool-registry";
 import { getAllCategories } from "@/lib/tool-classification";
+import { getCategoryIcon, getToolMonogram } from "@/lib/tool-visuals";
 import { getAbsoluteUrl, siteConfig } from "@/config/site";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
-import { ToolsCatalog } from "@/components/tools-catalog";
 
-// Static metadata for SEO
 export const metadata: Metadata = {
   title: `All Developer Tools | ${siteConfig.name} - ${TOOL_COUNT} Free Online Tools`,
   description:
@@ -125,169 +119,98 @@ export default function ToolsPage() {
           __html: serializeJsonForHtml(structuredData),
         }}
       />
-      <div className="mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8 max-w-7xl ">
-        <div className="px-4 sm:px-0">
+      <div className="max-w-[var(--workspace-max-w)] mx-auto px-4 sm:px-6 py-5 sm:py-6 space-y-6">
+        <div className="sr-only">
           <Breadcrumbs items={breadcrumbItems} />
         </div>
 
-        {/* Hero Section */}
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold">
-            Complete Developer Tools Collection
+        {/* Compact Catalog Header */}
+        <header className="pb-5 border-b border-border space-y-1.5">
+          <div className="font-mono text-xs text-primary tabular-nums">
+            DIRECTORY · {TOOL_COUNT} UTILITIES
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+            Developer Tools Catalog
           </h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Discover {TOOL_COUNT} free online developer tools and studio
-            utilities. Most process data locally, while network tools contact
-            servers or external services when required. No registration needed.
+          <p className="text-sm text-muted-foreground max-w-3xl">
+            Most tools process data locally in your browser, while network tools
+            contact servers or external services when required. No registration
+            needed.
           </p>
-        </div>
-
-        {/* Features */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-8">
-          <div className="text-center space-y-3">
-            <div className="mx-auto w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-              <Zap className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h3 className="text-lg font-semibold">Instant Processing</h3>
-            <p className="text-sm text-muted-foreground">
-              Most tools process data immediately in your browser; network
-              tools make remote requests when needed
-            </p>
-          </div>
-
-          <div className="text-center space-y-3">
-            <div className="mx-auto w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-              <Shield className="h-6 w-6 text-green-600 dark:text-green-400" />
-            </div>
-            <h3 className="text-lg font-semibold">Privacy Aware</h3>
-            <p className="text-sm text-muted-foreground">
-              Local tools keep input on-device; network tools send required
-              request data to servers or external services
-            </p>
-          </div>
-
-          <div className="text-center space-y-3">
-            <div className="mx-auto w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
-              <Globe className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-            </div>
-            <h3 className="text-lg font-semibold">Always Available</h3>
-            <p className="text-sm text-muted-foreground">
-              Access from any device with a modern web browser, no downloads
-              needed
-            </p>
-          </div>
-        </div>
+        </header>
 
         {/* Interactive Search & Tools by Category */}
         <ToolsCatalog
           categories={populatedCategories.map((category) => ({
             id: category.id,
             name: category.name,
-            icon: category.icon,
             count: category.tools.length,
           }))}
         >
           <div className="space-y-8">
-            <h2 className="text-2xl font-bold text-center">
-              Browse Tools by Category
-            </h2>
-
             {populatedCategories.map((category) => {
+              const CategoryIcon = getCategoryIcon(category.id);
               return (
-                <div key={category.id} className="space-y-4">
-                  <h3 className="text-xl font-semibold flex items-center gap-2">
-                    <span className="text-2xl">{category.icon}</span>
-                    {category.name} Tools
-                    <Badge variant="secondary">{category.tools.length}</Badge>
-                  </h3>
+                <section key={category.id} className="space-y-3">
+                  <div className="flex items-center justify-between border-b border-border pb-2">
+                    <h2 className="text-base font-semibold flex items-center gap-2">
+                      <CategoryIcon
+                        className="h-4 w-4 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                      <span>{category.name} Tools</span>
+                    </h2>
+                    <span className="font-mono text-xs text-muted-foreground tabular-nums">
+                      {category.tools.length}
+                    </span>
+                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {category.tools.map((tool) => (
-                      <Link
-                        key={tool.id}
-                        href={tool.path}
-                        className="block"
-                      >
-                        <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
-                          <CardHeader>
-                            <div className="flex items-start gap-3">
-                              <span className="text-2xl flex-shrink-0">
-                                {tool.icon}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    {category.tools.map((tool) => {
+                      const roleBadge = isStudioTool(tool)
+                        ? "Studio"
+                        : tool.processing !== "client"
+                          ? "Network"
+                          : null;
+
+                      return (
+                        <Link
+                          key={tool.id}
+                          href={tool.path}
+                          className="group flex items-start gap-3 rounded-md border border-border bg-card p-3.5 transition-colors hover:border-border-strong hover:bg-surface-sunken/60"
+                        >
+                          <ToolMonogram
+                            code={getToolMonogram(tool)}
+                            size="sm"
+                            className="mt-0.5"
+                          />
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-sm font-semibold truncate group-hover:text-primary transition-colors">
+                                {tool.name}
                               </span>
-                              <div className="flex-1 min-w-0">
-                                <CardTitle className="text-lg">
-                                  {tool.name}
-                                </CardTitle>
-                                <CardDescription className="text-sm">
-                                  {tool.description}
-                                </CardDescription>
-                              </div>
-                            </div>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="flex flex-wrap gap-1">
-                              {tool.tags.slice(0, 3).map((tag) => (
+                              {roleBadge && (
                                 <Badge
-                                  key={tag}
                                   variant="outline"
-                                  className="text-xs"
+                                  className="text-[11px] px-1.5 py-0 shrink-0 text-muted-foreground"
                                 >
-                                  {tag}
-                                </Badge>
-                              ))}
-                              {tool.tags.length > 3 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{tool.tags.length - 3}
+                                  {roleBadge}
                                 </Badge>
                               )}
                             </div>
-                          </CardContent>
-                        </Card>
-                      </Link>
-                    ))}
+                            <p className="text-xs text-muted-foreground line-clamp-2">
+                              {tool.description}
+                            </p>
+                          </div>
+                        </Link>
+                      );
+                    })}
                   </div>
-                </div>
+                </section>
               );
             })}
           </div>
         </ToolsCatalog>
-
-        {/* SEO Content */}
-        <div className="bg-muted/30 rounded-lg p-8 space-y-6">
-          <h2 className="text-2xl font-bold text-center">
-            Why Choose DevTool Platform?
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">🚀 Fast & Efficient</h3>
-              <p className="text-muted-foreground">
-                Most tools run locally in your browser using modern web
-                technologies. Network utilities make remote requests because
-                their results depend on servers or external services.
-              </p>
-
-              <h3 className="text-lg font-semibold">🔒 Privacy First</h3>
-              <p className="text-muted-foreground">
-                Local formatters and converters keep input on your device.
-                Network diagnostics and breach checks send only the request data
-                needed to provide their results.
-              </p>
-            </div>
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">💯 Completely Free</h3>
-              <p className="text-muted-foreground">
-                No hidden costs, premium features, or subscription fees. All
-                tools are completely free to use with no limitations.
-              </p>
-
-              <h3 className="text-lg font-semibold">📱 Mobile Friendly</h3>
-              <p className="text-muted-foreground">
-                Responsive design that works perfectly on phones, tablets, and
-                desktop computers. Access your tools from anywhere.
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
     </>
   );

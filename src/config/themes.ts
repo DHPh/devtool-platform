@@ -8,21 +8,21 @@ export interface ThemeDefinition {
 export const THEMES: readonly ThemeDefinition[] = [
   {
     id: "legacy",
-    label: "Classic",
-    description: "The familiar neutral look with light and dark modes.",
+    label: "Zinc",
+    description: "Clean neutral workbench with cobalt accents.",
     icon: "Palette",
   },
   {
-    id: "neon",
-    label: "Neon",
-    description: "Vivid green and pink accents over a deep charcoal.",
-    icon: "Zap",
+    id: "paper",
+    label: "Swiss Paper",
+    description: "Warm editorial palette with burnt amber accents and crisp corners.",
+    icon: "BookOpen",
   },
   {
-    id: "paper",
-    label: "Paper",
-    description: "A warm editorial theme with amber accents.",
-    icon: "BookOpen",
+    id: "neon",
+    label: "Precision",
+    description: "Deep slate-charcoal workbench with emerald accents.",
+    icon: "Zap",
   },
 ] as const;
 

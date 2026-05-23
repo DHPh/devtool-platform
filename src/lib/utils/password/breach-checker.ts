@@ -176,40 +176,40 @@ export function generateSecurityRecommendations(
   }
 
   if (breachResult.isBreached) {
-    recommendations.push("🚨 Change this password immediately");
-    recommendations.push("🔄 Use a unique password for each account");
-    recommendations.push("🛡️ Consider using a password manager");
+    recommendations.push("Change this password immediately");
+    recommendations.push("Use a unique password for each account");
+    recommendations.push("Consider using a password manager");
   }
 
   if (isCommonPassword(password)) {
     recommendations.push(
-      '❌ Avoid common passwords like "password" or "123456"'
+      'Avoid common passwords like "password" or "123456"'
     );
   }
 
   if (password.length < 12) {
-    recommendations.push("📏 Use at least 12 characters for better security");
+    recommendations.push("Use at least 12 characters for better security");
   }
 
   if (!/[A-Z]/.test(password)) {
-    recommendations.push("🔤 Include uppercase letters");
+    recommendations.push("Include uppercase letters");
   }
 
   if (!/[a-z]/.test(password)) {
-    recommendations.push("🔡 Include lowercase letters");
+    recommendations.push("Include lowercase letters");
   }
 
   if (!/[0-9]/.test(password)) {
-    recommendations.push("🔢 Include numbers");
+    recommendations.push("Include numbers");
   }
 
   if (!/[^a-zA-Z0-9]/.test(password)) {
-    recommendations.push("🔣 Include special characters");
+    recommendations.push("Include special characters");
   }
 
   if (recommendations.length === 0) {
-    recommendations.push("✅ This appears to be a good password!");
-    recommendations.push("🔐 Consider enabling two-factor authentication");
+    recommendations.push("This appears to be a good password");
+    recommendations.push("Consider enabling two-factor authentication");
   }
 
   return recommendations;

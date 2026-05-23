@@ -168,7 +168,7 @@ export function StudioTabs<Props extends object>({
   activeTab: controlledTab,
   onTabChange,
   listClassName,
-  contentClassName = "mt-5 focus:outline-none",
+  contentClassName = "mt-4 focus:outline-none",
 }: StudioTabsProps<Props>) {
   const [internalTab, setInternalTab] = useState(defaultTab);
   const activeTab = controlledTab ?? internalTab;
@@ -251,29 +251,30 @@ export function StudioTabs<Props extends object>({
         <StudioUrlObserver manifest={manifest} onUrlTab={applyUrlTab} />
       </Suspense>
 
-      <TabsList
-        aria-label={`${manifest.id.replaceAll("-", " ")} tools`}
-        className={cn(
-          "grid h-auto w-full auto-rows-fr gap-1 p-1",
-          getStudioGridColumns(manifest.tabs.length),
-          listClassName,
-        )}
-      >
-        {manifest.tabs.map((tab) => {
-          const Icon = ICONS[tab.icon];
-          return (
-            <TabsTrigger
-              key={tab.id}
-              value={tab.id}
-              className="h-full min-h-11 min-w-0 gap-2 whitespace-normal px-2.5 py-2 text-left text-xs sm:text-sm leading-snug justify-start sm:justify-center"
-            >
-              <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
-              <span className="hidden sm:inline line-clamp-2">{tab.label}</span>
-              <span className="sm:hidden truncate">{tab.shortLabel}</span>
-            </TabsTrigger>
-          );
-        })}
-      </TabsList>
+      <div className="-mx-4 px-4 sm:mx-0 sm:px-0 border-b border-border overflow-x-auto no-scrollbar">
+        <TabsList
+          aria-label={`${manifest.id.replaceAll("-", " ")} tools`}
+          className={cn(
+            "inline-flex h-auto min-w-full sm:min-w-0 items-center justify-start gap-1 rounded-none bg-transparent p-0 text-muted-foreground",
+            listClassName,
+          )}
+        >
+          {manifest.tabs.map((tab) => {
+            const Icon = ICONS[tab.icon];
+            return (
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                className="relative shrink-0 inline-flex items-center gap-1.5 rounded-none border-b-2 border-transparent bg-transparent px-3 py-2 text-xs sm:text-sm font-medium text-muted-foreground shadow-none transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
+              >
+                <Icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="sm:hidden">{tab.shortLabel}</span>
+              </TabsTrigger>
+            );
+          })}
+        </TabsList>
+      </div>
 
       {manifest.tabs.map((tab) => {
         const TabComponent = components.get(tab.id);

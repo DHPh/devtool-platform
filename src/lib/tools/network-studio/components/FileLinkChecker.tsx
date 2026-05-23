@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { File, CheckCircle, AlertCircle, Download, Clock } from "lucide-react";
+import { LightbulbIcon as Lightbulb } from "@phosphor-icons/react/Lightbulb";
 import { toast } from "sonner";
 import {
   formatFileSize,
@@ -149,8 +150,9 @@ export function FileLinkChecker() {
 
                   {/* Troubleshooting tips */}
                   <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                    <h4 className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">
-                      💡 Troubleshooting Tips:
+                    <h4 className="flex items-center gap-1.5 font-medium text-yellow-800 dark:text-yellow-200 mb-2">
+                      <Lightbulb aria-hidden="true" className="h-4 w-4" />
+                      Troubleshooting Tips:
                     </h4>
                     <ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
                       <li>• Check if the URL is correct and accessible</li>

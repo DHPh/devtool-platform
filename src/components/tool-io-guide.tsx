@@ -47,12 +47,12 @@ export function ToolIoGuide({
     <Collapsible
       open={open}
       onOpenChange={setOpen}
-      className="mb-5 rounded-lg border bg-muted/25"
+      className="mb-4 rounded-md border border-border bg-surface-sunken/70"
     >
       <CollapsibleTrigger asChild>
         <button
           type="button"
-          className="flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left text-xs sm:text-sm hover:bg-muted/40 transition-colors rounded-lg"
+          className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-xs hover:bg-surface-elevated/60 transition-colors rounded-md"
         >
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <BookOpen className="h-4 w-4 text-muted-foreground shrink-0" />

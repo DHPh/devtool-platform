@@ -77,6 +77,14 @@
   .mobile-button {
     @apply min-h-[44px] px-4 py-2 sm:px-6 sm:py-3;
   }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Code highlighting and dark mode improvements */
@@ -230,21 +238,24 @@
 }
 
 /* Tool-specific improvements */
-.tool-input {
-  @apply bg-background text-foreground border border-input focus:border-ring p-3 rounded-lg shadow-sm;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+.tool-input,
+.tool-input-bordered {
+  @apply bg-surface-sunken text-foreground border border-input focus:border-ring p-3 rounded-md;
+  transition: border-color 0.15s ease;
 }
 
-.tool-input:focus {
-  @apply outline-none ring-2 ring-ring/20 bg-card;
+.tool-input:focus,
+.tool-input-bordered:focus {
+  @apply outline-none ring-1 ring-ring bg-card;
 }
 
-.tool-input:hover {
-  @apply border-ring/50;
+.tool-input:hover,
+.tool-input-bordered:hover {
+  @apply border-border-strong;
 }
 
 .tool-output {
-  @apply bg-muted/50 text-foreground border border-border p-3 rounded-lg shadow-sm;
+  @apply bg-surface-sunken text-foreground border border-border p-3 rounded-md;
 }
 
 .tool-button-primary {
@@ -255,61 +266,24 @@
   @apply bg-secondary hover:bg-secondary/80 text-secondary-foreground border border-border;
 }
 
-/* Textarea specific styling for better text spacing */
-.tool-textarea {
-  @apply bg-background text-foreground border border-input focus:border-ring p-3.5 rounded-lg resize-y shadow-sm font-mono;
-  line-height: 1.5;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.tool-textarea:focus {
-  @apply outline-none ring-2 ring-ring/20 bg-card;
-}
-
-.tool-textarea:hover {
-  @apply border-ring/50;
-}
-
-/* Enhanced Textarea component styling */
-.textarea-enhanced {
-  @apply p-3.5 leading-relaxed bg-background text-foreground border border-input rounded-lg shadow-sm;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.textarea-enhanced:focus {
-  @apply outline-none ring-2 ring-ring/20 bg-card border-ring;
-}
-
-.textarea-enhanced:hover {
-  @apply border-ring/50;
-}
-
-/* Additional textarea and input variants */
-.tool-input-bordered {
-  @apply bg-background text-foreground border border-input focus:border-ring p-3 rounded-lg shadow-sm;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.tool-input-bordered:focus {
-  @apply outline-none ring-2 ring-ring/20 bg-card;
-}
-
-.tool-input-bordered:hover {
-  @apply border-ring/50;
-}
-
-/* Special styling for code input areas */
+.tool-textarea,
+.textarea-enhanced,
 .code-input-enhanced {
-  @apply bg-muted/40 text-foreground border border-input focus:border-ring p-3.5 rounded-lg shadow-sm font-mono;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  @apply bg-surface-sunken text-foreground border border-input focus:border-ring p-3.5 rounded-md font-mono;
+  line-height: 1.5;
+  transition: border-color 0.15s ease;
 }
 
+.tool-textarea:focus,
+.textarea-enhanced:focus,
 .code-input-enhanced:focus {
-  @apply outline-none ring-2 ring-ring/20 bg-card;
+  @apply outline-none ring-1 ring-ring bg-card;
 }
 
+.tool-textarea:hover,
+.textarea-enhanced:hover,
 .code-input-enhanced:hover {
-  @apply border-ring/50;
+  @apply border-border-strong;
 }
 
 /* Ensure smooth theme transitions */

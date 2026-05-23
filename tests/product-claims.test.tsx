@@ -2,7 +2,11 @@ import { isValidElement, type ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/font/google", () => ({
-  Inter: () => ({ className: "inter" }),
+  Inter: () => ({ className: "inter", variable: "--font-inter" }),
+  JetBrains_Mono: () => ({
+    className: "jetbrains-mono",
+    variable: "--font-jetbrains-mono",
+  }),
 }));
 
 import { metadata as layoutMetadata } from "@/app/layout";

@@ -6,6 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table } from "lucide-react";
+import { FileTextIcon as PhosphorFileText } from "@phosphor-icons/react/FileText";
+import { LightbulbIcon as Lightbulb } from "@phosphor-icons/react/Lightbulb";
+import { WarningIcon as Warning } from "@phosphor-icons/react/Warning";
 import { toast } from "sonner";
 import {
   getDelimiterDisplayName,
@@ -246,9 +249,12 @@ export default function CSVViewer() {
               className="w-full h-32 tool-textarea"
               spellCheck={false}
             />
-            <div className="text-sm text-muted-foreground">
-              💡 Tip: Use the &quot;Process CSV&quot; button above to parse your
-              data manually
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Lightbulb aria-hidden="true" className="h-4 w-4 shrink-0" />
+              <span>
+                Tip: Use the &quot;Process CSV&quot; button above to parse your
+                data manually
+              </span>
             </div>
           </div>
 
@@ -260,14 +266,19 @@ export default function CSVViewer() {
                 variant="outline"
                 className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
               >
-                📝 {getDelimiterDisplayName(detectedDelimiter)}
+                <PhosphorFileText
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5 mr-1"
+                />
+                {getDelimiterDisplayName(detectedDelimiter)}
               </Badge>
               {columnCount > 10 && (
                 <Badge
                   variant="outline"
                   className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300"
                 >
-                  ⚠️ Many columns detected
+                  <Warning aria-hidden="true" className="h-3.5 w-3.5 mr-1" />
+                  Many columns detected
                 </Badge>
               )}
               {parseIssueCount > 0 && (
@@ -275,7 +286,8 @@ export default function CSVViewer() {
                   variant="outline"
                   className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300"
                 >
-                  ⚠️ {parseIssueCount} row{parseIssueCount === 1 ? "" : "s"}{" "}
+                  <Warning aria-hidden="true" className="h-3.5 w-3.5 mr-1" />
+                  {parseIssueCount} row{parseIssueCount === 1 ? "" : "s"}{" "}
                   with unequal columns
                 </Badge>
               )}

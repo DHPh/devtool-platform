@@ -19,6 +19,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BarChart3, Download, FileText } from "lucide-react";
+import { FileTextIcon as PhosphorFileText } from "@phosphor-icons/react/FileText";
+import { TreeStructureIcon as TreeStructure } from "@phosphor-icons/react/TreeStructure";
+import { WarningIcon as Warning } from "@phosphor-icons/react/Warning";
 import { toast } from "sonner";
 import {
   getDelimiterDisplayName,
@@ -428,21 +431,30 @@ Charlie Wilson,32,Phoenix,72000,false`;
                     variant="outline"
                     className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
                   >
-                    📊 Nested data flattened
+                    <TreeStructure
+                      aria-hidden="true"
+                      className="h-3.5 w-3.5 mr-1"
+                    />
+                    Nested data flattened
                   </Badge>
                 )}
                 <Badge
                   variant="outline"
                   className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
                 >
-                  📝 {getDelimiterDisplayName(detectedDelimiter)}
+                  <PhosphorFileText
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5 mr-1"
+                  />
+                  {getDelimiterDisplayName(detectedDelimiter)}
                 </Badge>
                 {parseIssueCount > 0 && (
                   <Badge
                     variant="outline"
                     className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300"
                   >
-                    ⚠️ {parseIssueCount} row
+                    <Warning aria-hidden="true" className="h-3.5 w-3.5 mr-1" />
+                    {parseIssueCount} row
                     {parseIssueCount === 1 ? "" : "s"} with unequal columns
                   </Badge>
                 )}

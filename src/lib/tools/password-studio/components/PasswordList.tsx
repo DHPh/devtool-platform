@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Copy, Eye, EyeOff, Download, Trash2 } from "lucide-react";
+import { LockKeyIcon as LockKey } from "@phosphor-icons/react/LockKey";
 import { PasswordGenerationResult } from "@/lib/utils/password";
 
 interface PasswordListProps {
@@ -94,7 +95,11 @@ export function PasswordList({
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
-            <div className="text-4xl mb-2">🔐</div>
+            <LockKey
+              aria-hidden="true"
+              weight="duotone"
+              className="mx-auto mb-2.5 h-9 w-9 text-muted-foreground/60"
+            />
             <p>Click &quot;Generate&quot; to create secure passwords</p>
           </div>
         </CardContent>

@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Clock, CornerDownLeft, Search, Sparkles, Star } from "lucide-react";
+import { ArrowRight, Clock, CornerDownLeft, Layers, Search, Star } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { ToolMonogram } from "@/components/ui/tool-badge";
 import {
   TOOL_COUNT,
   getFeaturedTools,
@@ -18,6 +19,7 @@ import {
   searchTools,
   type ToolMetadata,
 } from "@/lib/tool-registry";
+import { getToolMonogram } from "@/lib/tool-visuals";
 import { useBookmarks } from "@/store/bookmarks";
 import { useRecentTools } from "@/store/recent-tools";
 
@@ -50,7 +52,12 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const { recentTools } = useRecentTools();
 
   const { sections, flatItems } = useMemo(() => {
-    const rawGroups: { id: string; label: string; icon: typeof Clock; tools: ToolMetadata[] }[] = [];
+    const rawGroups: {
+      id: string;
+      label: string;
+      icon: typeof Clock;
+      tools: ToolMetadata[];
+    }[] = [];
     const trimmed = query.trim();
 
     if (trimmed) {
@@ -96,7 +103,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         rawGroups.push({
           id: "featured",
           label: "Popular Tools",
-          icon: Sparkles,
+          icon: Layers,
           tools: featured,
         });
       }
@@ -174,14 +181,14 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="top-[10%] sm:top-[14%] translate-y-0 max-w-2xl p-0 gap-0 overflow-hidden">
+      <DialogContent className="top-[10%] sm:top-[14%] translate-y-0 max-w-2xl p-0 gap-0 overflow-hidden border-border-strong bg-popover shadow-popover">
         <DialogTitle className="sr-only">Search Developer Tools</DialogTitle>
         <DialogDescription className="sr-only">
           Search across {TOOL_COUNT} developer tools by name, tag, or category
         </DialogDescription>
 
         {/* Search Input Bar */}
-        <div className="flex items-center border-b px-4 pr-12">
+        <div className="flex items-center border-b border-border px-4 pr-12">
           <Search className="h-4 w-4 text-muted-foreground shrink-0 mr-3" />
           <input
             type="text"
@@ -194,7 +201,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             }}
             onKeyDown={handleKeyDown}
             autoFocus
-            className="flex h-12 w-full bg-transparent py-3 text-sm sm:text-base outline-none placeholder:text-muted-foreground"
+            className="flex h-11 w-full bg-transparent py-2.5 text-sm outline-none placeholder:text-muted-foreground"
           />
         </div>
 
@@ -209,7 +216,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               const SectionIcon = section.icon;
               return (
                 <div key={section.id} className="space-y-1">
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                     <SectionIcon className="h-3.5 w-3.5" />
                     <span>{section.label}</span>
                   </div>
@@ -225,15 +232,17 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                           aria-selected={isActive}
                           onMouseEnter={() => setSelectedIndex(flatIndex)}
                           onClick={() => navigateToTool(tool)}
-                          className={`w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-left transition-colors ${
+                          className={`w-full flex items-center gap-3 rounded-sm px-2.5 py-2 text-left transition-colors ${
                             isActive
                               ? "bg-accent text-accent-foreground"
-                              : "hover:bg-accent/60"
+                              : "hover:bg-surface-elevated/80"
                           }`}
                         >
-                          <span className="text-xl shrink-0" aria-hidden="true">
-                            {tool.icon}
-                          </span>
+                          <ToolMonogram
+                            code={getToolMonogram(tool)}
+                            size="sm"
+                            active={isActive}
+                          />
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
                               <span className="font-medium text-sm truncate">
@@ -271,11 +280,11 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           )}
 
           {query.trim() && flatItems.length > 0 && (
-            <div className="pt-1 border-t">
+            <div className="pt-1 border-t border-border">
               <button
                 type="button"
                 onClick={navigateToCatalogSearch}
-                className="w-full flex items-center justify-between rounded-md px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                className="w-full flex items-center justify-between rounded-sm px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
               >
                 <span>View all results for &ldquo;{query.trim()}&rdquo; in Tools Catalog</span>
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -285,28 +294,28 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         </div>
 
         {/* Keyboard Footer */}
-        <div className="hidden sm:flex items-center justify-between border-t bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
+        <div className="hidden sm:flex items-center justify-between border-t border-border bg-surface-sunken px-4 py-2 text-xs text-muted-foreground">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
-              <kbd className="rounded border bg-background px-1.5 py-0.5 font-mono text-[10px]">
+              <kbd className="rounded-sm border border-border bg-card px-1.5 py-0.5 font-mono text-[10px]">
                 ↑↓
               </kbd>
               Navigate
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="rounded border bg-background px-1.5 py-0.5 font-mono text-[10px]">
+              <kbd className="rounded-sm border border-border bg-card px-1.5 py-0.5 font-mono text-[10px]">
                 ↵
               </kbd>
               Open
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="rounded border bg-background px-1.5 py-0.5 font-mono text-[10px]">
+              <kbd className="rounded-sm border border-border bg-card px-1.5 py-0.5 font-mono text-[10px]">
                 Esc
               </kbd>
               Close
             </span>
           </div>
-          <span>{TOOL_COUNT} tools available</span>
+          <span className="font-mono tabular-nums">{TOOL_COUNT} tools indexed</span>
         </div>
       </DialogContent>
     </Dialog>

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { RefreshCw, Copy, Eye, EyeOff, Settings, ShieldCheck } from "lucide-react";
+import { LinkSimpleIcon as LinkSimple } from "@phosphor-icons/react/LinkSimple";
 import {
   generatePassphrase,
   generateMultiplePassphrases,
@@ -388,7 +389,11 @@ export function PassphraseGeneratorTab({
         <CardContent>
           {generatedPassphrases.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              <div className="text-4xl mb-2">🔗</div>
+              <LinkSimple
+                aria-hidden="true"
+                weight="duotone"
+                className="mx-auto mb-2.5 h-9 w-9 text-muted-foreground/60"
+              />
               <p>Generate passphrases to see them here</p>
             </div>
           ) : (

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import "./tokens.css";
 import "./themes/classic.css";
 import "./themes/neon.css";
 import "./themes/paper.css";
@@ -10,7 +11,11 @@ import { siteConfig, validateConfig } from "@/config/site";
 import { TOOL_COUNT } from "@/lib/tool-registry";
 import { serializeJsonForHtml } from "@/lib/security/safe-json";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains-mono",
+});
 
 // Validate configuration in development
 if (process.env.NODE_ENV === "development") {
@@ -144,24 +149,30 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" data-theme="legacy" suppressHydrationWarning>
+    <html
+      lang="en"
+      data-theme="legacy"
+      className={`${inter.variable} ${jetbrainsMono.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#000000" />
-        {/* Apply initial color mode before paint */}
+        {/* Apply initial theme palette and color mode before paint */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
+                var VALID_THEMES = { legacy: true, paper: true, neon: true };
                 function systemDark() {
                   return window.matchMedia('(prefers-color-scheme: dark)').matches;
                 }
-                function apply(mode) {
+                function apply(mode, activeTheme) {
                   var root = document.documentElement;
-                  root.setAttribute('data-theme', 'legacy');
+                  root.setAttribute('data-theme', VALID_THEMES[activeTheme] ? activeTheme : 'legacy');
                   var dark = mode === 'dark' || (mode === 'system' && systemDark());
                   root.classList.toggle('dark', dark);
                   root.classList.remove('light');
@@ -170,9 +181,10 @@ export default function RootLayout({
                   var stored = localStorage.getItem('devtool-theme');
                   var state = stored ? (JSON.parse(stored).state || {}) : {};
                   var mode = state.theme === 'dark' || state.theme === 'light' ? state.theme : 'system';
-                  apply(mode);
+                  var activeTheme = typeof state.activeTheme === 'string' ? state.activeTheme : 'legacy';
+                  apply(mode, activeTheme);
                 } catch (e) {
-                  apply('system');
+                  apply('system', 'legacy');
                 }
               })();
             `,
@@ -185,9 +197,9 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={inter.className}>
+      <body className="font-sans antialiased bg-background text-foreground">
         <Navigation />
-        <main className="min-h-screen w-full">{children}</main>
+        <main className="min-h-[calc(100vh-var(--header-height))] w-full">{children}</main>
         <Toaster />
       </body>
     </html>

@@ -18,12 +18,31 @@ const config: Config = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["var(--font-sans)"],
+        mono: ["var(--font-mono)"],
+      },
       colors: {
         border: "hsl(var(--border))",
+        "border-strong": "hsl(var(--border-strong))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        surface: {
+          canvas: "hsl(var(--background))",
+          panel: "hsl(var(--card))",
+          sunken: "hsl(var(--surface-sunken))",
+          elevated: "hsl(var(--surface-elevated))",
+        },
+        status: {
+          ok: "hsl(var(--status-ok))",
+          "ok-bg": "hsl(var(--status-ok-bg))",
+          warn: "hsl(var(--status-warn))",
+          "warn-bg": "hsl(var(--status-warn-bg))",
+          info: "hsl(var(--status-info))",
+          "info-bg": "hsl(var(--status-info-bg))",
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -54,9 +73,13 @@ const config: Config = {
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        lg: "var(--radius-lg)",
+        md: "var(--radius)",
+        sm: "var(--radius-sm)",
+      },
+      boxShadow: {
+        card: "var(--shadow-card)",
+        popover: "var(--shadow-popover)",
       },
       keyframes: {
         "accordion-down": {

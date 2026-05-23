@@ -24,6 +24,7 @@ import {
   FileText,
   Eye,
 } from "lucide-react";
+import { CheckCircleIcon as PhosphorCheckCircle } from "@phosphor-icons/react/CheckCircle";
 import { cn } from "@/lib/utils";
 import {
   formatFileSize,
@@ -395,7 +396,11 @@ export default function DuplicateFinderTab() {
               </div>
             ) : files.length > 0 && files.every((file) => file.hash) && !isScanning ? (
               <div className="text-center text-green-600 py-8">
-                <div className="text-4xl mb-4">🎉</div>
+                <PhosphorCheckCircle
+                  aria-hidden="true"
+                  weight="duotone"
+                  className="mx-auto mb-3 h-10 w-10 text-status-ok"
+                />
                 <p className="font-medium">No Duplicates Found!</p>
                 <p className="text-sm text-muted-foreground mt-2">
                   All {files.length} files are unique.

@@ -35,14 +35,9 @@ function createManifest(tabCount: number): StudioManifest {
 }
 
 describe("studio tabs", () => {
-  it.each([
-    [3, ["grid-cols-2", "sm:grid-cols-3"]],
-    [4, ["grid-cols-2", "sm:grid-cols-4"]],
-    [8, ["grid-cols-2", "sm:grid-cols-4"]],
-    [10, ["grid-cols-2", "sm:grid-cols-3", "lg:grid-cols-5"]],
-  ])(
-    "chooses a balanced responsive grid for %i tools",
-    (tabCount, expectedClasses) => {
+  it.each([3, 4, 8, 10])(
+    "renders a single-row scrollable underline tablist for %i tools",
+    (tabCount) => {
       render(
         <StudioTabs
           manifest={createManifest(tabCount)}
@@ -50,26 +45,24 @@ describe("studio tabs", () => {
         />,
       );
 
-      expect(screen.getByRole("tablist")).toHaveClass(
-        "grid",
-        "h-auto",
-        "auto-rows-fr",
-        ...expectedClasses,
-      );
+      const tablist = screen.getByRole("tablist");
+      expect(tablist).toHaveClass("inline-flex", "h-auto", "bg-transparent");
+      expect(tablist.parentElement).toHaveClass("overflow-x-auto");
+      expect(screen.getAllByRole("tab")).toHaveLength(tabCount);
     },
   );
 
-  it("gives every studio tab a compact, consistent minimum height", () => {
+  it("gives every studio tab consistent non-shrinking underline styling", () => {
     render(
       <StudioTabs manifest={createManifest(4)} componentProps={{}} />,
     );
 
     for (const tab of screen.getAllByRole("tab")) {
       expect(tab).toHaveClass(
-        "h-full",
-        "min-h-11",
-        "min-w-0",
-        "whitespace-normal",
+        "shrink-0",
+        "inline-flex",
+        "border-b-2",
+        "whitespace-nowrap",
       );
     }
   });

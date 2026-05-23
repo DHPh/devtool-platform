@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Download, Table, Upload } from "lucide-react";
+import { TreeStructureIcon as TreeStructure } from "@phosphor-icons/react/TreeStructure";
 import { toast } from "sonner";
 import { parseJsonTable } from "@/lib/processors/json-table";
 
@@ -263,7 +264,11 @@ export default function JSONTableViewer() {
                   variant="outline"
                   className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
                 >
-                  📊 Nested data flattened
+                  <TreeStructure
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5 mr-1"
+                  />
+                  Nested data flattened
                 </Badge>
                 <span className="text-sm text-muted-foreground">
                   Complex nested objects have been flattened into columns

@@ -18,6 +18,8 @@ import {
   AlertTriangle,
   CheckCircle,
 } from "lucide-react";
+import { LockKeyIcon as LockKey } from "@phosphor-icons/react/LockKey";
+import { MagnifyingGlassIcon as MagnifyingGlass } from "@phosphor-icons/react/MagnifyingGlass";
 import { BreachCheckResult } from "@/lib/utils/password";
 
 interface BreachCheckDisplayProps {
@@ -86,7 +88,11 @@ export function BreachCheckDisplay({
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
-            <div className="text-4xl mb-2">🔒</div>
+            <LockKey
+              aria-hidden="true"
+              weight="duotone"
+              className="mx-auto mb-2.5 h-9 w-9 text-muted-foreground/60"
+            />
             <p>Enter a password to check for breaches</p>
           </div>
         </CardContent>
@@ -242,7 +248,11 @@ export function BreachCheckDisplay({
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
-            <div className="text-4xl mb-2">🔍</div>
+            <MagnifyingGlass
+              aria-hidden="true"
+              weight="duotone"
+              className="mx-auto mb-2.5 h-9 w-9 text-muted-foreground/60"
+            />
             <p>Click &quot;Check&quot; to verify password security</p>
           </div>
         )}

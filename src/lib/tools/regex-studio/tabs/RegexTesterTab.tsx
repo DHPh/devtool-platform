@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { AlertCircle, Search } from "lucide-react";
+import { NotePencilIcon as NotePencil } from "@phosphor-icons/react/NotePencil";
 import {
   testRegex,
   RegexFlags,
@@ -302,7 +303,11 @@ export function RegexTesterTab({
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
-                <div className="text-4xl mb-2">📝</div>
+                <NotePencil
+                  aria-hidden="true"
+                  weight="duotone"
+                  className="mx-auto mb-2.5 h-9 w-9 text-muted-foreground/60"
+                />
                 <p>
                   {!testText
                     ? "Enter some test text to see matches"
